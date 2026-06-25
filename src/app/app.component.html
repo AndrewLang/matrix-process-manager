@@ -1,21 +1,24 @@
 <main class="app-frame">
-  <header class="titlebar" (mousedown)="startDrag($event)">
-    <div class="titlebar-left">
+  <header class="titlebar" data-tauri-drag-region (mousedown)="startDrag($event)" (dblclick)="toggleMaximize()">
+    <div class="titlebar-left" data-tauri-drag-region>
       <span class="app-mark"><i class="bi bi-grid-3x3-gap-fill"></i></span>
       <strong>Process Manager</strong>
     </div>
-    <label class="global-search" (mousedown)="$event.stopPropagation()">
+    <label class="global-search" (mousedown)="$event.stopPropagation()" (dblclick)="$event.stopPropagation()">
       <i class="bi bi-search"></i>
       <input type="search" placeholder="Search processes, PID, publisher..." />
       <kbd>Ctrl K</kbd>
     </label>
-    <div class="titlebar-actions" (mousedown)="$event.stopPropagation()">
-      <button type="button" aria-label="Refresh"><i class="bi bi-arrow-clockwise"></i></button>
-      <button type="button" aria-label="Settings"><i class="bi bi-gear"></i></button>
-      <span class="divider"></span>
-      <button type="button" aria-label="Minimize" (click)="minimize()"><i class="bi bi-dash"></i></button>
-      <button type="button" aria-label="Maximize" (click)="toggleMaximize()"><i class="bi bi-square"></i></button>
-      <button type="button" aria-label="Close" (click)="close()"><i class="bi bi-x-lg"></i></button>
+    <div class="titlebar-actions" (mousedown)="$event.stopPropagation()" (dblclick)="$event.stopPropagation()">
+      <div class="titlebar-tools">
+        <button type="button" aria-label="Refresh"><i class="bi bi-arrow-clockwise"></i></button>
+        <button type="button" aria-label="Settings"><i class="bi bi-gear"></i></button>
+      </div>
+      <div class="window-controls">
+        <button type="button" class="window-control" aria-label="Minimize" (click)="minimize()"><i class="bi bi-dash"></i></button>
+        <button type="button" class="window-control" aria-label="Maximize" (click)="toggleMaximize()"><i class="bi bi-square"></i></button>
+        <button type="button" class="window-control close" aria-label="Close" (click)="close()"><i class="bi bi-x-lg"></i></button>
+      </div>
     </div>
   </header>
 
@@ -75,8 +78,8 @@
             <div class="panel-head">
               <h1>Processes <span>({{ totalProcesses() }})</span></h1>
               <label class="filter-input"><i class="bi bi-search"></i><input type="search" placeholder="Filter processes..." /></label>
-              <button type="button" class="soft-button"><i class="bi bi-sliders"></i> View Options</button>
-              <button type="button" class="danger-button" disabled><i class="bi bi-slash-circle"></i> End Process</button>
+              <button type="button" class="soft-button"><i class="bi bi-sliders"></i><span>View Options</span></button>
+              <button type="button" class="danger-button" disabled><i class="bi bi-slash-circle"></i><span>End Process</span></button>
             </div>
             <ng-container [ngTemplateOutlet]="processTable" />
           </section>
@@ -90,10 +93,10 @@
             <h1>Processes <span>({{ totalProcesses() }})</span></h1>
             <div class="toolbar-row">
               <label class="filter-input wide"><i class="bi bi-search"></i><input type="search" placeholder="Filter processes..." /></label>
-              <button type="button" class="soft-button"><i class="bi bi-funnel"></i> Add Filter</button>
-              <button type="button" class="soft-button"><i class="bi bi-filter"></i> Quick Filters</button>
-              <button type="button" class="soft-button"><i class="bi bi-sliders"></i> View Options</button>
-              <button type="button" class="danger-button" disabled><i class="bi bi-slash-circle"></i> End Process</button>
+              <button type="button" class="soft-button"><i class="bi bi-funnel"></i><span>Add Filter</span></button>
+              <button type="button" class="soft-button"><i class="bi bi-filter"></i><span>Quick Filters</span></button>
+              <button type="button" class="soft-button"><i class="bi bi-sliders"></i><span>View Options</span></button>
+              <button type="button" class="danger-button" disabled><i class="bi bi-slash-circle"></i><span>End Process</span></button>
             </div>
             <div class="quick-tabs">
               <button type="button" class="active">All ({{ totalProcesses() }})</button>

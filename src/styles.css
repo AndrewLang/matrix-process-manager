@@ -72,7 +72,7 @@ input {
   justify-content: center;
   align-items: center;
   height: 44px;
-  padding: 0 12px 0 15px;
+  padding: 0 0 0 15px;
   border-bottom: 1px solid var(--border);
   background: rgba(6, 14, 22, 0.82);
   user-select: none;
@@ -113,6 +113,8 @@ input {
 .global-search,
 .filter-input {
   height: 30px;
+  display: flex;
+  align-items: center;
   gap: 8px;
   border: 1px solid var(--border);
   background: rgba(15, 28, 40, 0.84);
@@ -126,6 +128,16 @@ input {
 .global-search input,
 .filter-input input {
   flex: 1;
+  height: 100%;
+  line-height: 30px;
+}
+.global-search .bi,
+.filter-input .bi {
+  width: 16px;
+  display: inline-grid;
+  place-items: center;
+  line-height: 1;
+  flex: 0 0 auto;
 }
 kbd {
   padding: 1px 6px;
@@ -136,27 +148,52 @@ kbd {
 }
 .titlebar-actions {
   position: absolute;
-  right: 12px;
+  right: 0;
+  height: 100%;
+  gap: 10px;
+}
+.titlebar-tools,
+.window-controls {
+  display: flex;
+  align-items: center;
+}
+.titlebar-tools {
   gap: 6px;
 }
-.titlebar-actions button {
+.titlebar-tools button {
   width: 27px;
   height: 27px;
   border-radius: 50%;
   background: transparent;
   color: #b8c4cf;
 }
-.titlebar-actions button:hover,
+.titlebar-tools button:hover,
 .nav-item:hover,
 .soft-button:hover,
 .range-tabs button:hover {
   background: rgba(255, 255, 255, 0.06);
 }
-.titlebar-actions .divider {
-  width: 1px;
-  height: 18px;
-  margin: 0 4px;
-  background: var(--border);
+.window-controls {
+  height: 100%;
+}
+.window-control {
+  width: 46px;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  border-radius: 0;
+  background: transparent;
+  color: #c3ccd5;
+}
+.window-control .bi {
+  font-size: 13px;
+}
+.window-control:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.window-control.close:hover {
+  background: #c42b1c;
+  color: #ffffff;
 }
 
 .workspace {
@@ -407,7 +444,18 @@ h2 {
 .danger-button {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 7px;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+.soft-button .bi,
+.danger-button .bi {
+  flex: 0 0 auto;
+}
+.soft-button span,
+.danger-button span {
+  white-space: nowrap;
 }
 .danger-button {
   color: var(--red);
@@ -767,5 +815,14 @@ dd {
   .details-panel,
   .performance-rail {
     width: 250px;
+  }
+  .soft-button,
+  .danger-button {
+    width: 30px;
+    padding: 0;
+  }
+  .soft-button span,
+  .danger-button span {
+    display: none;
   }
 }
