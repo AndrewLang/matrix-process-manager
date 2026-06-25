@@ -1,63 +1,148 @@
-<section class="grid h-full min-h-0 min-w-0 gap-2.5 overflow-hidden px-2.5 py-3" [ngClass]="
-    detailsOpen()
-      ? 'grid-cols-[minmax(0,1fr)_auto]'
-      : 'grid-cols-[minmax(0,1fr)]'
-  ">
-    <section class="grid min-h-0 min-w-0 grid-rows-[144px_minmax(0,1fr)] gap-2.5 max-[1040px]:grid-rows-[296px_minmax(0,1fr)]">
-        <div class="grid grid-cols-5 gap-2.75 max-[1040px]:grid-cols-2">
-            @for (metric of state.metrics(); track metric.label) {
-            <mtx-metric-block [metric]="metric" />
-            }
+<section class="grid h-full min-h-0 min-w-0 grid-cols-[minmax(0,1fr)_236px] gap-2.5 overflow-hidden px-2.5 py-3 max-[1180px]:grid-cols-[minmax(0,1fr)]">
+    <section class="grid min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] gap-2.5 overflow-hidden">
+        <div>
+            <div>
+                <h1>Performance</h1>
+                <p>Real-time system performance and resource usage</p>
+            </div>
         </div>
 
-        <div class="grid min-h-0 gap-2.5" [ngClass]="
-        detailsOpen()
-          ? 'grid-cols-[minmax(0,1fr)_286px] max-[1040px]:grid-cols-[minmax(0,1fr)_250px]'
-          : 'grid-cols-[minmax(0,1fr)]'
-      ">
-            <section
-              class="grid min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
-                <div class="flex items-center gap-2.25 border-b border-(--border) p-3">
-                    <h1>
-                        Processes <span>({{ state.totalProcesses() }})</span>
-                    </h1>
-                    <mtx-search-box [hostClass]="filterSearchClass" placeholder="Filter processes..." [(value)]="processFilter" />
-                    <div class="relative flex-none" (click)="$event.stopPropagation()">
-                        <button type="button"
-                          class="inline-flex h-7.5 flex-none items-center justify-center gap-1.75 whitespace-nowrap rounded-[5px] border border-(--border) bg-[rgba(16,31,45,0.86)] px-3 py-0 hover:bg-white/6 max-[1040px]:w-7.5 max-[1040px]:px-0"
-                          (click)="toggleViewOptions()">
-                            <i class="bi bi-sliders flex-none"></i><span class="whitespace-nowrap max-[1040px]:hidden">View Options</span>
-                        </button>
-                        @if (viewOptionsOpen()) {
-                        <div
-                          class="absolute right-0 top-9 z-50 grid min-w-41 overflow-hidden rounded-md border border-(--border) bg-[rgba(10,22,33,0.98)] py-1 shadow-[0_12px_28px_rgba(0,0,0,0.32)]">
-                            <button type="button" class="flex h-8 items-center gap-2 bg-transparent px-3 py-0 text-left text-[#cbd7e2] hover:bg-white/6"
-                              (click)="
-                    dashboardProcessGrid.expandAllGroups(); closeViewOptions()
-                  ">
-                                <i class="bi bi-arrows-expand flex-none"></i><span>Expand all groups</span>
-                            </button>
-                            <button type="button" class="flex h-8 items-center gap-2 bg-transparent px-3 py-0 text-left text-[#cbd7e2] hover:bg-white/6"
-                              (click)="
-                    dashboardProcessGrid.collapseAllGroups(); closeViewOptions()
-                  ">
-                                <i class="bi bi-arrows-collapse flex-none"></i><span>Collapse all groups</span>
-                            </button>
+        <div id="cards" class="grid min-h-0 auto-rows-max content-start gap-2.5 overflow-auto pr-1">
+            <section class="grid gap-2.5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+                @for (metric of summaryMetrics().slice(0, 2); track metric.label) {
+                <article class="cursor-pointer rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-3"
+                  [ngClass]="accentClass(metric.accent)" (dblclick)="openPerformanceMetric(metric.label)">
+                    <div class="mb-2 flex items-center justify-between">
+                        <h2>{{ metric.label }} Usage</h2>
+                        <span class="text-[11px] text-(--muted)">{{ metric.value }}</span>
+                    </div>
+                    <svg
+                      class="h-48 w-full rounded border border-white/6 bg-[linear-gradient(rgba(122,153,181,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(122,153,181,0.08)_1px,transparent_1px)] bg-size-[32px_28px]"
+                      viewBox="0 0 320 112" preserveAspectRatio="none">
+                        <polygon class="fill-current opacity-14" [attr.points]="chartAreaPath(metricKey(metric.label))" />
+                        <polyline class="fill-none stroke-current stroke-[0.8px]" [attr.points]="chartPath(metricKey(metric.label))" />
+                    </svg>
+                    <div class="mt-1.5 flex justify-between text-[11px] text-(--muted)"><span>5m</span><span>Now</span></div>
+                </article>
+                }
+            </section>
+
+            <section class="grid gap-2.5 xl:grid-cols-3">
+                @for (metric of summaryMetrics().slice(2, 5); track metric.label) {
+                <article class="cursor-pointer rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-3"
+                  [ngClass]="accentClass(metric.accent)" (dblclick)="openPerformanceMetric(metric.label)">
+                    <div class="mb-2 flex items-center justify-between">
+                        <h2>{{ metric.label }} Activity</h2>
+                        <span class="text-[11px] text-(--muted)">{{ metric.detail }}</span>
+                    </div>
+                    <svg
+                      class="h-36 w-full rounded border border-white/6 bg-[linear-gradient(rgba(122,153,181,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(122,153,181,0.08)_1px,transparent_1px)] bg-size-[28px_24px]"
+                      viewBox="0 0 260 96" preserveAspectRatio="none">
+                        <polygon class="fill-current opacity-14" [attr.points]="chartAreaPath(metricKey(metric.label), 260, 96)" />
+                        <polyline class="fill-none stroke-current stroke-[0.8px]" [attr.points]="chartPath(metricKey(metric.label), 260, 96)" />
+                    </svg>
+                    <div class="mt-1.5 flex justify-between text-[11px] text-(--muted)"><span>5m</span><span>Now</span></div>
+                </article>
+                }
+            </section>
+
+            <section class="grid items-start gap-2.5 xl:grid-cols-2">
+                <article class="rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-3">
+                    <div class="mb-2 flex items-center justify-between">
+                        <h2>Top Resource Consumers</h2>
+                        <span class="text-[11px] text-(--muted)"></span>
+                    </div>
+                    <div class="grid grid-cols-[minmax(0,1fr)_48px_72px_70px_70px] gap-2 border-b border-white/6 pb-1.5 text-[11px] text-(--muted)">
+                        <span>Process</span><span>CPU</span><span>Memory</span><span>Disk</span><span>Network</span>
+                    </div>
+                    <div class="mt-2 grid gap-2 text-[12px]">
+                        @for (row of topConsumers(); track row.pid) {
+                        <div class="grid grid-cols-[minmax(0,1fr)_48px_72px_70px_70px] gap-2 text-[#aab8c6]">
+                            <span class="truncate"><i class="bi mr-1.5 text-(--blue)" [ngClass]="row.iconClass"></i>{{ row.name }}</span>
+                            <strong class="text-(--blue)">{{ row.cpu }}</strong>
+                            <span class="truncate">{{ row.memory }}</span>
+                            <span class="truncate">{{ row.disk }}</span>
+                            <span class="truncate">{{ row.network }}</span>
                         </div>
                         }
                     </div>
-                    <button type="button"
-                      class="inline-flex h-7.5 flex-none items-center justify-center gap-1.75 whitespace-nowrap rounded-[5px] border border-[rgba(255,75,67,0.38)] bg-[rgba(16,31,45,0.86)] px-3 py-0 text-(--red) max-[1040px]:w-7.5 max-[1040px]:px-0"
-                      disabled>
-                        <i class="bi bi-slash-circle flex-none"></i><span class="whitespace-nowrap max-[1040px]:hidden">End Process</span>
-                    </button>
-                </div>
-                <mtx-process-grid #dashboardProcessGrid [rows]="filteredRows()" [selectedProcess]="state.selectedProcess()"
-                  (processSelected)="selectProcess($event)" />
+                </article>
+
+                <article class="rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-3">
+                    <h2>System Summary</h2>
+                    <div class="mt-3 grid gap-x-8 gap-y-2 text-[12px] text-[#aab8c6]">
+                        <span>OS
+                            <span class="ml-2 text-[#e5eef7]">{{ systemInfoValue("Platform") }}</span>
+                        </span>
+                        <span>CPU
+                            <span class="ml-2 text-[#e5eef7]">{{ systemInfoValue("CPU model") }}</span>
+                        </span>
+                        <span>Cores
+                            <span class="ml-2 text-[#e5eef7]">{{ systemInfoValue("Cores") }}</span>
+                        </span>
+                        <span>Memory <span class="ml-2 text-[#e5eef7]">{{ metric("Memory")?.detail ?? "Unavailable" }}</span>
+                        </span>
+                        <span>Architecture <span class="ml-2 text-[#e5eef7]">64-bit</span></span>
+                        <span>Virtualization <span class="ml-2 text-[#e5eef7]">{{ systemInfoValue("Virtualization") }}</span>
+                        </span>
+                    </div>
+                </article>
             </section>
-            @if (detailsOpen()) {
-            <mtx-details-pane [process]="state.selectedRow()" [bars]="state.bars()" (closeDetails)="closeDetails()" />
-            }
         </div>
     </section>
+
+    <aside
+      class="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-md border border-(--border) bg-[linear-gradient(180deg,rgba(13,28,42,0.96),rgba(8,18,29,0.92))] max-[1180px]:hidden">
+        <div class="flex items-center justify-between border-b border-(--border) p-3">
+            <h2>Details</h2>
+            <button type="button" class="text-(--muted)"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="min-h-0 overflow-auto p-3">
+            <section class="grid gap-2.5 border-b border-white/6 pb-3">
+                <h2>CPU</h2>
+                <div class="h-1.5 rounded-full bg-white/8">
+                    <div class="h-full rounded-full bg-(--blue)" [style.width]="metric('CPU')?.value ?? '0%'"></div>
+                </div>
+                @for (item of cpuDetails(); track item.label) {
+                <div class="flex justify-between gap-2 text-[12px]"><span class="text-(--muted)">{{ item.label }}</span><span>{{ item.value }}</span></div>
+                }
+            </section>
+            <section class="mt-3 grid gap-2.5 border-b border-white/6 pb-3">
+                <h2>Memory</h2>
+                <div class="h-1.5 rounded-full bg-white/8">
+                    <div class="h-full rounded-full bg-(--violet)" [style.width]="metric('Memory')?.value ?? '0%'"></div>
+                </div>
+                @for (item of memoryDetails(); track item.label) {
+                <div class="flex justify-between gap-2 text-[12px]"><span class="text-(--muted)">{{ item.label }}</span><span>{{ item.value }}</span></div>
+                }
+            </section>
+            <section class="mt-3 grid gap-2.5 border-b border-white/6 pb-3">
+                <h2>GPU</h2>
+                <div class="h-1.5 rounded-full bg-white/8">
+                    <div class="h-full rounded-full bg-(--cyan)" [style.width]="metric('GPU')?.value ?? '0%'"></div>
+                </div>
+                @for (item of gpuDetails(); track item.label) {
+                <div class="flex justify-between gap-2 text-[12px]"><span class="text-(--muted)">{{ item.label }}</span><span>{{ item.value }}</span></div>
+                }
+            </section>
+            <section class="mt-3 grid gap-2.5 border-b border-white/6 pb-3">
+                <h2>Disk</h2>
+                <div class="h-1.5 rounded-full bg-white/8">
+                    <div class="h-full rounded-full bg-(--green)" [style.width]="metric('Disk')?.value ?? '0%'"></div>
+                </div>
+                @for (item of diskDetails(); track item.label) {
+                <div class="flex justify-between gap-2 text-[12px]"><span class="text-(--muted)">{{ item.label }}</span><span>{{ item.value }}</span></div>
+                }
+            </section>
+            <section class="mt-3 grid gap-2.5">
+                <h2>Network</h2>
+                <div class="h-1.5 rounded-full bg-white/8">
+                    <div class="h-full rounded-full bg-(--orange)" [style.width]="metric('Network')?.value ?? '0%'"></div>
+                </div>
+                @for (item of networkDetails(); track item.label) {
+                <div class="flex justify-between gap-2 text-[12px]"><span class="text-(--muted)">{{ item.label }}</span><span>{{ item.value }}</span></div>
+                }
+            </section>
+        </div>
+    </aside>
 </section>

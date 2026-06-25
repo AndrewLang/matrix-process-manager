@@ -5,7 +5,7 @@
         <span class="text-[11px] text-(--muted)">{{ networkAdapters().length }} detected</span>
     </div>
     @if (networkAdapters().length > 0) {
-    <div class="mt-3 grid gap-2 md:grid-cols-2">
+    <div class="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         @for (adapter of networkAdapters(); track adapter.adapterIndex) {
         <button type="button" class="rounded border p-2 text-left transition-colors" [class.border-(--orange)]="isSelected(adapter)"
           [class.border-white/6]="!isSelected(adapter)" [class.bg-white/5]="isSelected(adapter)" [class.bg-black/10]="!isSelected(adapter)"

@@ -12,7 +12,7 @@
         </div>
     </div>
     @if (diskDrives().length > 0) {
-    <div class="mt-3 grid gap-2 md:grid-cols-2">
+    <div class="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         @for (drive of sortedDiskDrives(); track drive.diskIndex) {
         <button type="button" class="rounded border p-2 text-left transition-colors" [class.border-(--green)]="isSelected(drive)"
           [class.border-white/6]="!isSelected(drive)" [class.bg-white/5]="isSelected(drive)" [class.bg-black/10]="!isSelected(drive)"
