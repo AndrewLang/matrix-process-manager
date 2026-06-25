@@ -15,7 +15,19 @@
     }}</strong>
     <small class="text-[#aab7c4]">{{ metric().detail }}</small>
   </div>
-  <svg class="h-13.75 w-full self-end" viewBox="0 0 240 88" aria-hidden="true">
+  <svg class="h-full min-h-0 w-full self-stretch" viewBox="0 0 240 88" preserveAspectRatio="none" aria-hidden="true">
+    <g class="stroke-current text-[#7f8d9a] opacity-35">
+      <line x1="18" x2="224" y1="14" y2="14" stroke-width="1" stroke-dasharray="3 5" />
+      <line x1="18" x2="224" y1="29.5" y2="29.5" stroke-width="1" stroke-dasharray="3 5" />
+      <line x1="18" x2="224" y1="45" y2="45" stroke-width="1" stroke-dasharray="3 5" />
+      <line x1="18" x2="224" y1="60.5" y2="60.5" stroke-width="1" stroke-dasharray="3 5" />
+      <line x1="18" x2="224" y1="76" y2="76" stroke-width="1" stroke-dasharray="3 5" />
+    </g>
+    <g class="fill-current text-[#8fa0b0] opacity-65" font-size="8" text-anchor="end">
+      <text x="236" y="16.5">100</text>
+      <text x="236" y="47.5">50</text>
+      <text x="236" y="78.5">0</text>
+    </g>
     <path
       class="fill-none stroke-current stroke-[3px] [stroke-linecap:round]"
       [attr.d]="'M ' + metric().path" />
