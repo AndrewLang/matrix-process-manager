@@ -1,0 +1,272 @@
+<main class="app-frame">
+  <header class="titlebar" (mousedown)="startDrag($event)">
+    <div class="titlebar-left">
+      <span class="app-mark"><i class="bi bi-grid-3x3-gap-fill"></i></span>
+      <strong>Process Manager</strong>
+    </div>
+    <label class="global-search" (mousedown)="$event.stopPropagation()">
+      <i class="bi bi-search"></i>
+      <input type="search" placeholder="Search processes, PID, publisher..." />
+      <kbd>Ctrl K</kbd>
+    </label>
+    <div class="titlebar-actions" (mousedown)="$event.stopPropagation()">
+      <button type="button" aria-label="Refresh"><i class="bi bi-arrow-clockwise"></i></button>
+      <button type="button" aria-label="Settings"><i class="bi bi-gear"></i></button>
+      <span class="divider"></span>
+      <button type="button" aria-label="Minimize" (click)="minimize()"><i class="bi bi-dash"></i></button>
+      <button type="button" aria-label="Maximize" (click)="toggleMaximize()"><i class="bi bi-square"></i></button>
+      <button type="button" aria-label="Close" (click)="close()"><i class="bi bi-x-lg"></i></button>
+    </div>
+  </header>
+
+  <div class="workspace">
+    <aside class="sidebar">
+      <nav class="nav-section">
+        <span class="nav-label">Overview</span>
+        @for (item of overviewItems; track item.label) {
+        <button type="button" class="nav-item" [class.active]="activeView() === item.id" (click)="setView(item.id)">
+          <i [class]="'bi ' + item.icon"></i>
+          {{ item.label }}
+        </button>
+        }
+      </nav>
+
+      <nav class="nav-section tools">
+        <span class="nav-label">Tools</span>
+        @for (item of toolItems; track item.label) {
+        <button type="button" class="nav-item" [class.active]="activeView() === item.id" (click)="setView(item.id)">
+          <i [class]="'bi ' + item.icon"></i>
+          {{ item.label }}
+        </button>
+        }
+      </nav>
+
+      <div class="system-card">
+        <span class="device-icon"><i class="bi bi-laptop"></i></span>
+        <strong>My Workstation</strong>
+        <span>Windows 11 Pro</span>
+        <span>Uptime: 5h 42m 18s</span>
+      </div>
+
+      <button type="button" class="theme-toggle"><span><i class="bi bi-moon"></i> Dark</span><i class="bi bi-chevron-down"></i></button>
+      <div class="health"><i class="bi bi-check-circle-fill"></i> All systems operational</div>
+    </aside>
+
+    <section class="content-shell">
+      @if (activeView() === "dashboard") {
+      <section class="dashboard-view">
+        <div class="metrics-grid">
+          @for (metric of metrics; track metric.label) {
+          <article class="metric-card" [class]="metric.accent">
+            <div>
+              <span>{{ metric.label }}</span>
+              <strong>{{ metric.value }}</strong>
+              <small>{{ metric.detail }}</small>
+            </div>
+            <svg viewBox="0 0 240 88" aria-hidden="true">
+              <path [attr.d]="'M ' + metric.path" />
+            </svg>
+          </article>
+          }
+        </div>
+
+        <div class="dashboard-main">
+          <section class="panel process-panel">
+            <div class="panel-head">
+              <h1>Processes <span>({{ totalProcesses() }})</span></h1>
+              <label class="filter-input"><i class="bi bi-search"></i><input type="search" placeholder="Filter processes..." /></label>
+              <button type="button" class="soft-button"><i class="bi bi-sliders"></i> View Options</button>
+              <button type="button" class="danger-button" disabled><i class="bi bi-slash-circle"></i> End Process</button>
+            </div>
+            <ng-container [ngTemplateOutlet]="processTable" />
+          </section>
+          <ng-container [ngTemplateOutlet]="detailsPanel" />
+        </div>
+      </section>
+      } @else if (activeView() === "processes") {
+      <section class="processes-view">
+        <section class="panel process-panel full-table">
+          <div class="panel-head stacked">
+            <h1>Processes <span>({{ totalProcesses() }})</span></h1>
+            <div class="toolbar-row">
+              <label class="filter-input wide"><i class="bi bi-search"></i><input type="search" placeholder="Filter processes..." /></label>
+              <button type="button" class="soft-button"><i class="bi bi-funnel"></i> Add Filter</button>
+              <button type="button" class="soft-button"><i class="bi bi-filter"></i> Quick Filters</button>
+              <button type="button" class="soft-button"><i class="bi bi-sliders"></i> View Options</button>
+              <button type="button" class="danger-button" disabled><i class="bi bi-slash-circle"></i> End Process</button>
+            </div>
+            <div class="quick-tabs">
+              <button type="button" class="active">All ({{ totalProcesses() }})</button>
+              <button type="button">Apps (48)</button>
+              <button type="button">Background (78)</button>
+              <button type="button">Windows (9)</button>
+              <button type="button">System (7)</button>
+            </div>
+          </div>
+          <ng-container [ngTemplateOutlet]="processTable" />
+        </section>
+        <ng-container [ngTemplateOutlet]="detailsPanel" />
+      </section>
+      } @else if (activeView() === "performance") {
+      <section class="performance-view">
+        <div class="view-heading">
+          <div>
+            <h1>Performance</h1>
+            <p>Real-time system performance and resource usage</p>
+          </div>
+          <div class="range-tabs"><button>1m</button><button
+              class="active">5m</button><button>15m</button><button>1h</button><button>6h</button><button>24h</button></div>
+        </div>
+        <div class="metrics-grid performance-metrics">
+          @for (metric of metrics; track metric.label) {
+          <article class="metric-card" [class]="metric.accent">
+            <div><span>{{ metric.label }}</span><strong>{{ metric.value }}</strong><small>{{ metric.detail }}</small></div>
+            <svg viewBox="0 0 240 88" aria-hidden="true">
+              <path [attr.d]="'M ' + metric.path" />
+            </svg>
+          </article>
+          }
+        </div>
+        <div class="performance-grid">
+          <article class="panel chart-card large">
+            <h2>CPU Usage</h2>
+            <div class="chart-lines blue-chart"></div>
+          </article>
+          <article class="panel chart-card large">
+            <h2>Memory Usage</h2>
+            <div class="chart-area violet-chart"></div>
+          </article>
+          <article class="panel chart-card">
+            <h2>Disk Activity</h2>
+            <div class="chart-lines green-chart"></div>
+          </article>
+          <article class="panel chart-card">
+            <h2>Network Activity</h2>
+            <div class="chart-lines orange-chart"></div>
+          </article>
+          <article class="panel top-consumers">
+            <h2>Top Resource Consumers</h2><ng-container [ngTemplateOutlet]="miniConsumers" />
+          </article>
+          <article class="panel summary-card">
+            <h2>System Summary</h2>
+            <div class="summary-grid"><span>OS</span><strong>Windows 11 Pro</strong><span>CPU</span><strong>Intel Core i7</strong><span>Memory</span><strong>16
+                GB DDR4</strong><span>Virtualization</span><strong>Enabled</strong></div>
+          </article>
+          <article class="panel alert-card">
+            <h2>Performance Alerts</h2>
+            <div class="ok-mark"><i class="bi bi-check-lg"></i></div><strong>No active alerts</strong><span>All systems are running normally.</span>
+          </article>
+        </div>
+      </section>
+      <aside class="performance-rail panel">
+        <h2>Details</h2><ng-container [ngTemplateOutlet]="resourceBars" />
+      </aside>
+      } @else {
+      <section class="placeholder-view panel">
+        <h1>{{ activeTitle() }}</h1>
+        <p>This route is wired into the shell and ready for the next implementation slice.</p>
+      </section>
+      }
+    </section>
+  </div>
+
+  <footer class="statusbar">
+    <span><i class="bi bi-check-circle-fill status-icon"></i> All systems operational</span>
+    <span>Processes: {{ totalProcesses() }}</span>
+    <span>CPU: 18%</span>
+    <span>Memory: 56%</span>
+    <span>Disk: 23%</span>
+    <span>Network: 12%</span>
+  </footer>
+</main>
+
+<ng-template #processTable>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th>Name</th>
+          <th>PID</th>
+          <th>Status</th>
+          <th>CPU</th>
+          <th>Memory</th>
+          <th>Disk</th>
+          <th>Network</th>
+          <th>User</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of rows(); track row.pid) {
+        <tr [class.selected]="row.selected || selectedProcess() === row.name" (click)="selectProcess(row)">
+          <td><input type="checkbox" [checked]="row.selected || selectedProcess() === row.name" /></td>
+          <td>
+            <div class="process-name"><span class="process-icon"><i [class]="'bi ' + row.iconClass"></i></span>
+              <div><strong>{{ row.name }}</strong><small>{{ row.publisher }}</small></div>
+            </div>
+          </td>
+          <td>{{ row.pid }}</td>
+          <td><span class="status-pill"><i></i>{{ row.status }}</span></td>
+          <td class="accent-text">{{ row.cpu }}</td>
+          <td class="accent-text">{{ row.memory }}</td>
+          <td>{{ row.disk }}</td>
+          <td>{{ row.network }}</td>
+          <td>{{ row.user }}</td>
+          <td class="row-menu"><i class="bi bi-three-dots-vertical"></i></td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</ng-template>
+
+<ng-template #detailsPanel>
+  <aside class="details-panel panel">
+    <div class="details-head"><span class="chrome-icon"><i class="bi bi-browser-chrome"></i></span>
+      <div><strong>Google Chrome</strong><small>Google LLC</small></div><button type="button" aria-label="Expand details"><i
+          class="bi bi-arrows-angle-expand"></i></button><button type="button" aria-label="Close details"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <button type="button" class="danger-button" disabled><i class="bi bi-slash-circle"></i> End Process</button>
+    <div class="tabs"><button class="active">Overview</button><button>Performance</button><button>Open Files</button><button>Modules</button></div>
+    <dl class="details-list">
+      <dt>PID</dt>
+      <dd>14532</dd>
+      <dt>Status</dt>
+      <dd><span class="status-pill"><i></i>Running</span></dd>
+      <dt>User</dt>
+      <dd>john</dd>
+      <dt>Started</dt>
+      <dd>May 18, 2024 10:42:31 AM</dd>
+      <dt>Path</dt>
+      <dd>C:\Program Files\Google\Chrome</dd>
+      <dt>Command Line</dt>
+      <dd>chrome.exe --type=renderer</dd>
+      <dt>Threads</dt>
+      <dd>48</dd>
+      <dt>Handles</dt>
+      <dd>1,203</dd>
+    </dl>
+    <h2>Resource Usage</h2>
+    <ng-container [ngTemplateOutlet]="resourceBars" />
+  </aside>
+</ng-template>
+
+<ng-template #resourceBars>
+  <div class="resource-bars">
+    @for (bar of bars; track bar.label) {
+    <div class="resource-row" [class]="bar.accent"><span>{{ bar.label }}</span>
+      <div><i [style.width]="bar.width"></i></div><strong>{{ bar.value }}</strong>
+    </div>
+    }
+  </div>
+</ng-template>
+
+<ng-template #miniConsumers>
+  <div class="mini-table">
+    @for (row of rows().slice(0, 5); track row.pid) {
+    <div><span><i [class]="'bi ' + row.iconClass"></i> {{ row.name }}</span><strong>{{ row.cpu }}</strong><span>{{ row.memory }}</span><span>{{ row.disk
+        }}</span></div>
+    }
+  </div>
+</ng-template>
