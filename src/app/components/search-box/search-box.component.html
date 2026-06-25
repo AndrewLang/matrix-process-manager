@@ -1,0 +1,7 @@
+<label [class]="hostClass()" (mousedown)="$event.stopPropagation()" (dblclick)="$event.stopPropagation()">
+    <i class="bi bi-search grid w-4 flex-none place-items-center leading-none"></i>
+    <input [class]="inputClass()" type="search" [placeholder]="placeholder()" />
+    @if (shortcut()) {
+    <kbd class="h-[20px]">{{ shortcut() }}</kbd>
+    }
+</label>

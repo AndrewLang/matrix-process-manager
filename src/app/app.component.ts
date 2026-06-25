@@ -1,70 +1,14 @@
-import { NgClass, NgTemplateOutlet } from "@angular/common";
 import { Component, OnInit, computed, signal } from "@angular/core";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-
-type ViewId = "dashboard" | "processes" | "performance" | "startup" | "users" | "services" | "system" | "logs" | "settings";
-
-interface NavItem {
-  id: ViewId;
-  label: string;
-  icon: string;
-}
-
-interface MetricCard {
-  label: string;
-  value: string;
-  detail: string;
-  accent: string;
-  path: string;
-}
-
-interface ProcessRow {
-  name: string;
-  publisher: string;
-  pid: number;
-  status: string;
-  cpu: string;
-  memory: string;
-  disk: string;
-  network: string;
-  user: string;
-  iconClass: string;
-  selected?: boolean;
-}
-
-interface ResourceBar {
-  label: string;
-  value: string;
-  width: string;
-  accent: string;
-}
-
-interface BackendProcessSnapshot {
-  processes: BackendProcessRow[];
-  totalProcesses: number;
-}
-
-interface BackendProcessRow {
-  info: {
-    pid: number;
-    name: string;
-    publisher: string;
-    status: string;
-    user: string;
-    path: string;
-  };
-  metrics: {
-    cpuPercent: number;
-    memoryBytes: number;
-    diskReadBytes: number;
-    diskWrittenBytes: number;
-  };
-}
+import { BackendProcessRow, BackendProcessSnapshot, MetricCard, NavItem, ProcessRow, ResourceBar, ViewId } from "./app.models";
+import { SidebarComponent } from "./components/sidebar/sidebar.component";
+import { TitlebarComponent } from "./components/titlebar/titlebar.component";
+import { WorkareaComponent } from "./components/workarea/workarea.component";
 
 @Component({
   selector: "app-root",
-  imports: [NgClass, NgTemplateOutlet],
+  imports: [SidebarComponent, TitlebarComponent, WorkareaComponent],
   templateUrl: "./app.component.html",
   styleUrl: "./app.component.css",
 })
