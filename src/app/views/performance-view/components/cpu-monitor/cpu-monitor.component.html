@@ -26,11 +26,11 @@
                 <span class="text-(--muted)">Utilization</span>
                 <strong class="mt-1 block text-2xl leading-none">{{ metricValue("CPU") }}</strong>
             </div>
-            <div>
+            <div class="col-span-2">
                 <span class="text-(--muted)">Speed</span>
                 <strong class="mt-1 block text-2xl leading-none">{{ systemInfoValue("CPU current speed") }}</strong>
             </div>
-            <div></div>
+
             <div>
                 <span class="text-(--muted)">Processes</span>
                 <strong class="mt-1 block text-xl leading-none">{{ state.totalProcesses() }}</strong>
