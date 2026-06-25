@@ -23,6 +23,22 @@
 @layer base {
   * {
     @apply box-border;
+    scrollbar-color: rgba(122, 153, 181, 0.34) transparent;
+    scrollbar-width: thin;
+  }
+
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: rgba(122, 153, 181, 0.34);
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
   }
 
   html,
