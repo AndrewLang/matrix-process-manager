@@ -1,0 +1,72 @@
+<article
+  class="rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+    <div class="flex items-center justify-between">
+        <div>
+            <h2>CPU Logical Processors</h2>
+            <p class="mt-1 text-[12px] text-(--muted)">{{ systemInfoValue("CPU model") }}</p>
+        </div>
+        <span class="text-[11px] text-(--muted)">{{ logicalProcessors.length }} cores/threads</span>
+    </div>
+    <div class="mt-3 grid gap-2" [style.grid-template-columns]="'repeat(' + logicalProcessorColumns() + ', minmax(0, 1fr))'">
+        @for (core of logicalProcessors; track core) {
+        <svg
+          class="block h-20 w-full min-w-0 max-w-full rounded border border-white/6 bg-[linear-gradient(rgba(122,153,181,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(122,153,181,0.08)_1px,transparent_1px)] bg-size-[20px_16px] text-[#20c8f2]"
+          viewBox="0 0 120 64" preserveAspectRatio="none">
+            <polygon class="fill-current opacity-18" [attr.points]="coreAreaPoints(core)" />
+            <polyline class="fill-none stroke-current stroke-[0.8px]" [attr.points]="corePath(core)" />
+        </svg>
+        }
+    </div>
+</article>
+<article
+  class="mt-2.5 rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+    <div class="grid gap-5 text-[13px] max-[1180px]:grid-cols-1 min-[1181px]:grid-cols-[1fr_1.25fr]">
+        <div class="grid grid-cols-3 gap-x-6 gap-y-4 max-[760px]:grid-cols-2">
+            <div>
+                <span class="text-(--muted)">Utilization</span>
+                <strong class="mt-1 block text-2xl leading-none">{{ metricValue("CPU") }}</strong>
+            </div>
+            <div>
+                <span class="text-(--muted)">Speed</span>
+                <strong class="mt-1 block text-2xl leading-none">{{ systemInfoValue("CPU current speed") }}</strong>
+            </div>
+            <div></div>
+            <div>
+                <span class="text-(--muted)">Processes</span>
+                <strong class="mt-1 block text-xl leading-none">{{ state.totalProcesses() }}</strong>
+            </div>
+            <div>
+                <span class="text-(--muted)">Threads</span>
+                <strong class="mt-1 block text-xl leading-none">{{ systemInfoValue("Threads") }}</strong>
+            </div>
+            <div>
+                <span class="text-(--muted)">Handles</span>
+                <strong class="mt-1 block text-xl leading-none">{{ systemInfoValue("Handles") }}</strong>
+            </div>
+            <div>
+                <span class="text-(--muted)">Up time</span>
+                <strong class="mt-1 block text-xl leading-none">{{ systemInfoValue("Up time") }}</strong>
+            </div>
+        </div>
+        <dl class="grid grid-cols-[max-content_minmax(0,1fr)] gap-x-6 gap-y-2 text-[13px]">
+            <dt class="text-(--muted)">CPU model:</dt>
+            <dd class="min-w-0 truncate text-[#e5eef7]">{{ systemInfoValue("CPU model") }}</dd>
+            <dt class="text-(--muted)">Base speed:</dt>
+            <dd class="text-[#e5eef7]">{{ systemInfoValue("CPU base speed") }}</dd>
+            <dt class="text-(--muted)">Sockets:</dt>
+            <dd class="text-[#e5eef7]">{{ systemInfoValue("Sockets") }}</dd>
+            <dt class="text-(--muted)">Cores:</dt>
+            <dd class="text-[#e5eef7]">{{ systemInfoValue("Cores") }}</dd>
+            <dt class="text-(--muted)">Logical processors:</dt>
+            <dd class="text-[#e5eef7]">{{ systemInfoValue("CPU logical processors") }}</dd>
+            <dt class="text-(--muted)">Virtualization:</dt>
+            <dd class="text-[#e5eef7]">{{ systemInfoValue("Virtualization") }}</dd>
+            <dt class="text-(--muted)">L1 cache:</dt>
+            <dd class="text-[#e5eef7]">{{ systemInfoValue("L1 cache") }}</dd>
+            <dt class="text-(--muted)">L2 cache:</dt>
+            <dd class="text-[#e5eef7]">{{ systemInfoValue("L2 cache") }}</dd>
+            <dt class="text-(--muted)">L3 cache:</dt>
+            <dd class="text-[#e5eef7]">{{ systemInfoValue("L3 cache") }}</dd>
+        </dl>
+    </div>
+</article>

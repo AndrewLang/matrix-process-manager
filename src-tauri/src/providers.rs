@@ -171,7 +171,7 @@ fn sysinfo_thread_count(system: &System) -> usize {
 fn windows_thread_count() -> Option<usize> {
     use windows_sys::Win32::Foundation::{CloseHandle, INVALID_HANDLE_VALUE};
     use windows_sys::Win32::System::Diagnostics::ToolHelp::{
-        CreateToolhelp32Snapshot, Thread32First, Thread32Next, THREADENTRY32, TH32CS_SNAPTHREAD,
+        CreateToolhelp32Snapshot, Thread32First, Thread32Next, TH32CS_SNAPTHREAD, THREADENTRY32,
     };
 
     unsafe {
@@ -309,8 +309,7 @@ impl CpuUsageCollector {
                 "\\Processor(_Total)\\% Processor Time",
             ] {
                 let wide_path = GpuUsageCollector::wide(path);
-                if unsafe { PdhAddEnglishCounterW(query, wide_path.as_ptr(), 0, &mut counter) }
-                    == 0
+                if unsafe { PdhAddEnglishCounterW(query, wide_path.as_ptr(), 0, &mut counter) } == 0
                 {
                     break;
                 }
