@@ -74,6 +74,23 @@ export interface BackendProcessSnapshot {
     totalDiskPercent: number;
     usedMemoryBytes: number;
     totalMemoryBytes: number;
+    cpuInfo: BackendCpuInfo;
+}
+
+export interface BackendCpuInfo {
+    model: string;
+    currentSpeedMhz: number;
+    baseSpeedMhz: number;
+    sockets: number;
+    cores: number;
+    logicalProcessors: number;
+    uptimeSeconds: number;
+    totalThreads: number;
+    totalHandles?: number;
+    virtualization?: string;
+    l1CacheBytes?: number;
+    l2CacheBytes?: number;
+    l3CacheBytes?: number;
 }
 
 export interface BackendProcessRow {

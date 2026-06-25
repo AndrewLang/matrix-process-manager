@@ -1,4 +1,6 @@
-use crate::models::{CommandError, ProcessInfo, ProcessMetrics, ProcessRow, ProcessSnapshot};
+use crate::models::{
+    CommandError, CpuInfo, ProcessInfo, ProcessMetrics, ProcessRow, ProcessSnapshot,
+};
 use std::collections::{HashMap, HashSet};
 use std::sync::Mutex;
 use sysinfo::{ProcessesToUpdate, System};
@@ -9,6 +11,7 @@ pub trait ProcessProvider: Send + Sync + 'static {
 
 pub struct SysinfoProcessProvider {
     system: Mutex<System>,
+    cpu_usage: Mutex<CpuUsageCollector>,
     gpu_usage: Mutex<GpuUsageCollector>,
     disk_usage: Mutex<DiskUsageCollector>,
     memory_usage: Mutex<MemoryUsageCollector>,
@@ -18,6 +21,7 @@ impl SysinfoProcessProvider {
     pub fn new() -> Self {
         Self {
             system: Mutex::new(System::new_all()),
+            cpu_usage: Mutex::new(CpuUsageCollector::new()),
             gpu_usage: Mutex::new(GpuUsageCollector::new()),
             disk_usage: Mutex::new(DiskUsageCollector::new()),
             memory_usage: Mutex::new(MemoryUsageCollector::new()),
@@ -35,7 +39,35 @@ impl ProcessProvider for SysinfoProcessProvider {
         system.refresh_cpu_usage();
         system.refresh_memory();
         let cpu_count = system.cpus().len().max(1) as f32;
-        let total_cpu_percent = system.global_cpu_usage();
+        let total_cpu_percent = self
+            .cpu_usage
+            .lock()
+            .ok()
+            .and_then(|mut collector| collector.sample())
+            .unwrap_or_else(|| system.global_cpu_usage());
+        let cpu_info = CpuInfo {
+            model: system
+                .cpus()
+                .first()
+                .map(|cpu| cpu.brand().to_string())
+                .unwrap_or_default(),
+            current_speed_mhz: average_cpu_frequency(system.cpus()),
+            base_speed_mhz: system
+                .cpus()
+                .first()
+                .map(|cpu| cpu.frequency())
+                .unwrap_or_default(),
+            sockets: 1,
+            cores: System::physical_core_count().unwrap_or(system.cpus().len()),
+            logical_processors: system.cpus().len(),
+            uptime_seconds: System::uptime(),
+            total_threads: total_thread_count(&system),
+            total_handles: total_handle_count(&system),
+            virtualization: None,
+            l1_cache_bytes: None,
+            l2_cache_bytes: None,
+            l3_cache_bytes: None,
+        };
         let gpu_usage = self
             .gpu_usage
             .lock()
@@ -109,9 +141,104 @@ impl ProcessProvider for SysinfoProcessProvider {
             total_disk_percent,
             used_memory_bytes: system.used_memory(),
             total_memory_bytes: system.total_memory(),
+            cpu_info,
             processes,
         })
     }
+}
+
+fn average_cpu_frequency(cpus: &[sysinfo::Cpu]) -> u64 {
+    if cpus.is_empty() {
+        return 0;
+    }
+
+    cpus.iter().map(|cpu| cpu.frequency()).sum::<u64>() / cpus.len() as u64
+}
+
+fn total_thread_count(system: &System) -> usize {
+    windows_thread_count().unwrap_or_else(|| sysinfo_thread_count(system))
+}
+
+fn sysinfo_thread_count(system: &System) -> usize {
+    system
+        .processes()
+        .values()
+        .filter_map(|process| process.tasks().map(|tasks| tasks.len()))
+        .sum()
+}
+
+#[cfg(windows)]
+fn windows_thread_count() -> Option<usize> {
+    use windows_sys::Win32::Foundation::{CloseHandle, INVALID_HANDLE_VALUE};
+    use windows_sys::Win32::System::Diagnostics::ToolHelp::{
+        CreateToolhelp32Snapshot, Thread32First, Thread32Next, THREADENTRY32, TH32CS_SNAPTHREAD,
+    };
+
+    unsafe {
+        let snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
+        if snapshot == INVALID_HANDLE_VALUE {
+            return None;
+        }
+
+        let mut entry = THREADENTRY32 {
+            dwSize: std::mem::size_of::<THREADENTRY32>() as u32,
+            ..Default::default()
+        };
+        let mut count = 0usize;
+
+        if Thread32First(snapshot, &mut entry) != 0 {
+            loop {
+                count += 1;
+
+                if Thread32Next(snapshot, &mut entry) == 0 {
+                    break;
+                }
+            }
+        }
+
+        CloseHandle(snapshot);
+        Some(count)
+    }
+}
+
+#[cfg(not(windows))]
+fn windows_thread_count() -> Option<usize> {
+    None
+}
+
+#[cfg(windows)]
+fn total_handle_count(system: &System) -> Option<usize> {
+    use windows_sys::Win32::Foundation::CloseHandle;
+    use windows_sys::Win32::System::Threading::{
+        GetProcessHandleCount, OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION,
+    };
+
+    let mut total = 0usize;
+    let mut sampled = false;
+
+    for pid in system.processes().keys().map(|pid| pid.as_u32()) {
+        unsafe {
+            let handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, pid);
+            if handle.is_null() {
+                continue;
+            }
+
+            let mut count = 0u32;
+            if GetProcessHandleCount(handle, &mut count) != 0 {
+                total += count as usize;
+                sampled = true;
+            }
+
+            CloseHandle(handle);
+        }
+    }
+
+    sampled.then_some(total)
+}
+
+#[cfg(not(windows))]
+fn total_handle_count(_system: &System) -> Option<usize> {
+    None
 }
 
 #[cfg(windows)]
@@ -153,6 +280,120 @@ fn visible_window_process_ids() -> HashSet<u32> {
 #[cfg(not(windows))]
 fn visible_window_process_ids() -> HashSet<u32> {
     HashSet::new()
+}
+
+#[cfg(windows)]
+struct CpuUsageCollector {
+    query: windows_sys::Win32::System::Performance::PDH_HQUERY,
+    counter: windows_sys::Win32::System::Performance::PDH_HCOUNTER,
+    ready: bool,
+}
+
+#[cfg(windows)]
+unsafe impl Send for CpuUsageCollector {}
+
+#[cfg(windows)]
+impl CpuUsageCollector {
+    fn new() -> Self {
+        use windows_sys::Win32::System::Performance::{
+            PdhAddEnglishCounterW, PdhCollectQueryData, PdhOpenQueryW,
+        };
+
+        let mut query = std::ptr::null_mut();
+        let mut counter = std::ptr::null_mut();
+        let opened = unsafe { PdhOpenQueryW(std::ptr::null(), 0, &mut query) } == 0;
+
+        if opened {
+            for path in [
+                "\\Processor Information(_Total)\\% Processor Utility",
+                "\\Processor(_Total)\\% Processor Time",
+            ] {
+                let wide_path = GpuUsageCollector::wide(path);
+                if unsafe { PdhAddEnglishCounterW(query, wide_path.as_ptr(), 0, &mut counter) }
+                    == 0
+                {
+                    break;
+                }
+            }
+        }
+
+        if !counter.is_null() {
+            unsafe {
+                PdhCollectQueryData(query);
+            }
+        } else if !query.is_null() {
+            unsafe {
+                windows_sys::Win32::System::Performance::PdhCloseQuery(query);
+            }
+            query = std::ptr::null_mut();
+        }
+
+        Self {
+            query,
+            counter,
+            ready: false,
+        }
+    }
+
+    fn sample(&mut self) -> Option<f32> {
+        use windows_sys::Win32::System::Performance::{
+            PdhCollectQueryData, PdhGetFormattedCounterValue, PDH_FMT_COUNTERVALUE, PDH_FMT_DOUBLE,
+        };
+
+        if self.query.is_null() || self.counter.is_null() {
+            return None;
+        }
+
+        if unsafe { PdhCollectQueryData(self.query) } != 0 {
+            return None;
+        }
+
+        if !self.ready {
+            self.ready = true;
+            return None;
+        }
+
+        let mut value = PDH_FMT_COUNTERVALUE::default();
+        let status = unsafe {
+            PdhGetFormattedCounterValue(
+                self.counter,
+                PDH_FMT_DOUBLE,
+                std::ptr::null_mut(),
+                &mut value,
+            )
+        };
+
+        if status != 0 || value.CStatus != 0 {
+            return None;
+        }
+
+        Some(unsafe { value.Anonymous.doubleValue }.clamp(0.0, 100.0) as f32)
+    }
+}
+
+#[cfg(windows)]
+impl Drop for CpuUsageCollector {
+    fn drop(&mut self) {
+        if !self.query.is_null() {
+            unsafe {
+                windows_sys::Win32::System::Performance::PdhCloseQuery(self.query);
+            }
+        }
+    }
+}
+
+#[cfg(not(windows))]
+struct CpuUsageCollector;
+
+#[cfg(not(windows))]
+impl CpuUsageCollector {
+    fn new() -> Self {
+        Self
+    }
+
+    fn sample(&mut self) -> Option<f32> {
+        None
+    }
 }
 
 #[derive(Default)]

@@ -32,6 +32,24 @@ pub struct ProcessRow {
 
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct CpuInfo {
+    pub model: String,
+    pub current_speed_mhz: u64,
+    pub base_speed_mhz: u64,
+    pub sockets: usize,
+    pub cores: usize,
+    pub logical_processors: usize,
+    pub uptime_seconds: u64,
+    pub total_threads: usize,
+    pub total_handles: Option<usize>,
+    pub virtualization: Option<String>,
+    pub l1_cache_bytes: Option<u64>,
+    pub l2_cache_bytes: Option<u64>,
+    pub l3_cache_bytes: Option<u64>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ProcessSnapshot {
     pub processes: Vec<ProcessRow>,
     pub total_processes: usize,
@@ -40,6 +58,7 @@ pub struct ProcessSnapshot {
     pub total_disk_percent: f32,
     pub used_memory_bytes: u64,
     pub total_memory_bytes: u64,
+    pub cpu_info: CpuInfo,
 }
 
 #[derive(Clone, Debug, Serialize)]

@@ -3,7 +3,7 @@ import { NavigationEnd, Router } from "@angular/router";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { filter } from "rxjs";
-import { BackendProcessRow, BackendProcessSnapshot, MetricCard, NavItem, ProcessGroup, ProcessRow, ResourceBar, ResourceSample, SystemInfoItem, UpdateFrequency, ViewId } from "./app.models";
+import { BackendCpuInfo, BackendProcessRow, BackendProcessSnapshot, MetricCard, NavItem, ProcessGroup, ProcessRow, ResourceBar, ResourceSample, SystemInfoItem, UpdateFrequency, ViewId } from "./app.models";
 import { CommonDialogComponent } from "./components/common-dialog/common-dialog.component";
 import { SidebarComponent } from "./components/sidebar/sidebar.component";
 import { TitlebarComponent } from "./components/titlebar/titlebar.component";
@@ -27,6 +27,7 @@ export class AppComponent implements OnDestroy, OnInit {
   private snapshotInFlight = false;
   private processOrder: number[] = [];
   private metricHistory: ResourceSample[] = [];
+  private cpuInfo?: BackendCpuInfo;
 
   overviewItems: NavItem[] = [
     { id: "dashboard", label: "Dashboard", icon: "bi-speedometer2" },
@@ -126,6 +127,7 @@ export class AppComponent implements OnDestroy, OnInit {
     invoke<BackendProcessSnapshot>("get_process_snapshot")
       .then((snapshot) => {
         this.totalProcesses.set(snapshot.totalProcesses);
+        this.cpuInfo = snapshot.cpuInfo;
         const selectedPid = this.workareaState.selectedPid();
         const rows = this.stabilizeProcessOrder(snapshot.processes).map((row) => this.toProcessRow(row, selectedPid));
         this.rows.set(rows);
@@ -271,7 +273,7 @@ export class AppComponent implements OnDestroy, OnInit {
     const sample: ResourceSample = { cpu, gpu, memory: memoryPercent, disk, network: 0 };
     this.metricHistory = [...this.metricHistory.slice(-59), sample];
     const metrics: MetricCard[] = [
-      { label: "CPU", value: `${cpu.toFixed(0)}%`, detail: `${rows.length} visible processes`, accent: "blue", path: this.historyPath("cpu") },
+      { label: "CPU", value: `${cpu.toFixed(0)}%`, detail: "Total CPU usage", accent: "blue", path: this.historyPath("cpu") },
       { label: "GPU", value: `${gpu.toFixed(0)}%`, detail: "GPU engine utilization", accent: "cyan", path: this.historyPath("gpu") },
       { label: "Memory", value: `${memoryPercent.toFixed(0)}%`, detail: this.formatBytes(memoryBytes), accent: "violet", path: this.historyPath("memory") },
       { label: "Disk", value: `${disk.toFixed(0)}%`, detail: `${this.formatBytes(diskBytes)}/s`, accent: "green", path: this.historyPath("disk") },
@@ -292,6 +294,19 @@ export class AppComponent implements OnDestroy, OnInit {
       { label: "Visible processes", value: rows.length.toString() },
       { label: "Total processes", value: this.totalProcesses().toString() },
       { label: "CPU", value: metrics.find((metric) => metric.label === "CPU")?.value ?? "0%" },
+      { label: "CPU model", value: this.cpuInfo?.model || "Unknown" },
+      { label: "CPU current speed", value: this.formatMegahertz(this.cpuInfo?.currentSpeedMhz ?? 0) },
+      { label: "CPU base speed", value: this.formatMegahertz(this.cpuInfo?.baseSpeedMhz ?? 0) },
+      { label: "Sockets", value: (this.cpuInfo?.sockets ?? 1).toString() },
+      { label: "Cores", value: (this.cpuInfo?.cores ?? navigator.hardwareConcurrency ?? 0).toString() },
+      { label: "CPU logical processors", value: (this.cpuInfo?.logicalProcessors ?? navigator.hardwareConcurrency ?? 0).toString() },
+      { label: "Threads", value: this.cpuInfo?.totalThreads != null ? this.cpuInfo.totalThreads.toString() : "Unavailable" },
+      { label: "Handles", value: this.cpuInfo?.totalHandles != null ? this.cpuInfo.totalHandles.toString() : "Unavailable" },
+      { label: "Up time", value: this.formatDuration(this.cpuInfo?.uptimeSeconds ?? 0) },
+      { label: "Virtualization", value: this.cpuInfo?.virtualization ?? "Unavailable" },
+      { label: "L1 cache", value: this.cpuInfo?.l1CacheBytes ? this.formatBytes(this.cpuInfo.l1CacheBytes) : "Unavailable" },
+      { label: "L2 cache", value: this.cpuInfo?.l2CacheBytes ? this.formatBytes(this.cpuInfo.l2CacheBytes) : "Unavailable" },
+      { label: "L3 cache", value: this.cpuInfo?.l3CacheBytes ? this.formatBytes(this.cpuInfo.l3CacheBytes) : "Unavailable" },
       { label: "Memory", value: metrics.find((metric) => metric.label === "Memory")?.detail ?? "0 B" },
       { label: "Disk throughput", value: metrics.find((metric) => metric.label === "Disk")?.detail ?? "0 B/s" },
       { label: "Update frequency", value: this.workareaState.updateFrequency() },
@@ -318,6 +333,22 @@ export class AppComponent implements OnDestroy, OnInit {
 
   private historyY(value: number): string {
     return (76 - Math.max(0, Math.min(100, value)) * 0.62).toFixed(1);
+  }
+
+  private formatMegahertz(value: number): string {
+    if (value <= 0) {
+      return "Unavailable";
+    }
+
+    return `${(value / 1000).toFixed(2)} GHz`;
+  }
+
+  private formatDuration(totalSeconds: number): string {
+    const days = Math.floor(totalSeconds / 86400);
+    const hours = Math.floor(totalSeconds % 86400 / 3600).toString().padStart(2, "0");
+    const minutes = Math.floor(totalSeconds % 3600 / 60).toString().padStart(2, "0");
+    const seconds = Math.floor(totalSeconds % 60).toString().padStart(2, "0");
+    return `${days}:${hours}:${minutes}:${seconds}`;
   }
 
   private parseBytesPerSecond(value: string): number {

@@ -11,7 +11,7 @@ export class WorkareaStateService {
     selectedPid = signal<number | undefined>(undefined);
     bars = signal<ResourceBar[]>([]);
     activeTitle = signal("Dashboard");
-    updateFrequency = signal<UpdateFrequency>("normal");
+    updateFrequency = signal<UpdateFrequency>("high");
     resourceHistory = signal<ResourceSample[]>([]);
     systemInfo = signal<SystemInfoItem[]>([]);
 
