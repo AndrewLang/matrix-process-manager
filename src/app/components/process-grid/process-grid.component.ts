@@ -31,16 +31,16 @@ export class ProcessGridComponent {
     rows = input.required<ProcessRow[]>();
     selectedProcess = input.required<string>();
     processSelected = output<ProcessRow>();
+    collapsedGroups = signal<ReadonlySet<string>>(new Set());
 
     columns = signal<ProcessColumn[]>([
         { key: "select", label: "", width: 32, minWidth: 32, resizable: false },
         { key: "name", label: "Name", width: 230, minWidth: 150, resizable: true },
-        { key: "pid", label: "PID", width: 72, minWidth: 56, resizable: true },
-        { key: "status", label: "Status", width: 96, minWidth: 74, resizable: true },
         { key: "cpu", label: "CPU", width: 72, minWidth: 60, resizable: true },
         { key: "memory", label: "Memory", width: 104, minWidth: 82, resizable: true },
         { key: "disk", label: "Disk", width: 102, minWidth: 82, resizable: true },
         { key: "network", label: "Network", width: 104, minWidth: 82, resizable: true },
+        { key: "pid", label: "PID", width: 72, minWidth: 56, resizable: true },
         { key: "user", label: "User", width: 92, minWidth: 72, resizable: true },
         { key: "menu", label: "", width: 36, minWidth: 36, resizable: false },
     ]);
@@ -105,8 +105,30 @@ export class ProcessGridComponent {
         return group.rows[0]?.memory ?? "";
     }
 
-    groupStatus(group: ProcessNameGroup): string {
-        return group.rows.some((row) => row.status.toLowerCase() === "running") ? "Running" : group.rows[0]?.status ?? "";
+    isGroupExpanded(section: ProcessSection, group: ProcessNameGroup): boolean {
+        return !this.collapsedGroups().has(this.groupKey(section, group));
+    }
+
+    toggleGroup(section: ProcessSection, group: ProcessNameGroup): void {
+        const key = this.groupKey(section, group);
+        this.collapsedGroups.update((groups) => {
+            const nextGroups = new Set(groups);
+            if (nextGroups.has(key)) {
+                nextGroups.delete(key);
+            } else {
+                nextGroups.add(key);
+            }
+
+            return nextGroups;
+        });
+    }
+
+    expandAllGroups(): void {
+        this.collapsedGroups.set(new Set());
+    }
+
+    collapseAllGroups(): void {
+        this.collapsedGroups.set(new Set(this.sections().flatMap((section) => section.groups.map((group) => this.groupKey(section, group)))));
     }
 
     @HostListener("document:mousemove", ["$event"])
@@ -138,5 +160,9 @@ export class ProcessGridComponent {
 
     private countRows(groups: Map<string, ProcessRow[]>): number {
         return Array.from(groups.values()).reduce((total, rows) => total + rows.length, 0);
+    }
+
+    private groupKey(section: ProcessSection, group: ProcessNameGroup): string {
+        return `${section.key}:${group.name}`;
     }
 }

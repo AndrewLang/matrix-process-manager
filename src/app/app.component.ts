@@ -1,6 +1,8 @@
 import { Component, OnInit, computed, signal } from "@angular/core";
+import { NavigationEnd, Router } from "@angular/router";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { filter } from "rxjs";
 import { BackendProcessRow, BackendProcessSnapshot, MetricCard, NavItem, ProcessGroup, ProcessRow, ResourceBar, ViewId } from "./app.models";
 import { SidebarComponent } from "./components/sidebar/sidebar.component";
 import { TitlebarComponent } from "./components/titlebar/titlebar.component";
@@ -69,7 +71,16 @@ export class AppComponent implements OnInit {
     { label: "Network Receive", value: "4.3 Mbps", width: "31%", accent: "blue" },
   ];
 
-  activeTitle = computed(() => this.overviewItems.find((item) => item.id === this.activeView())?.label ?? "Dashboard");
+  activeTitle = computed(() => [...this.overviewItems, ...this.toolItems].find((item) => item.id === this.activeView())?.label ?? "Dashboard");
+
+  constructor(private router: Router) {
+    this.router.events.pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd)).subscribe((event) => {
+      const view = event.urlAfterRedirects.replace(/^\//, "").split("/")[0];
+      if (this.isViewId(view)) {
+        this.activeView.set(view);
+      }
+    });
+  }
 
   ngOnInit(): void {
     getCurrentWindow().setIcon("/assets/app-icon.png").catch(() => undefined);
@@ -84,6 +95,7 @@ export class AppComponent implements OnInit {
 
   setView(view: ViewId): void {
     this.activeView.set(view);
+    this.router.navigate([view]);
   }
 
   selectProcess(row: ProcessRow): void {
@@ -162,5 +174,9 @@ export class AppComponent implements OnInit {
     }
 
     return "apps";
+  }
+
+  private isViewId(view: string): view is ViewId {
+    return [...this.overviewItems, ...this.toolItems].some((item) => item.id === view);
   }
 }

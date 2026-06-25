@@ -1,0 +1,56 @@
+<section class="grid h-full min-h-0 min-w-0 gap-2.5 overflow-hidden px-2.5 py-3"
+  [ngClass]="detailsOpen() ? 'grid-cols-[minmax(0,1fr)_auto]' : 'grid-cols-[minmax(0,1fr)]'">
+    <section class="grid min-h-0 min-w-0 gap-2.5"
+      [ngClass]="detailsOpen() ? 'grid-cols-[minmax(0,1fr)_286px] max-[1040px]:grid-cols-[minmax(0,1fr)_250px]' : 'grid-cols-[minmax(0,1fr)]'">
+        <section
+          class="grid min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+            <div class="flex flex-col items-stretch gap-2.25 border-b border-(--border) p-3">
+                <h1>Processes <span>({{ state.totalProcesses() }})</span></h1>
+                <div class="flex items-center gap-2 text-[12px]">
+                    <mtx-search-box [hostClass]="wideFilterSearchClass" placeholder="Filter processes..." [(value)]="processFilter" />
+                    <button type="button"
+                      class="inline-flex h-7.5 flex-none items-center justify-center gap-1.75 whitespace-nowrap rounded-[5px] border border-(--border) bg-[rgba(16,31,45,0.86)] px-3 py-0 hover:bg-white/6 max-[1040px]:w-7.5 max-[1040px]:px-0"><i
+                          class="bi bi-funnel flex-none"></i><span class="whitespace-nowrap max-[1040px]:hidden">Add Filter</span></button>
+                    <button type="button"
+                      class="inline-flex h-7.5 flex-none items-center justify-center gap-1.75 whitespace-nowrap rounded-[5px] border border-(--border) bg-[rgba(16,31,45,0.86)] px-3 py-0 hover:bg-white/6 max-[1040px]:w-7.5 max-[1040px]:px-0"><i
+                          class="bi bi-filter flex-none"></i><span class="whitespace-nowrap max-[1040px]:hidden">Quick Filters</span></button>
+                    <div class="relative flex-none" (click)="$event.stopPropagation()">
+                        <button type="button"
+                          class="inline-flex h-7.5 flex-none items-center justify-center gap-1.75 whitespace-nowrap rounded-[5px] border border-(--border) bg-[rgba(16,31,45,0.86)] px-3 py-0 hover:bg-white/6 max-[1040px]:w-7.5 max-[1040px]:px-0"
+                          (click)="toggleViewOptions()"><i class="bi bi-sliders flex-none"></i><span class="whitespace-nowrap max-[1040px]:hidden">View
+                                Options</span></button>
+                        @if (viewOptionsOpen()) {
+                        <div
+                          class="absolute right-0 top-9 z-20 grid min-w-41 overflow-hidden rounded-md border border-(--border) bg-[rgba(10,22,33,0.98)] py-1 shadow-[0_12px_28px_rgba(0,0,0,0.32)]">
+                            <button type="button" class="flex h-8 items-center gap-2 bg-transparent px-3 py-0 text-left text-[#cbd7e2] hover:bg-white/6"
+                              (click)="processesProcessGrid.expandAllGroups(); closeViewOptions()"><i class="bi bi-arrows-expand flex-none"></i><span>Expand all
+                                    groups</span></button>
+                            <button type="button" class="flex h-8 items-center gap-2 bg-transparent px-3 py-0 text-left text-[#cbd7e2] hover:bg-white/6"
+                              (click)="processesProcessGrid.collapseAllGroups(); closeViewOptions()"><i
+                                  class="bi bi-arrows-collapse flex-none"></i><span>Collapse all groups</span></button>
+                        </div>
+                        }
+                    </div>
+                    <button type="button"
+                      class="inline-flex h-7.5 flex-none items-center justify-center gap-1.75 whitespace-nowrap rounded-[5px] border border-[rgba(255,75,67,0.38)] bg-[rgba(16,31,45,0.86)] px-3 py-0 text-(--red) max-[1040px]:w-7.5 max-[1040px]:px-0"
+                      disabled><i class="bi bi-slash-circle flex-none"></i><span class="whitespace-nowrap max-[1040px]:hidden">End Process</span></button>
+                </div>
+                <div class="flex gap-2 text-[12px]">
+                    <button type="button"
+                      class="h-7.5 rounded-[5px] border border-[rgba(23,144,255,0.3)] bg-[rgba(23,144,255,0.15)] px-3 py-0 text-[#1e9dff]">All ({{
+                        state.totalProcesses() }})</button>
+                    <button type="button" class="h-7.5 rounded-[5px] border border-transparent bg-transparent px-3 py-0 text-[#a8b6c4]">Apps (48)</button>
+                    <button type="button" class="h-7.5 rounded-[5px] border border-transparent bg-transparent px-3 py-0 text-[#a8b6c4]">Background
+                        (78)</button>
+                    <button type="button" class="h-7.5 rounded-[5px] border border-transparent bg-transparent px-3 py-0 text-[#a8b6c4]">Windows (9)</button>
+                    <button type="button" class="h-7.5 rounded-[5px] border border-transparent bg-transparent px-3 py-0 text-[#a8b6c4]">System (7)</button>
+                </div>
+            </div>
+            <mtx-process-grid #processesProcessGrid [rows]="filteredRows()" [selectedProcess]="state.selectedProcess()"
+              (processSelected)="selectProcess($event)" />
+        </section>
+        @if (detailsOpen()) {
+        <mtx-details-pane [bars]="state.bars()" (closeDetails)="closeDetails()" />
+        }
+    </section>
+</section>

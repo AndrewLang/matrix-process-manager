@@ -22,7 +22,7 @@
             @for (section of sections(); track section.key) {
             <tr class="bg-[rgba(10,22,33,0.92)]">
                 <td [attr.colspan]="columns().length"
-                  class="h-8 border-b border-[rgba(122,153,181,0.13)] bg-[rgba(10,22,33,0.96)] px-3 py-0 text-[12px] font-semibold text-[#d6e2ee]">
+                  class="h-8 border-b border-[rgba(122,153,181,0.13)] bg-[rgba(10,22,33,0.96)] px-3 py-0 text-left text-[12px] font-semibold text-[#d6e2ee]">
                     <span>{{ section.label }}</span>
                     <span class="ml-1.5 font-normal text-(--muted)">{{ section.count }}</span>
                 </td>
@@ -44,16 +44,18 @@
                                 groupPublisher(group) }} · {{ group.rows.length }} process{{ group.rows.length === 1 ? "" : "es" }}</small></div>
                     </div>
                 </td>
-                <td>{{ group.rows.length }}</td>
-                <td><span class="inline-flex h-5 items-center gap-1.25 rounded-[5px] bg-[rgba(34,206,116,0.14)] px-1.75 py-0 text-[#20d779]"><i
-                          class="h-1.25 w-1.25 rounded-full bg-(--green)"></i>{{ groupStatus(group) }}</span></td>
                 <td class="text-[#249dff]">{{ groupCpu(group) }}</td>
                 <td class="text-[#249dff]">{{ groupMemory(group) }}</td>
                 <td></td>
                 <td></td>
+                <td>{{ group.rows.length === 1 ? group.rows[0].pid : "--" }}</td>
                 <td></td>
-                <td class="text-center text-[#97a7b6]"><i class="bi bi-chevron-down"></i></td>
+                <td class="text-center text-[#97a7b6]"><button class="grid h-full w-full place-items-center bg-transparent text-[#97a7b6] hover:text-[#d6e2ee]"
+                      type="button" [attr.aria-label]="isGroupExpanded(section, group) ? 'Collapse group' : 'Expand group'"
+                      (click)="toggleGroup(section, group)"><i
+                          [ngClass]="isGroupExpanded(section, group) ? 'bi bi-chevron-down' : 'bi bi-chevron-right'"></i></button></td>
             </tr>
+            @if (isGroupExpanded(section, group)) {
             @for (row of group.rows; track row.pid) {
             <tr [ngClass]="isSelected(row) ? 'bg-[linear-gradient(90deg,rgba(23,144,255,0.26),rgba(23,144,255,0.1))]' : ''" (click)="processSelected.emit(row)">
                 <td>
@@ -71,16 +73,15 @@
                                 row.publisher }}</small></div>
                     </div>
                 </td>
-                <td>{{ row.pid }}</td>
-                <td><span class="inline-flex h-5 items-center gap-1.25 rounded-[5px] bg-[rgba(34,206,116,0.14)] px-1.75 py-0 text-[#20d779]"><i
-                          class="h-1.25 w-1.25 rounded-full bg-(--green)"></i>{{ row.status }}</span></td>
                 <td class="text-[#249dff]">{{ row.cpu }}</td>
                 <td class="text-[#249dff]">{{ row.memory }}</td>
                 <td>{{ row.disk }}</td>
                 <td>{{ row.network }}</td>
+                <td>{{ row.pid }}</td>
                 <td>{{ row.user }}</td>
                 <td class="text-center text-[#97a7b6]"><i class="bi bi-three-dots-vertical"></i></td>
             </tr>
+            }
             }
             }
             } @empty {
