@@ -17,7 +17,7 @@ export class AppComponent implements OnInit {
   activeView = signal<ViewId>("dashboard");
   selectedProcess = signal("Google Chrome");
   totalProcesses = signal(142);
-  sidebarWidth = signal(164);
+  sidebarWidth = signal(200);
 
   overviewItems: NavItem[] = [
     { id: "dashboard", label: "Dashboard", icon: "bi-speedometer2" },

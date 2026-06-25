@@ -2,6 +2,8 @@
     <i class="bi bi-search grid w-4 flex-none place-items-center leading-none"></i>
     <input [class]="inputClass()" type="search" [placeholder]="placeholder()" />
     @if (shortcut()) {
-    <kbd class="h-[20px]">{{ shortcut() }}</kbd>
+    <kbd
+      class="flex h-5 min-w-[42px] items-center justify-center rounded border border-[rgba(122,153,181,0.22)] bg-white/5 px-2 py-0 text-[10px] leading-5 text-[#9dacba]">{{
+        shortcut() }}</kbd>
     }
 </label>

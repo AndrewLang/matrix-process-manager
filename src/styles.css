@@ -79,11 +79,11 @@
 
   th,
   td {
-    @apply h-[35px] overflow-hidden text-ellipsis whitespace-nowrap border-b border-[rgba(122,153,181,0.09)] px-[9px] py-0 text-left text-[#cbd7e2];
+    @apply h-[39px] overflow-hidden text-ellipsis whitespace-nowrap border-b border-[rgba(122,153,181,0.09)] px-3 py-0 text-left text-[13px] text-[#cbd7e2];
   }
 
   th {
-    @apply h-[34px] bg-[rgba(10,22,33,0.7)] font-semibold text-[#a8b4c1];
+    @apply h-[38px] bg-[rgba(10,22,33,0.7)] font-semibold text-[#a8b4c1];
   }
 
   th:first-child,

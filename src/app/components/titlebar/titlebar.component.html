@@ -10,18 +10,26 @@
 
     <div class="absolute right-0 flex h-full items-center gap-2.5" (mousedown)="$event.stopPropagation()" (dblclick)="$event.stopPropagation()">
         <div class="flex items-center gap-1.5">
-            <button class="h-[27px] w-[27px] rounded-full bg-transparent text-[#b8c4cf] hover:bg-white/6" type="button" aria-label="Refresh"><i
-                  class="bi bi-arrow-clockwise"></i></button>
-            <button class="h-[27px] w-[27px] rounded-full bg-transparent text-[#b8c4cf] hover:bg-white/6" type="button" aria-label="Settings"><i
-                  class="bi bi-gear"></i></button>
+            <button class="h-[27px] w-[27px] rounded-full bg-transparent text-[#b8c4cf] hover:bg-white/6" type="button" aria-label="Refresh">
+                <i class="bi bi-arrow-clockwise"></i>
+            </button>
+            <button class="h-[27px] w-[27px] rounded-full bg-transparent text-[#b8c4cf] hover:bg-white/6" type="button" aria-label="Settings">
+                <i class="bi bi-gear"></i>
+            </button>
         </div>
         <div class="flex h-full items-center">
             <button class="grid h-full w-[46px] place-items-center rounded-none bg-transparent text-[#c3ccd5] hover:bg-white/10" type="button"
-              aria-label="Minimize" (click)="minimizeWindow.emit()"><i class="bi bi-dash text-[13px]"></i></button>
+              aria-label="Minimize" (click)="minimizeWindow.emit()">
+                <i class="bi bi-dash text-[13px]"></i>
+            </button>
             <button class="grid h-full w-[46px] place-items-center rounded-none bg-transparent text-[#c3ccd5] hover:bg-white/10" type="button"
-              aria-label="Maximize" (click)="toggleMaximizeWindow.emit()"><i class="bi bi-square text-[13px]"></i></button>
+              aria-label="Maximize" (click)="toggleMaximizeWindow.emit()">
+                <i class="bi bi-square text-[13px]"></i>
+            </button>
             <button class="grid h-full w-[46px] place-items-center rounded-none bg-transparent text-[#c3ccd5] hover:bg-[#c42b1c] hover:text-white" type="button"
-              aria-label="Close" (click)="closeWindow.emit()"><i class="bi bi-x-lg text-[13px]"></i></button>
+              aria-label="Close" (click)="closeWindow.emit()">
+                <i class="bi bi-x-lg text-[13px]"></i>
+            </button>
         </div>
     </div>
 </header>
