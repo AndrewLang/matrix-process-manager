@@ -63,6 +63,7 @@
                         </div>
                     </div>
                 </td>
+                <td>{{ groupType(section) }}</td>
                 <td class="text-[#249dff]">{{ groupCpu(group) }}</td>
                 <td class="text-[#249dff]">{{ groupGpu(group) }}</td>
                 <td class="text-[#249dff]">{{ groupMemory(group) }}</td>
@@ -98,6 +99,7 @@
                         </div>
                     </div>
                 </td>
+                <td>{{ rowType(row) }}</td>
                 <td class="text-[#249dff]">{{ row.cpu }}</td>
                 <td class="text-[#249dff]">{{ row.gpu }}</td>
                 <td class="text-[#249dff]">{{ row.memory }}</td>

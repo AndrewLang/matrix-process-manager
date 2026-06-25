@@ -9,6 +9,7 @@ pub struct ProcessInfo {
     pub status: String,
     pub user: String,
     pub path: String,
+    pub has_visible_window: bool,
     pub icon_data_url: Option<String>,
 }
 

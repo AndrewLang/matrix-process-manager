@@ -126,7 +126,7 @@ export class AppComponent implements OnDestroy, OnInit {
       .then((snapshot) => {
         this.totalProcesses.set(snapshot.totalProcesses);
         const selectedPid = this.workareaState.selectedPid();
-        const rows = this.stabilizeProcessOrder(snapshot.processes).slice(0, 75).map((row) => this.toProcessRow(row, selectedPid));
+        const rows = this.stabilizeProcessOrder(snapshot.processes).map((row) => this.toProcessRow(row, selectedPid));
         this.rows.set(rows);
         this.updateResourceSummary(rows, snapshot.totalCpuPercent, snapshot.totalGpuPercent, snapshot.totalDiskPercent, snapshot.usedMemoryBytes, snapshot.totalMemoryBytes);
       })
@@ -223,17 +223,22 @@ export class AppComponent implements OnDestroy, OnInit {
   private classifyProcess(row: BackendProcessRow): ProcessGroup {
     const name = row.info.name.toLowerCase();
     const publisher = row.info.publisher.toLowerCase();
+    const path = row.info.path.toLowerCase();
     const user = row.info.user.toLowerCase();
 
-    if (publisher.includes("microsoft") && /windows|explorer|dwm|shell|search|start|runtime/.test(name)) {
+    if (row.info.hasVisibleWindow) {
+      return "apps";
+    }
+
+    if ((publisher.includes("microsoft") || path.includes("\\windows\\")) && /windows|explorer|dwm|shell|search|start|runtime|system|registry|font|spool|audio|defender/.test(name)) {
       return "windows";
     }
 
-    if (user === "system" || /service|host|daemon|helper|agent|updater|runtime|broker/.test(name)) {
+    if (user === "system" || /service|host|daemon|helper|agent|updater|runtime|broker|crashpad|utility|worker|background/.test(name)) {
       return "background";
     }
 
-    return "apps";
+    return "background";
   }
 
   private isViewId(view: string): view is ViewId {

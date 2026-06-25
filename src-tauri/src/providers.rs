@@ -1,5 +1,5 @@
 use crate::models::{CommandError, ProcessInfo, ProcessMetrics, ProcessRow, ProcessSnapshot};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Mutex;
 use sysinfo::{ProcessesToUpdate, System};
 
@@ -11,6 +11,7 @@ pub struct SysinfoProcessProvider {
     system: Mutex<System>,
     gpu_usage: Mutex<GpuUsageCollector>,
     disk_usage: Mutex<DiskUsageCollector>,
+    memory_usage: Mutex<MemoryUsageCollector>,
 }
 
 impl SysinfoProcessProvider {
@@ -19,6 +20,7 @@ impl SysinfoProcessProvider {
             system: Mutex::new(System::new_all()),
             gpu_usage: Mutex::new(GpuUsageCollector::new()),
             disk_usage: Mutex::new(DiskUsageCollector::new()),
+            memory_usage: Mutex::new(MemoryUsageCollector::new()),
         }
     }
 }
@@ -44,6 +46,12 @@ impl ProcessProvider for SysinfoProcessProvider {
             .lock()
             .map(|mut collector| collector.sample())
             .unwrap_or_default();
+        let private_memory = self
+            .memory_usage
+            .lock()
+            .map(|mut collector| collector.sample())
+            .unwrap_or_default();
+        let visible_window_pids = visible_window_process_ids();
 
         let mut processes = system
             .processes()
@@ -64,6 +72,7 @@ impl ProcessProvider for SysinfoProcessProvider {
                             .user_id()
                             .map(|user_id| user_id.to_string())
                             .unwrap_or_default(),
+                        has_visible_window: visible_window_pids.contains(&process.pid().as_u32()),
                         icon_data_url: process_icon_data_url(&path),
                         path,
                     },
@@ -74,7 +83,10 @@ impl ProcessProvider for SysinfoProcessProvider {
                             .get(&process.pid().as_u32())
                             .copied()
                             .unwrap_or_default(),
-                        memory_bytes: process.memory(),
+                        memory_bytes: private_memory
+                            .get(&process.pid().as_u32())
+                            .copied()
+                            .unwrap_or_else(|| process.memory()),
                         disk_read_bytes: disk.read_bytes,
                         disk_written_bytes: disk.written_bytes,
                     },
@@ -100,6 +112,44 @@ impl ProcessProvider for SysinfoProcessProvider {
             processes,
         })
     }
+}
+
+#[cfg(windows)]
+fn visible_window_process_ids() -> HashSet<u32> {
+    use windows_sys::Win32::Foundation::{HWND, LPARAM};
+    use windows_sys::Win32::UI::WindowsAndMessaging::{
+        EnumWindows, GetWindowTextLengthW, GetWindowThreadProcessId, IsWindowVisible,
+    };
+
+    unsafe extern "system" fn collect_window_pid(hwnd: HWND, lparam: LPARAM) -> i32 {
+        if unsafe { IsWindowVisible(hwnd) } == 0 || unsafe { GetWindowTextLengthW(hwnd) } == 0 {
+            return 1;
+        }
+
+        let mut pid = 0;
+        unsafe {
+            GetWindowThreadProcessId(hwnd, &mut pid);
+        }
+
+        if pid != 0 {
+            let pids = unsafe { &mut *(lparam as *mut HashSet<u32>) };
+            pids.insert(pid);
+        }
+
+        1
+    }
+
+    let mut pids = HashSet::new();
+    unsafe {
+        EnumWindows(Some(collect_window_pid), &mut pids as *mut HashSet<u32> as LPARAM);
+    }
+
+    pids
+}
+
+#[cfg(not(windows))]
+fn visible_window_process_ids() -> HashSet<u32> {
+    HashSet::new()
 }
 
 #[derive(Default)]
@@ -373,6 +423,167 @@ impl Drop for DiskUsageCollector {
                 windows_sys::Win32::System::Performance::PdhCloseQuery(self.query);
             }
         }
+    }
+}
+
+#[cfg(windows)]
+struct MemoryUsageCollector {
+    query: windows_sys::Win32::System::Performance::PDH_HQUERY,
+    pid_counter: windows_sys::Win32::System::Performance::PDH_HCOUNTER,
+    private_counter: windows_sys::Win32::System::Performance::PDH_HCOUNTER,
+}
+
+#[cfg(windows)]
+unsafe impl Send for MemoryUsageCollector {}
+
+#[cfg(windows)]
+impl MemoryUsageCollector {
+    fn new() -> Self {
+        use windows_sys::Win32::System::Performance::{
+            PdhAddEnglishCounterW, PdhCollectQueryData, PdhOpenQueryW,
+        };
+
+        let mut query = std::ptr::null_mut();
+        let mut pid_counter = std::ptr::null_mut();
+        let mut private_counter = std::ptr::null_mut();
+        let pid_path = GpuUsageCollector::wide("\\Process(*)\\ID Process");
+        let private_path = GpuUsageCollector::wide("\\Process(*)\\Working Set - Private");
+        let opened = unsafe { PdhOpenQueryW(std::ptr::null(), 0, &mut query) } == 0;
+        let pid_added = opened
+            && unsafe { PdhAddEnglishCounterW(query, pid_path.as_ptr(), 0, &mut pid_counter) }
+                == 0;
+        let private_added = pid_added
+            && unsafe {
+                PdhAddEnglishCounterW(query, private_path.as_ptr(), 0, &mut private_counter)
+            } == 0;
+
+        if private_added {
+            unsafe {
+                PdhCollectQueryData(query);
+            }
+        } else if !query.is_null() {
+            unsafe {
+                windows_sys::Win32::System::Performance::PdhCloseQuery(query);
+            }
+            query = std::ptr::null_mut();
+            pid_counter = std::ptr::null_mut();
+            private_counter = std::ptr::null_mut();
+        }
+
+        Self {
+            query,
+            pid_counter,
+            private_counter,
+        }
+    }
+
+    fn sample(&mut self) -> HashMap<u32, u64> {
+        use windows_sys::Win32::System::Performance::PdhCollectQueryData;
+
+        if self.query.is_null() || self.pid_counter.is_null() || self.private_counter.is_null() {
+            return HashMap::new();
+        }
+
+        if unsafe { PdhCollectQueryData(self.query) } != 0 {
+            return HashMap::new();
+        }
+
+        let pids = self.large_counter_array(self.pid_counter);
+        let private_bytes = self.large_counter_array(self.private_counter);
+        let mut by_pid = HashMap::new();
+
+        for (instance, pid) in pids {
+            if pid <= 0 {
+                continue;
+            }
+
+            if let Some(bytes) = private_bytes.get(&instance).copied().filter(|bytes| *bytes >= 0) {
+                by_pid.insert(pid as u32, bytes as u64);
+            }
+        }
+
+        by_pid
+    }
+
+    fn large_counter_array(
+        &self,
+        counter: windows_sys::Win32::System::Performance::PDH_HCOUNTER,
+    ) -> HashMap<String, i64> {
+        use windows_sys::Win32::System::Performance::{
+            PdhGetFormattedCounterArrayW, PDH_FMT_COUNTERVALUE_ITEM_W, PDH_FMT_LARGE,
+            PDH_MORE_DATA,
+        };
+
+        let mut buffer_size = 0;
+        let mut item_count = 0;
+        let status = unsafe {
+            PdhGetFormattedCounterArrayW(
+                counter,
+                PDH_FMT_LARGE,
+                &mut buffer_size,
+                &mut item_count,
+                std::ptr::null_mut(),
+            )
+        };
+
+        if status != PDH_MORE_DATA || buffer_size == 0 || item_count == 0 {
+            return HashMap::new();
+        }
+
+        let mut buffer = vec![0u8; buffer_size as usize];
+        let items = buffer.as_mut_ptr() as *mut PDH_FMT_COUNTERVALUE_ITEM_W;
+        let status = unsafe {
+            PdhGetFormattedCounterArrayW(
+                counter,
+                PDH_FMT_LARGE,
+                &mut buffer_size,
+                &mut item_count,
+                items,
+            )
+        };
+
+        if status != 0 {
+            return HashMap::new();
+        }
+
+        unsafe { std::slice::from_raw_parts(items, item_count as usize) }
+            .iter()
+            .filter_map(|item| {
+                if item.FmtValue.CStatus != 0 {
+                    return None;
+                }
+
+                Some((
+                    GpuUsageCollector::string_from_wide(item.szName),
+                    unsafe { item.FmtValue.Anonymous.largeValue },
+                ))
+            })
+            .collect()
+    }
+}
+
+#[cfg(windows)]
+impl Drop for MemoryUsageCollector {
+    fn drop(&mut self) {
+        if !self.query.is_null() {
+            unsafe {
+                windows_sys::Win32::System::Performance::PdhCloseQuery(self.query);
+            }
+        }
+    }
+}
+
+#[cfg(not(windows))]
+struct MemoryUsageCollector;
+
+#[cfg(not(windows))]
+impl MemoryUsageCollector {
+    fn new() -> Self {
+        Self
+    }
+
+    fn sample(&mut self) -> HashMap<u32, u64> {
+        HashMap::new()
     }
 }
 

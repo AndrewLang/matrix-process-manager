@@ -36,6 +36,7 @@ export class ProcessGridComponent {
     columns = signal<ProcessColumn[]>([
         { key: "select", label: "", width: 32, minWidth: 32, resizable: false },
         { key: "name", label: "Name", width: 230, minWidth: 150, resizable: true },
+        { key: "type", label: "Type", width: 132, minWidth: 104, resizable: true },
         { key: "cpu", label: "CPU", width: 72, minWidth: 60, resizable: true },
         { key: "gpu", label: "GPU", width: 72, minWidth: 60, resizable: true },
         { key: "memory", label: "Memory", width: 104, minWidth: 82, resizable: true },
@@ -106,6 +107,14 @@ export class ProcessGridComponent {
         return group.rows.find((row) => row.iconDataUrl)?.iconDataUrl;
     }
 
+    groupType(section: ProcessSection): string {
+        return this.processTypeLabel(section.key);
+    }
+
+    rowType(row: ProcessRow): string {
+        return this.processTypeLabel(row.processGroup ?? "apps");
+    }
+
     groupMemory(group: ProcessNameGroup): string {
         return this.formatBytes(group.rows.reduce((total, row) => total + this.parseBytes(row.memory), 0));
     }
@@ -167,6 +176,18 @@ export class ProcessGridComponent {
 
     private groupKey(section: ProcessSection, group: ProcessNameGroup): string {
         return `${section.key}:${group.name}`;
+    }
+
+    private processTypeLabel(group: ProcessGroup): string {
+        if (group === "background") {
+            return "Background process";
+        }
+
+        if (group === "windows") {
+            return "Windows process";
+        }
+
+        return "App";
     }
 
     private parseBytes(value: string): number {

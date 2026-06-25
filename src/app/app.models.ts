@@ -84,6 +84,7 @@ export interface BackendProcessRow {
         status: string;
         user: string;
         path: string;
+        hasVisibleWindow: boolean;
         iconDataUrl?: string;
     };
     metrics: {
