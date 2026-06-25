@@ -1,12 +1,12 @@
 <article
-  class="grid h-[91px] min-w-0 grid-cols-[84px_minmax(0,1fr)] gap-2 overflow-hidden rounded-md border border-[var(--border)] bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] px-3 py-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
-  [ngClass]="{ 'text-[var(--blue)]': metric().accent === 'blue', 'text-[var(--cyan)]': metric().accent === 'cyan', 'text-[var(--violet)]': metric().accent === 'violet', 'text-[var(--green)]': metric().accent === 'green', 'text-[var(--orange)]': metric().accent === 'orange', 'text-[var(--yellow)]': metric().accent === 'yellow' }">
+  class="grid h-22.75 min-w-0 grid-cols-[84px_minmax(0,1fr)] gap-2 overflow-hidden rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] px-3 py-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
+  [ngClass]="{ 'text-(--blue)': metric().accent === 'blue', 'text-(--cyan)': metric().accent === 'cyan', 'text-(--violet)': metric().accent === 'violet', 'text-(--green)': metric().accent === 'green', 'text-(--orange)': metric().accent === 'orange', 'text-(--yellow)': metric().accent === 'yellow' }">
     <div>
         <span class="text-[#aab7c4]">{{ metric().label }}</span>
-        <strong class="my-2 mb-[5px] block text-2xl leading-none">{{ metric().value }}</strong>
+        <strong class="my-2 mb-1.25 block text-2xl leading-none">{{ metric().value }}</strong>
         <small class="text-[#aab7c4]">{{ metric().detail }}</small>
     </div>
-    <svg class="h-[55px] w-full self-end" viewBox="0 0 240 88" aria-hidden="true">
+    <svg class="h-13.75 w-full self-end" viewBox="0 0 240 88" aria-hidden="true">
         <path class="fill-none stroke-current stroke-[3px] [stroke-linecap:round]" [attr.d]="'M ' + metric().path" />
     </svg>
 </article>

@@ -11,8 +11,7 @@
                 <th class="relative select-none">
                     {{ column.label }}
                     @if (column.resizable) {
-                    <span class="absolute top-0 right-0 h-full w-1 cursor-col-resize hover:bg-[var(--blue)]"
-                      (mousedown)="startResize($event, columnIndex)"></span>
+                    <span class="absolute top-0 right-0 h-full w-1 cursor-col-resize hover:bg-(--blue)" (mousedown)="startResize($event, columnIndex)"></span>
                     }
                 </th>
                 }
@@ -23,16 +22,16 @@
             <tr [ngClass]="isSelected(row) ? 'bg-[linear-gradient(90deg,rgba(23,144,255,0.26),rgba(23,144,255,0.1))]' : ''" (click)="processSelected.emit(row)">
                 <td><input type="checkbox" [checked]="isSelected(row)" /></td>
                 <td>
-                    <div class="flex min-w-0 items-center gap-[9px]"><span
-                          class="grid h-[21px] w-[21px] flex-none place-items-center rounded-md bg-[linear-gradient(135deg,#1ba5ff,#0f69ff)] text-[10px] font-extrabold text-white"><i
+                    <div class="flex min-w-0 items-center gap-2.25"><span
+                          class="grid h-5.25 w-5.25 flex-none place-items-center rounded-md bg-[linear-gradient(135deg,#1ba5ff,#0f69ff)] text-[10px] font-extrabold text-white"><i
                               class="bi text-[13px]" [ngClass]="row.iconClass"></i></span>
                         <div class="grid min-w-0"><strong>{{ row.name }}</strong><small class="overflow-hidden text-ellipsis text-[10px] text-[#8fa0b0]">{{
                                 row.publisher }}</small></div>
                     </div>
                 </td>
                 <td>{{ row.pid }}</td>
-                <td><span class="inline-flex h-5 items-center gap-[5px] rounded-[5px] bg-[rgba(34,206,116,0.14)] px-[7px] py-0 text-[#20d779]"><i
-                          class="h-[5px] w-[5px] rounded-full bg-[var(--green)]"></i>{{ row.status }}</span></td>
+                <td><span class="inline-flex h-5 items-center gap-1.25 rounded-[5px] bg-[rgba(34,206,116,0.14)] px-1.75 py-0 text-[#20d779]"><i
+                          class="h-1.25 w-1.25 rounded-full bg-(--green)"></i>{{ row.status }}</span></td>
                 <td class="text-[#249dff]">{{ row.cpu }}</td>
                 <td class="text-[#249dff]">{{ row.memory }}</td>
                 <td>{{ row.disk }}</td>

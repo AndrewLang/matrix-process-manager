@@ -21,6 +21,6 @@ export class WorkareaComponent {
     activeTitle = input.required<string>();
     processSelected = output<ProcessRow>();
 
-    filterSearchClass = "flex h-[30px] flex-1 items-center gap-2 rounded-[5px] border border-[var(--border)] bg-[rgba(15,28,40,0.84)] px-2.5 py-0 text-[var(--muted)]";
-    wideFilterSearchClass = "flex h-[30px] basis-[238px] items-center gap-2 rounded-[5px] border border-[var(--border)] bg-[rgba(15,28,40,0.84)] px-2.5 py-0 text-[var(--muted)]";
+    filterSearchClass = "flex h-7.5 flex-1 items-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(15,28,40,0.84)] px-2.5 py-0 text-(--muted)";
+    wideFilterSearchClass = "flex h-7.5 basis-[238px] items-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(15,28,40,0.84)] px-2.5 py-0 text-(--muted)";
 }

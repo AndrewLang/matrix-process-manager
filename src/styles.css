@@ -61,12 +61,12 @@
   }
 
   h1 {
-    @apply text-[16px] leading-[1.2];
+    @apply text-base leading-[1.2];
   }
 
   h1 span,
   p {
-    @apply font-normal text-[var(--muted)];
+    @apply font-normal text-(--muted);
   }
 
   h2 {
@@ -79,11 +79,11 @@
 
   th,
   td {
-    @apply h-[39px] overflow-hidden text-ellipsis whitespace-nowrap border-b border-[rgba(122,153,181,0.09)] px-3 py-0 text-left text-[13px] text-[#cbd7e2];
+    @apply h-9.75 overflow-hidden text-ellipsis whitespace-nowrap border-b border-[rgba(122,153,181,0.09)] px-3 py-0 text-left text-[13px] text-[#cbd7e2];
   }
 
   th {
-    @apply h-[38px] bg-[rgba(10,22,33,0.7)] font-semibold text-[#a8b4c1];
+    @apply h-9.5 bg-[rgba(10,22,33,0.7)] font-semibold text-[#a8b4c1];
   }
 
   th:first-child,
@@ -92,7 +92,7 @@
   }
 
   input[type="checkbox"] {
-    @apply h-3 w-3 accent-[var(--blue)];
+    @apply h-3 w-3 accent-(--blue);
   }
 
   dt {
@@ -104,6 +104,6 @@
   }
 
   kbd {
-    @apply rounded border border-[var(--border)] bg-white/4 px-1.5 py-px text-[#bac7d3];
+    @apply rounded border border-(--border) bg-white/4 px-1.5 py-px text-[#bac7d3];
   }
 }

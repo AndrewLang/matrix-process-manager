@@ -7,6 +7,6 @@ import { Component, input } from "@angular/core";
 export class SearchBoxComponent {
     placeholder = input.required<string>();
     hostClass = input("");
-    inputClass = input("h-full flex-1 leading-[30px]");
+    inputClass = input("h-full flex-1 leading-7.5");
     shortcut = input<string>();
 }
