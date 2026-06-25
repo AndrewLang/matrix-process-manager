@@ -1,6 +1,6 @@
 <mtx-resource-detail-monitor [metric]="'gpu'" label="GPU" accent="text-(--cyan)" />
 <article
-    class="mt-2 rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+  class="mt-2 rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
     <div class="flex items-center justify-between">
         <h2>GPU Engines</h2>
         <span class="text-[11px] text-(--muted)">{{ metricValue("GPU") }}</span>
@@ -30,8 +30,8 @@
                     <span>{{ engine.name }}</span>
                     <span class="text-(--muted)">{{ usage(engine.utilizationPercent) }}</span>
                 </div>
-                                <svg
-                                    class="h-8 w-full rounded border border-white/6 bg-[linear-gradient(rgba(122,153,181,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(122,153,181,0.08)_1px,transparent_1px)] bg-size-[24px_18px] text-(--cyan)"
+                <svg
+                  class="h-8 w-full rounded border border-white/6 bg-[linear-gradient(rgba(122,153,181,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(122,153,181,0.08)_1px,transparent_1px)] bg-size-[24px_18px] text-(--cyan)"
                   viewBox="0 0 120 64" preserveAspectRatio="none">
                     <polyline class="fill-none stroke-current stroke-[0.75px]" [attr.points]="enginePath(adapter.adapterIndex, engine.name)" />
                 </svg>
