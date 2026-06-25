@@ -10,6 +10,7 @@ pub trait ProcessProvider: Send + Sync + 'static {
 pub struct SysinfoProcessProvider {
     system: Mutex<System>,
     gpu_usage: Mutex<GpuUsageCollector>,
+    disk_usage: Mutex<DiskUsageCollector>,
 }
 
 impl SysinfoProcessProvider {
@@ -17,6 +18,7 @@ impl SysinfoProcessProvider {
         Self {
             system: Mutex::new(System::new_all()),
             gpu_usage: Mutex::new(GpuUsageCollector::new()),
+            disk_usage: Mutex::new(DiskUsageCollector::new()),
         }
     }
 }
@@ -34,6 +36,11 @@ impl ProcessProvider for SysinfoProcessProvider {
         let total_cpu_percent = system.global_cpu_usage();
         let gpu_usage = self
             .gpu_usage
+            .lock()
+            .map(|mut collector| collector.sample())
+            .unwrap_or_default();
+        let total_disk_percent = self
+            .disk_usage
             .lock()
             .map(|mut collector| collector.sample())
             .unwrap_or_default();
@@ -87,6 +94,7 @@ impl ProcessProvider for SysinfoProcessProvider {
             total_processes: processes.len(),
             total_cpu_percent,
             total_gpu_percent: gpu_usage.total_percent,
+            total_disk_percent,
             used_memory_bytes: system.used_memory(),
             total_memory_bytes: system.total_memory(),
             processes,
@@ -276,6 +284,109 @@ impl Drop for GpuUsageCollector {
                 windows_sys::Win32::System::Performance::PdhCloseQuery(self.query);
             }
         }
+    }
+}
+
+#[cfg(windows)]
+struct DiskUsageCollector {
+    query: windows_sys::Win32::System::Performance::PDH_HQUERY,
+    counter: windows_sys::Win32::System::Performance::PDH_HCOUNTER,
+    ready: bool,
+}
+
+#[cfg(windows)]
+unsafe impl Send for DiskUsageCollector {}
+
+#[cfg(windows)]
+impl DiskUsageCollector {
+    fn new() -> Self {
+        use windows_sys::Win32::System::Performance::{
+            PdhAddEnglishCounterW, PdhCollectQueryData, PdhOpenQueryW,
+        };
+
+        let mut query = std::ptr::null_mut();
+        let mut counter = std::ptr::null_mut();
+        let path = GpuUsageCollector::wide("\\PhysicalDisk(_Total)\\% Disk Time");
+        let opened = unsafe { PdhOpenQueryW(std::ptr::null(), 0, &mut query) } == 0;
+        let added =
+            opened && unsafe { PdhAddEnglishCounterW(query, path.as_ptr(), 0, &mut counter) } == 0;
+
+        if added {
+            unsafe {
+                PdhCollectQueryData(query);
+            }
+        } else if !query.is_null() {
+            unsafe {
+                windows_sys::Win32::System::Performance::PdhCloseQuery(query);
+            }
+            query = std::ptr::null_mut();
+        }
+
+        Self {
+            query,
+            counter,
+            ready: false,
+        }
+    }
+
+    fn sample(&mut self) -> f32 {
+        use windows_sys::Win32::System::Performance::{
+            PdhCollectQueryData, PdhGetFormattedCounterValue, PDH_FMT_COUNTERVALUE, PDH_FMT_DOUBLE,
+        };
+
+        if self.query.is_null() || self.counter.is_null() {
+            return 0.0;
+        }
+
+        if unsafe { PdhCollectQueryData(self.query) } != 0 {
+            return 0.0;
+        }
+
+        if !self.ready {
+            self.ready = true;
+            return 0.0;
+        }
+
+        let mut value = PDH_FMT_COUNTERVALUE::default();
+        let status = unsafe {
+            PdhGetFormattedCounterValue(
+                self.counter,
+                PDH_FMT_DOUBLE,
+                std::ptr::null_mut(),
+                &mut value,
+            )
+        };
+
+        if status != 0 || value.CStatus != 0 {
+            return 0.0;
+        }
+
+        unsafe { value.Anonymous.doubleValue }.max(0.0).min(100.0) as f32
+    }
+}
+
+#[cfg(windows)]
+impl Drop for DiskUsageCollector {
+    fn drop(&mut self) {
+        if !self.query.is_null() {
+            unsafe {
+                windows_sys::Win32::System::Performance::PdhCloseQuery(self.query);
+            }
+        }
+    }
+}
+
+#[cfg(not(windows))]
+struct DiskUsageCollector;
+
+#[cfg(not(windows))]
+impl DiskUsageCollector {
+    fn new() -> Self {
+        Self
+    }
+
+    fn sample(&mut self) -> f32 {
+        0.0
     }
 }
 

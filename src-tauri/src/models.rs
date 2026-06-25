@@ -36,6 +36,7 @@ pub struct ProcessSnapshot {
     pub total_processes: usize,
     pub total_cpu_percent: f32,
     pub total_gpu_percent: f32,
+    pub total_disk_percent: f32,
     pub used_memory_bytes: u64,
     pub total_memory_bytes: u64,
 }

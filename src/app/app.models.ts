@@ -71,6 +71,7 @@ export interface BackendProcessSnapshot {
     totalProcesses: number;
     totalCpuPercent: number;
     totalGpuPercent: number;
+    totalDiskPercent: number;
     usedMemoryBytes: number;
     totalMemoryBytes: number;
 }

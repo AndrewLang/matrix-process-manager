@@ -128,7 +128,7 @@ export class AppComponent implements OnDestroy, OnInit {
         const selectedPid = this.workareaState.selectedPid();
         const rows = this.stabilizeProcessOrder(snapshot.processes).slice(0, 75).map((row) => this.toProcessRow(row, selectedPid));
         this.rows.set(rows);
-        this.updateResourceSummary(rows, snapshot.totalCpuPercent, snapshot.totalGpuPercent, snapshot.usedMemoryBytes, snapshot.totalMemoryBytes);
+        this.updateResourceSummary(rows, snapshot.totalCpuPercent, snapshot.totalGpuPercent, snapshot.totalDiskPercent, snapshot.usedMemoryBytes, snapshot.totalMemoryBytes);
       })
       .catch(() => undefined)
       .finally(() => {
@@ -255,18 +255,18 @@ export class AppComponent implements OnDestroy, OnInit {
     this.refreshSnapshot();
   }
 
-  private updateResourceSummary(rows: ProcessRow[], totalCpuPercent: number, totalGpuPercent: number, usedMemoryBytes: number, totalMemoryBytes: number): void {
+  private updateResourceSummary(rows: ProcessRow[], totalCpuPercent: number, totalGpuPercent: number, totalDiskPercent: number, usedMemoryBytes: number, totalMemoryBytes: number): void {
     const cpu = Math.max(0, Math.min(100, totalCpuPercent));
     const gpu = Math.max(0, Math.min(100, totalGpuPercent));
+    const disk = Math.max(0, Math.min(100, totalDiskPercent));
     const diskBytes = rows.reduce((total, row) => total + this.parseBytesPerSecond(row.disk), 0);
     const memoryBytes = Math.max(0, usedMemoryBytes);
     const memoryPercent = totalMemoryBytes > 0 ? Math.min(100, memoryBytes / totalMemoryBytes * 100) : 0;
-    const diskPercent = Math.min(100, diskBytes / (100 * 1024 * 1024) * 100);
     const metrics: MetricCard[] = [
       { label: "CPU", value: `${cpu.toFixed(0)}%`, detail: `${rows.length} visible processes`, accent: "blue", path: this.sparklinePath(cpu) },
       { label: "GPU", value: `${gpu.toFixed(0)}%`, detail: "GPU engine utilization", accent: "cyan", path: this.sparklinePath(gpu) },
       { label: "Memory", value: `${memoryPercent.toFixed(0)}%`, detail: this.formatBytes(memoryBytes), accent: "violet", path: this.sparklinePath(memoryPercent) },
-      { label: "Disk", value: `${diskPercent.toFixed(0)}%`, detail: `${this.formatBytes(diskBytes)}/s`, accent: "green", path: this.sparklinePath(diskPercent) },
+      { label: "Disk", value: `${disk.toFixed(0)}%`, detail: `${this.formatBytes(diskBytes)}/s`, accent: "green", path: this.sparklinePath(disk) },
       { label: "Network", value: "0%", detail: "Network sampling unavailable", accent: "orange", path: this.sparklinePath(0) },
     ];
     this.metrics.set(metrics);
