@@ -1,6 +1,7 @@
 import { Component, OnDestroy, OnInit, computed, effect, signal } from "@angular/core";
 import { NavigationEnd, Router } from "@angular/router";
 import { invoke } from "@tauri-apps/api/core";
+import { PhysicalPosition, PhysicalSize } from "@tauri-apps/api/dpi";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { filter } from "rxjs";
 import { BackendCpuInfo, BackendProcessRow, BackendProcessSnapshot, MetricCard, NavItem, ProcessGroup, ProcessRow, ResourceBar, ResourceSample, SystemInfoItem, UpdateFrequency, ViewId } from "./app.models";
@@ -12,6 +13,21 @@ import { SplitterDirective } from "./directives/splitter.directive";
 import { ProcessSnapshotWorkerRequest, ProcessSnapshotWorkerResponse } from "./process-snapshot.worker";
 import { WorkareaStateService } from "./services/workarea-state.service";
 
+interface PersistedUiState {
+  activeView: ViewId;
+  route: string;
+  sidebarWidth: number;
+  updateFrequency: UpdateFrequency;
+}
+
+interface PersistedWindowState {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  maximized: boolean;
+}
+
 @Component({
   selector: "mtx-root",
   imports: [CommonDialogComponent, SidebarComponent, SplitterDirective, TitlebarComponent, WorkareaComponent],
@@ -19,12 +35,17 @@ import { WorkareaStateService } from "./services/workarea-state.service";
   styleUrl: "./app.component.css",
 })
 export class AppComponent implements OnDestroy, OnInit {
-  activeView = signal<ViewId>("dashboard");
+  private readonly uiStateKey = "matrix-process-manager.ui-state";
+  private readonly windowStateKey = "matrix-process-manager.window-state";
+  private readonly persistedUiState = this.loadUiState();
+  activeView = signal<ViewId>(this.persistedUiState?.activeView ?? "dashboard");
   selectedProcess = signal("Google Chrome");
   totalProcesses = signal(142);
-  sidebarWidth = signal(200);
+  sidebarWidth = signal(this.persistedUiState?.sidebarWidth ?? 200);
   settingsDialogOpen = signal(false);
   private refreshTimer?: ReturnType<typeof setInterval>;
+  private uiSaveTimer?: ReturnType<typeof setTimeout>;
+  private windowSaveTimer?: ReturnType<typeof setTimeout>;
   private snapshotInFlight = false;
   private refreshPausedUntil = 0;
   private processOrder: number[] = [];
@@ -33,6 +54,7 @@ export class AppComponent implements OnDestroy, OnInit {
   private processWorker?: Worker;
   private transformRequestId = 0;
   private pendingTransforms = new Map<number, { resolve: (response: ProcessSnapshotWorkerResponse) => void; reject: () => void }>();
+  private windowUnlisteners: Array<() => void> = [];
 
   overviewItems: NavItem[] = [
     { id: "dashboard", label: "Dashboard", icon: "bi-speedometer2" },
@@ -87,10 +109,15 @@ export class AppComponent implements OnDestroy, OnInit {
   activeTitle = computed(() => [...this.overviewItems, ...this.toolItems].find((item) => item.id === this.activeView())?.label ?? "Dashboard");
 
   constructor(private router: Router, public workareaState: WorkareaStateService) {
+    if (this.persistedUiState) {
+      this.workareaState.setUpdateFrequency(this.persistedUiState.updateFrequency);
+    }
+
     this.router.events.pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd)).subscribe((event) => {
       const view = event.urlAfterRedirects.replace(/^\//, "").split("/")[0];
       if (this.isViewId(view)) {
         this.activeView.set(view);
+        this.scheduleUiStateSave(event.urlAfterRedirects);
       }
     });
 
@@ -101,6 +128,9 @@ export class AppComponent implements OnDestroy, OnInit {
 
   ngOnInit(): void {
     getCurrentWindow().setIcon("/assets/app-icon.png").catch(() => undefined);
+    this.restoreWindowState();
+    this.trackWindowState();
+    this.restoreRoute();
     this.startProcessWorker();
     this.updateSystemInfo();
     this.refreshSnapshot();
@@ -109,6 +139,17 @@ export class AppComponent implements OnDestroy, OnInit {
   ngOnDestroy(): void {
     if (this.refreshTimer) {
       clearInterval(this.refreshTimer);
+    }
+    if (this.uiSaveTimer) {
+      clearTimeout(this.uiSaveTimer);
+    }
+    if (this.windowSaveTimer) {
+      clearTimeout(this.windowSaveTimer);
+    }
+    this.saveUiState(this.router.url);
+    this.saveWindowState();
+    for (const unlisten of this.windowUnlisteners) {
+      unlisten();
     }
     this.processWorker?.terminate();
   }
@@ -123,6 +164,7 @@ export class AppComponent implements OnDestroy, OnInit {
 
   setUpdateFrequency(frequency: UpdateFrequency): void {
     this.workareaState.setUpdateFrequency(frequency);
+    this.scheduleUiStateSave(this.router.url);
   }
 
   refreshSnapshot(): void {
@@ -157,6 +199,7 @@ export class AppComponent implements OnDestroy, OnInit {
 
   setView(view: ViewId): void {
     this.activeView.set(view);
+    this.scheduleUiStateSave(`/${view}`);
     this.router.navigate([view]);
   }
 
@@ -166,6 +209,7 @@ export class AppComponent implements OnDestroy, OnInit {
 
   setSidebarWidth(width: number): void {
     this.sidebarWidth.set(width);
+    this.scheduleUiStateSave(this.router.url);
   }
 
   pauseRefreshForDrag(event: MouseEvent): void {
@@ -188,8 +232,158 @@ export class AppComponent implements OnDestroy, OnInit {
     getCurrentWindow().toggleMaximize();
   }
 
-  close(): void {
-    getCurrentWindow().close();
+  async close(): Promise<void> {
+    this.saveUiState(this.router.url);
+    await this.saveWindowState();
+    this.processWorker?.terminate();
+    const appWindow = getCurrentWindow();
+    appWindow.destroy().catch(() => appWindow.close());
+  }
+
+  private restoreRoute(): void {
+    const route = this.persistedUiState?.route;
+    if (!route || this.router.url !== "/" && this.router.url !== "/dashboard") {
+      return;
+    }
+
+    queueMicrotask(() => {
+      this.router.navigateByUrl(route).catch(() => undefined);
+    });
+  }
+
+  private restoreWindowState(): void {
+    const state = this.loadWindowState();
+    const appWindow = getCurrentWindow();
+    const restore = state
+      ? appWindow.setSize(new PhysicalSize(state.width, state.height))
+        .then(() => appWindow.setPosition(new PhysicalPosition(state.x, state.y)))
+        .then(() => state.maximized ? appWindow.maximize() : undefined)
+      : Promise.resolve();
+
+    restore
+      .catch(() => undefined)
+      .finally(() => appWindow.show().catch(() => undefined));
+  }
+
+  private trackWindowState(): void {
+    const appWindow = getCurrentWindow();
+    appWindow.onMoved(() => this.scheduleWindowStateSave()).then((unlisten) => this.windowUnlisteners.push(unlisten)).catch(() => undefined);
+    appWindow.onResized(() => this.scheduleWindowStateSave()).then((unlisten) => this.windowUnlisteners.push(unlisten)).catch(() => undefined);
+    appWindow.onCloseRequested(() => this.saveWindowState()).then((unlisten) => this.windowUnlisteners.push(unlisten)).catch(() => undefined);
+  }
+
+  private scheduleUiStateSave(route: string): void {
+    if (this.uiSaveTimer) {
+      clearTimeout(this.uiSaveTimer);
+    }
+
+    this.uiSaveTimer = setTimeout(() => this.saveUiState(route), 120);
+  }
+
+  private saveUiState(route: string): void {
+    const state: PersistedUiState = {
+      activeView: this.activeView(),
+      route: this.normalizeRoute(route, this.activeView()),
+      sidebarWidth: this.sidebarWidth(),
+      updateFrequency: this.workareaState.updateFrequency(),
+    };
+    this.writeJson(this.uiStateKey, state);
+  }
+
+  private scheduleWindowStateSave(): void {
+    if (this.windowSaveTimer) {
+      clearTimeout(this.windowSaveTimer);
+    }
+
+    this.windowSaveTimer = setTimeout(() => this.saveWindowState(), 250);
+  }
+
+  private saveWindowState(): Promise<void> {
+    const appWindow = getCurrentWindow();
+    return Promise.all([appWindow.outerPosition(), appWindow.outerSize(), appWindow.isMaximized()])
+      .then(([position, size, maximized]) => {
+        this.writeJson(this.windowStateKey, {
+          x: position.x,
+          y: position.y,
+          width: size.width,
+          height: size.height,
+          maximized,
+        } satisfies PersistedWindowState);
+      })
+      .catch(() => undefined);
+  }
+
+  private loadUiState(): PersistedUiState | undefined {
+    const state = this.readJson<Partial<PersistedUiState>>(this.uiStateKey);
+    if (!state || !this.isPersistedViewId(state.activeView) || !this.isUpdateFrequency(state.updateFrequency)) {
+      return undefined;
+    }
+
+    return {
+      activeView: state.activeView,
+      route: this.normalizeRoute(state.route, state.activeView),
+      sidebarWidth: this.clampSidebarWidth(state.sidebarWidth),
+      updateFrequency: state.updateFrequency,
+    };
+  }
+
+  private loadWindowState(): PersistedWindowState | undefined {
+    const state = this.readJson<Partial<PersistedWindowState>>(this.windowStateKey);
+    if (!state || !Number.isFinite(state.x) || !Number.isFinite(state.y) || !Number.isFinite(state.width) || !Number.isFinite(state.height)) {
+      return undefined;
+    }
+
+    const x = state.x as number;
+    const y = state.y as number;
+    const width = state.width as number;
+    const height = state.height as number;
+
+    return {
+      x: Math.round(x),
+      y: Math.round(y),
+      width: Math.max(980, Math.round(width)),
+      height: Math.max(640, Math.round(height)),
+      maximized: state.maximized === true,
+    };
+  }
+
+  private normalizeRoute(route: unknown, fallbackView: ViewId): string {
+    if (typeof route !== "string") {
+      return `/${fallbackView}`;
+    }
+
+    const path = route.startsWith("/") ? route : `/${route}`;
+    const firstSegment = path.replace(/^\//, "").split("/")[0];
+    return this.isPersistedViewId(firstSegment) ? path : `/${fallbackView}`;
+  }
+
+  private clampSidebarWidth(width: unknown): number {
+    return Math.max(120, Math.min(280, typeof width === "number" && Number.isFinite(width) ? width : 200));
+  }
+
+  private readJson<T>(key: string): T | undefined {
+    try {
+      const value = localStorage.getItem(key);
+      return value ? JSON.parse(value) as T : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  private writeJson(key: string, value: unknown): void {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch {
+      return;
+    }
+  }
+
+  private isPersistedViewId(value: unknown): value is ViewId {
+    return value === "dashboard" || value === "processes" || value === "performance" || value === "startup" || value === "system" || value === "settings" || value === "disk" || value === "terminal" || value === "more";
+  }
+
+  private isUpdateFrequency(value: unknown): value is UpdateFrequency {
+    return value === "high" || value === "normal" || value === "low" || value === "paused";
   }
 
   private startProcessWorker(): void {
