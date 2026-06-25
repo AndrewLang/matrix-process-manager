@@ -1,4 +1,5 @@
 export type ViewId = "dashboard" | "processes" | "performance" | "startup" | "users" | "services" | "system" | "logs" | "settings";
+export type ProcessGroup = "apps" | "background" | "windows";
 
 export interface NavItem {
     id: ViewId;
@@ -17,6 +18,7 @@ export interface MetricCard {
 export interface ProcessRow {
     name: string;
     publisher: string;
+    processGroup?: ProcessGroup;
     pid: number;
     status: string;
     cpu: string;

@@ -12,7 +12,7 @@
               class="grid min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                 <div class="flex items-center gap-2.25 border-b border-(--border) p-3">
                     <h1>Processes <span>({{ totalProcesses() }})</span></h1>
-                    <mtx-search-box [hostClass]="filterSearchClass" placeholder="Filter processes..." />
+                    <mtx-search-box [hostClass]="filterSearchClass" placeholder="Filter processes..." [(value)]="processFilter" />
                     <button type="button"
                       class="inline-flex h-7.5 flex-none items-center justify-center gap-1.75 whitespace-nowrap rounded-[5px] border border-(--border) bg-[rgba(16,31,45,0.86)] px-3 py-0 hover:bg-white/6 max-[1040px]:w-7.5 max-[1040px]:px-0"><i
                           class="bi bi-sliders flex-none"></i><span class="whitespace-nowrap max-[1040px]:hidden">View Options</span></button>
@@ -20,7 +20,7 @@
                       class="inline-flex h-7.5 flex-none items-center justify-center gap-1.75 whitespace-nowrap rounded-[5px] border border-[rgba(255,75,67,0.38)] bg-[rgba(16,31,45,0.86)] px-3 py-0 text-(--red) max-[1040px]:w-7.5 max-[1040px]:px-0"
                       disabled><i class="bi bi-slash-circle flex-none"></i><span class="whitespace-nowrap max-[1040px]:hidden">End Process</span></button>
                 </div>
-                <mtx-process-grid [rows]="rows()" [selectedProcess]="selectedProcess()" (processSelected)="processSelected.emit($event)" />
+                <mtx-process-grid [rows]="filteredRows()" [selectedProcess]="selectedProcess()" (processSelected)="processSelected.emit($event)" />
             </section>
             <ng-container [ngTemplateOutlet]="detailsPanel" />
         </div>
@@ -32,7 +32,7 @@
             <div class="flex flex-col items-stretch gap-2.25 border-b border-(--border) p-3">
                 <h1>Processes <span>({{ totalProcesses() }})</span></h1>
                 <div class="flex items-center gap-2">
-                    <mtx-search-box [hostClass]="wideFilterSearchClass" placeholder="Filter processes..." />
+                    <mtx-search-box [hostClass]="wideFilterSearchClass" placeholder="Filter processes..." [(value)]="processFilter" />
                     <button type="button"
                       class="inline-flex h-7.5 flex-none items-center justify-center gap-1.75 whitespace-nowrap rounded-[5px] border border-(--border) bg-[rgba(16,31,45,0.86)] px-3 py-0 hover:bg-white/6 max-[1040px]:w-7.5 max-[1040px]:px-0"><i
                           class="bi bi-funnel flex-none"></i><span class="whitespace-nowrap max-[1040px]:hidden">Add Filter</span></button>
@@ -57,7 +57,7 @@
                     <button type="button" class="h-7.5 rounded-[5px] border border-transparent bg-transparent px-3 py-0 text-[#a8b6c4]">System (7)</button>
                 </div>
             </div>
-            <mtx-process-grid [rows]="rows()" [selectedProcess]="selectedProcess()" (processSelected)="processSelected.emit($event)" />
+            <mtx-process-grid [rows]="filteredRows()" [selectedProcess]="selectedProcess()" (processSelected)="processSelected.emit($event)" />
         </section>
         <ng-container [ngTemplateOutlet]="detailsPanel" />
     </section>
@@ -85,28 +85,28 @@
             <article
               class="rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                 <h2>CPU Usage</h2>
-                <div class="mt-3 h-36.25 rounded-[5px] text-(--blue) [background-size:100%_100%,32px_32px]"
+                <div class="mt-3 h-36.25 rounded-[5px] text-(--blue) bg-size-[100%_100%,32px_32px]"
                   style="background-image: linear-gradient(135deg, transparent 0 12%, currentColor 12.5% 13.4%, transparent 13.8% 24%, currentColor 24.4% 25.6%, transparent 26% 41%, currentColor 41.4% 42.8%, transparent 43.2% 60%, currentColor 60.4% 61.4%, transparent 62%), linear-gradient(rgba(122, 153, 181, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(122, 153, 181, 0.08) 1px, transparent 1px)">
                 </div>
             </article>
             <article
               class="rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                 <h2>Memory Usage</h2>
-                <div class="mt-3 h-36.25 rounded-[5px] text-(--violet) [background-size:100%_100%,32px_32px]"
+                <div class="mt-3 h-36.25 rounded-[5px] text-(--violet) bg-size-[100%_100%,32px_32px]"
                   style="background-image: linear-gradient(to top, rgba(155, 77, 255, 0.32), transparent 72%), linear-gradient(8deg, transparent 0 46%, currentColor 46.4% 47.4%, transparent 47.8%), linear-gradient(rgba(122, 153, 181, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(122, 153, 181, 0.08) 1px, transparent 1px)">
                 </div>
             </article>
             <article
               class="rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                 <h2>Disk Activity</h2>
-                <div class="mt-3 h-36.25 rounded-[5px] text-(--green) [background-size:100%_100%,32px_32px]"
+                <div class="mt-3 h-36.25 rounded-[5px] text-(--green) bg-size-[100%_100%,32px_32px]"
                   style="background-image: linear-gradient(135deg, transparent 0 12%, currentColor 12.5% 13.4%, transparent 13.8% 24%, currentColor 24.4% 25.6%, transparent 26% 41%, currentColor 41.4% 42.8%, transparent 43.2% 60%, currentColor 60.4% 61.4%, transparent 62%), linear-gradient(rgba(122, 153, 181, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(122, 153, 181, 0.08) 1px, transparent 1px)">
                 </div>
             </article>
             <article
               class="rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                 <h2>Network Activity</h2>
-                <div class="mt-3 h-36.25 rounded-[5px] text-(--orange) [background-size:100%_100%,32px_32px]"
+                <div class="mt-3 h-36.25 rounded-[5px] text-(--orange) bg-size-[100%_100%,32px_32px]"
                   style="background-image: linear-gradient(135deg, transparent 0 12%, currentColor 12.5% 13.4%, transparent 13.8% 24%, currentColor 24.4% 25.6%, transparent 26% 41%, currentColor 41.4% 42.8%, transparent 43.2% 60%, currentColor 60.4% 61.4%, transparent 62%), linear-gradient(rgba(122, 153, 181, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(122, 153, 181, 0.08) 1px, transparent 1px)">
                 </div>
             </article>
@@ -118,15 +118,14 @@
               class="rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                 <h2>System Summary</h2>
                 <div class="mt-4.5 grid grid-cols-[70px_minmax(0,1fr)_70px_minmax(0,1fr)] gap-3"><span class="text-(--muted)">OS</span><strong>Windows
-                        11 Pro</strong><span class="text-(--muted)">CPU</span><strong>Intel Core i7</strong><span
-                      class="text-(--muted)">Memory</span><strong>16 GB DDR4</strong><span
-                      class="text-(--muted)">Virtualization</span><strong>Enabled</strong></div>
+                        11 Pro</strong><span class="text-(--muted)">CPU</span><strong>Intel Core i7</strong><span class="text-(--muted)">Memory</span><strong>16
+                        GB DDR4</strong><span class="text-(--muted)">Virtualization</span><strong>Enabled</strong></div>
             </article>
             <article
               class="grid place-items-center rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-3 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                 <h2>Performance Alerts</h2>
-                    <div class="grid h-9 w-9 place-items-center rounded-full bg-[rgba(34,206,116,0.16)] text-[13px] text-(--green)"><i
-                      class="bi bi-check-lg"></i></div><strong>No active alerts</strong><span class="text-(--muted)">All systems are running
+                <div class="grid h-9 w-9 place-items-center rounded-full bg-[rgba(34,206,116,0.16)] text-[13px] text-(--green)"><i class="bi bi-check-lg"></i>
+                </div><strong>No active alerts</strong><span class="text-(--muted)">All systems are running
                     normally.</span>
             </article>
         </div>
@@ -152,18 +151,18 @@
                   class="bi bi-browser-chrome text-[13px]"></i></span>
             <div class="grid min-w-0"><strong>Google Chrome</strong><small class="overflow-hidden text-ellipsis text-[10px] text-[#8fa0b0]">Google LLC</small>
             </div><button class="ml-auto h-5.5 w-5.5 bg-transparent text-[#9aacba]" type="button" aria-label="Expand details"><i
-              class="bi bi-arrows-angle-expand"></i></button><button class="h-5.5 w-5.5 bg-transparent text-[#9aacba]" type="button"
+                  class="bi bi-arrows-angle-expand"></i></button><button class="h-5.5 w-5.5 bg-transparent text-[#9aacba]" type="button"
               aria-label="Close details"><i class="bi bi-x-lg"></i></button>
         </div>
         <button type="button"
           class="my-3.25 inline-flex h-7.5 w-full flex-none items-center justify-center gap-1.75 whitespace-nowrap rounded-[5px] border border-[rgba(255,75,67,0.38)] bg-[rgba(16,31,45,0.86)] px-3 py-0 text-(--red)"
           disabled><i class="bi bi-slash-circle flex-none"></i><span>End Process</span></button>
-          <div class="flex gap-3.5 overflow-hidden border-b border-(--border)"><button
-            class="h-7.75 border-b-2 border-(--blue) bg-transparent text-(--blue)">Overview</button><button
-            class="h-7.75 border-b-2 border-transparent bg-transparent text-[#9fb0c0]">Performance</button><button
-            class="h-7.75 border-b-2 border-transparent bg-transparent text-[#9fb0c0]">Open Files</button><button
-            class="h-7.75 border-b-2 border-transparent bg-transparent text-[#9fb0c0]">Modules</button></div>
-          <dl class="my-0 mb-3.5 grid grid-cols-[76px_minmax(0,1fr)] gap-x-2.5 gap-y-3.25 border-b border-(--border) py-3.5">
+        <div class="flex gap-3.5 overflow-hidden border-b border-(--border)"><button
+              class="h-7.75 border-b-2 border-(--blue) bg-transparent text-(--blue)">Overview</button><button
+              class="h-7.75 border-b-2 border-transparent bg-transparent text-[#9fb0c0]">Performance</button><button
+              class="h-7.75 border-b-2 border-transparent bg-transparent text-[#9fb0c0]">Open Files</button><button
+              class="h-7.75 border-b-2 border-transparent bg-transparent text-[#9fb0c0]">Modules</button></div>
+        <dl class="my-0 mb-3.5 grid grid-cols-[76px_minmax(0,1fr)] gap-x-2.5 gap-y-3.25 border-b border-(--border) py-3.5">
             <dt>PID</dt>
             <dd>14532</dd>
             <dt>Status</dt>

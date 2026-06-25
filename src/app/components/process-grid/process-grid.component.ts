@@ -1,6 +1,6 @@
 import { NgClass } from "@angular/common";
-import { Component, HostListener, input, output, signal } from "@angular/core";
-import { ProcessRow } from "../../app.models";
+import { Component, HostListener, computed, input, output, signal } from "@angular/core";
+import { ProcessGroup, ProcessRow } from "../../app.models";
 
 interface ProcessColumn {
     key: string;
@@ -8,6 +8,18 @@ interface ProcessColumn {
     width: number;
     minWidth: number;
     resizable: boolean;
+}
+
+interface ProcessNameGroup {
+    name: string;
+    rows: ProcessRow[];
+}
+
+interface ProcessSection {
+    key: ProcessGroup;
+    label: string;
+    groups: ProcessNameGroup[];
+    count: number;
 }
 
 @Component({
@@ -33,6 +45,29 @@ export class ProcessGridComponent {
         { key: "menu", label: "", width: 36, minWidth: 36, resizable: false },
     ]);
 
+    sections = computed<ProcessSection[]>(() => {
+        const sections = new Map<ProcessGroup, Map<string, ProcessRow[]>>([
+            ["apps", new Map<string, ProcessRow[]>()],
+            ["background", new Map<string, ProcessRow[]>()],
+            ["windows", new Map<string, ProcessRow[]>()],
+        ]);
+
+        for (const row of this.rows()) {
+            const section = sections.get(row.processGroup ?? "apps")!;
+            const nameRows = section.get(row.name) ?? [];
+            nameRows.push(row);
+            section.set(row.name, nameRows);
+        }
+
+        const processSections: ProcessSection[] = [
+            { key: "apps", label: "Apps", groups: this.toNameGroups(sections.get("apps")!), count: this.countRows(sections.get("apps")!) },
+            { key: "background", label: "Background processes", groups: this.toNameGroups(sections.get("background")!), count: this.countRows(sections.get("background")!) },
+            { key: "windows", label: "Windows processes", groups: this.toNameGroups(sections.get("windows")!), count: this.countRows(sections.get("windows")!) },
+        ];
+
+        return processSections.filter((section) => section.count > 0);
+    });
+
     private resizing?: { index: number; startX: number; startWidth: number };
 
     startResize(event: MouseEvent, index: number): void {
@@ -48,6 +83,26 @@ export class ProcessGridComponent {
 
     isSelected(row: ProcessRow): boolean {
         return row.selected || this.selectedProcess() === row.name;
+    }
+
+    groupCpu(group: ProcessNameGroup): string {
+        return `${group.rows.reduce((total, row) => total + Number.parseFloat(row.cpu), 0).toFixed(1)}%`;
+    }
+
+    groupPublisher(group: ProcessNameGroup): string {
+        return group.rows[0]?.publisher ?? "Unknown publisher";
+    }
+
+    groupIcon(group: ProcessNameGroup): string {
+        return group.rows[0]?.iconClass ?? "bi-window";
+    }
+
+    groupMemory(group: ProcessNameGroup): string {
+        return group.rows[0]?.memory ?? "";
+    }
+
+    groupStatus(group: ProcessNameGroup): string {
+        return group.rows.some((row) => row.status.toLowerCase() === "running") ? "Running" : group.rows[0]?.status ?? "";
     }
 
     @HostListener("document:mousemove", ["$event"])
@@ -69,5 +124,15 @@ export class ProcessGridComponent {
     @HostListener("document:mouseup")
     stopResize(): void {
         this.resizing = undefined;
+    }
+
+    private toNameGroups(groups: Map<string, ProcessRow[]>): ProcessNameGroup[] {
+        return Array.from(groups.entries())
+            .map(([name, rows]) => ({ name, rows }))
+            .sort((left, right) => left.name.localeCompare(right.name));
+    }
+
+    private countRows(groups: Map<string, ProcessRow[]>): number {
+        return Array.from(groups.values()).reduce((total, rows) => total + rows.length, 0);
     }
 }

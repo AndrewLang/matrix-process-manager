@@ -1,5 +1,5 @@
 import { NgClass, NgTemplateOutlet } from "@angular/common";
-import { Component, input, output } from "@angular/core";
+import { Component, computed, input, output, signal } from "@angular/core";
 import { MetricCard, ProcessRow, ResourceBar, ViewId } from "../../app.models";
 import { MetricBlockComponent } from "../metric-block/metric-block.component";
 import { ProcessGridComponent } from "../process-grid/process-grid.component";
@@ -20,6 +20,22 @@ export class WorkareaComponent {
     bars = input.required<ResourceBar[]>();
     activeTitle = input.required<string>();
     processSelected = output<ProcessRow>();
+    processFilter = signal("");
+
+    filteredRows = computed(() => {
+        const filter = this.processFilter().trim().toLowerCase();
+        if (!filter) {
+            return this.rows();
+        }
+
+        return this.rows().filter((row) =>
+            row.name.toLowerCase().includes(filter)
+            || row.publisher.toLowerCase().includes(filter)
+            || row.pid.toString().includes(filter)
+            || row.status.toLowerCase().includes(filter)
+            || row.user.toLowerCase().includes(filter),
+        );
+    });
 
     filterSearchClass = "flex h-7.5 flex-1 items-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(15,28,40,0.84)] px-2.5 py-0 text-(--muted)";
     wideFilterSearchClass = "flex h-7.5 basis-[238px] items-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(15,28,40,0.84)] px-2.5 py-0 text-(--muted)";

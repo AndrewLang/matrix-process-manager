@@ -1,4 +1,4 @@
-import { Component, input } from "@angular/core";
+import { Component, input, model } from "@angular/core";
 
 @Component({
     selector: "mtx-search-box",
@@ -9,4 +9,5 @@ export class SearchBoxComponent {
     hostClass = input("");
     inputClass = input("h-full flex-1 leading-7.5");
     shortcut = input<string>();
+    value = model("");
 }

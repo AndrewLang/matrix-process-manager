@@ -1,7 +1,7 @@
 import { Component, OnInit, computed, signal } from "@angular/core";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { BackendProcessRow, BackendProcessSnapshot, MetricCard, NavItem, ProcessRow, ResourceBar, ViewId } from "./app.models";
+import { BackendProcessRow, BackendProcessSnapshot, MetricCard, NavItem, ProcessGroup, ProcessRow, ResourceBar, ViewId } from "./app.models";
 import { SidebarComponent } from "./components/sidebar/sidebar.component";
 import { TitlebarComponent } from "./components/titlebar/titlebar.component";
 import { WorkareaComponent } from "./components/workarea/workarea.component";
@@ -44,20 +44,20 @@ export class AppComponent implements OnInit {
   ];
 
   rows = signal<ProcessRow[]>([
-    { name: "Google Chrome", publisher: "Google LLC", pid: 14532, status: "Running", cpu: "7.3%", memory: "1.23 GB", disk: "15.6 MB/s", network: "5.4 Mbps", user: "john", iconClass: "bi-browser-chrome", selected: true },
-    { name: "Visual Studio Code", publisher: "Microsoft Corporation", pid: 11224, status: "Running", cpu: "3.6%", memory: "812.4 MB", disk: "2.1 MB/s", network: "1.2 Mbps", user: "john", iconClass: "bi-code-square" },
-    { name: "Slack", publisher: "Slack Technologies", pid: 22344, status: "Running", cpu: "2.1%", memory: "598.7 MB", disk: "1.2 MB/s", network: "0.6 Mbps", user: "john", iconClass: "bi-hash" },
-    { name: "Spotify", publisher: "Spotify AB", pid: 33412, status: "Running", cpu: "1.6%", memory: "456.1 MB", disk: "0.8 MB/s", network: "0.3 Mbps", user: "john", iconClass: "bi-music-note-beamed" },
-    { name: "Finder", publisher: "Apple Inc.", pid: 764, status: "Running", cpu: "1.2%", memory: "302.5 MB", disk: "0.2 MB/s", network: "0 Mbps", user: "john", iconClass: "bi-folder2-open" },
-    { name: "Docker Desktop", publisher: "Docker Inc.", pid: 55678, status: "Running", cpu: "0.9%", memory: "284.3 MB", disk: "10.3 MB/s", network: "0.2 Mbps", user: "john", iconClass: "bi-box-seam" },
-    { name: "Windows Explorer", publisher: "Microsoft Corporation", pid: 4780, status: "Running", cpu: "0.8%", memory: "210.7 MB", disk: "0.4 MB/s", network: "0 Mbps", user: "john", iconClass: "bi-folder" },
-    { name: "Terminal", publisher: "Apple Inc.", pid: 9512, status: "Running", cpu: "0.6%", memory: "168.9 MB", disk: "0.1 MB/s", network: "0 Mbps", user: "john", iconClass: "bi-terminal" },
-    { name: "Notion", publisher: "Notion Labs, Inc.", pid: 61988, status: "Running", cpu: "0.4%", memory: "156.3 MB", disk: "0.3 MB/s", network: "0.1 Mbps", user: "john", iconClass: "bi-journal-text" },
-    { name: "Microsoft Teams", publisher: "Microsoft Corporation", pid: 27892, status: "Running", cpu: "0.4%", memory: "129.8 MB", disk: "0.2 MB/s", network: "0 Mbps", user: "john", iconClass: "bi-people-fill" },
-    { name: "Postman", publisher: "Postman Inc.", pid: 14620, status: "Running", cpu: "0.3%", memory: "118.6 MB", disk: "0.1 MB/s", network: "0 Mbps", user: "john", iconClass: "bi-send" },
-    { name: "WhatsApp", publisher: "WhatsApp LLC", pid: 16320, status: "Running", cpu: "0.3%", memory: "112.4 MB", disk: "0.1 MB/s", network: "0 Mbps", user: "john", iconClass: "bi-chat-dots" },
-    { name: "OneDrive", publisher: "Microsoft Corporation", pid: 25612, status: "Running", cpu: "0.2%", memory: "98.7 MB", disk: "0.1 MB/s", network: "0 Mbps", user: "john", iconClass: "bi-cloud" },
-    { name: "Activity Monitor", publisher: "Apple Inc.", pid: 1376, status: "Running", cpu: "0.2%", memory: "86.3 MB", disk: "0 MB/s", network: "0 Mbps", user: "john", iconClass: "bi-graph-up" },
+    { name: "Google Chrome", publisher: "Google LLC", processGroup: "apps", pid: 14532, status: "Running", cpu: "7.3%", memory: "1.23 GB", disk: "15.6 MB/s", network: "5.4 Mbps", user: "john", iconClass: "bi-browser-chrome", selected: true },
+    { name: "Google Chrome", publisher: "Google LLC", processGroup: "apps", pid: 14536, status: "Running", cpu: "1.1%", memory: "412.8 MB", disk: "1.4 MB/s", network: "0.8 Mbps", user: "john", iconClass: "bi-browser-chrome" },
+    { name: "Visual Studio Code", publisher: "Microsoft Corporation", processGroup: "apps", pid: 11224, status: "Running", cpu: "3.6%", memory: "812.4 MB", disk: "2.1 MB/s", network: "1.2 Mbps", user: "john", iconClass: "bi-code-square" },
+    { name: "Slack", publisher: "Slack Technologies", processGroup: "apps", pid: 22344, status: "Running", cpu: "2.1%", memory: "598.7 MB", disk: "1.2 MB/s", network: "0.6 Mbps", user: "john", iconClass: "bi-hash" },
+    { name: "Spotify", publisher: "Spotify AB", processGroup: "apps", pid: 33412, status: "Running", cpu: "1.6%", memory: "456.1 MB", disk: "0.8 MB/s", network: "0.3 Mbps", user: "john", iconClass: "bi-music-note-beamed" },
+    { name: "Docker Desktop", publisher: "Docker Inc.", processGroup: "apps", pid: 55678, status: "Running", cpu: "0.9%", memory: "284.3 MB", disk: "10.3 MB/s", network: "0.2 Mbps", user: "john", iconClass: "bi-box-seam" },
+    { name: "Windows Explorer", publisher: "Microsoft Corporation", processGroup: "windows", pid: 4780, status: "Running", cpu: "0.8%", memory: "210.7 MB", disk: "0.4 MB/s", network: "0 Mbps", user: "john", iconClass: "bi-folder" },
+    { name: "Terminal", publisher: "Microsoft Corporation", processGroup: "apps", pid: 9512, status: "Running", cpu: "0.6%", memory: "168.9 MB", disk: "0.1 MB/s", network: "0 Mbps", user: "john", iconClass: "bi-terminal" },
+    { name: "Notion", publisher: "Notion Labs, Inc.", processGroup: "apps", pid: 61988, status: "Running", cpu: "0.4%", memory: "156.3 MB", disk: "0.3 MB/s", network: "0.1 Mbps", user: "john", iconClass: "bi-journal-text" },
+    { name: "Microsoft Teams", publisher: "Microsoft Corporation", processGroup: "apps", pid: 27892, status: "Running", cpu: "0.4%", memory: "129.8 MB", disk: "0.2 MB/s", network: "0 Mbps", user: "john", iconClass: "bi-people-fill" },
+    { name: "Postman", publisher: "Postman Inc.", processGroup: "apps", pid: 14620, status: "Running", cpu: "0.3%", memory: "118.6 MB", disk: "0.1 MB/s", network: "0 Mbps", user: "john", iconClass: "bi-send" },
+    { name: "WhatsApp", publisher: "WhatsApp LLC", processGroup: "apps", pid: 16320, status: "Running", cpu: "0.3%", memory: "112.4 MB", disk: "0.1 MB/s", network: "0 Mbps", user: "john", iconClass: "bi-chat-dots" },
+    { name: "OneDrive", publisher: "Microsoft Corporation", processGroup: "background", pid: 25612, status: "Running", cpu: "0.2%", memory: "98.7 MB", disk: "0.1 MB/s", network: "0 Mbps", user: "john", iconClass: "bi-cloud" },
+    { name: "Service Host", publisher: "Microsoft Corporation", processGroup: "background", pid: 1376, status: "Running", cpu: "0.2%", memory: "86.3 MB", disk: "0 MB/s", network: "0 Mbps", user: "system", iconClass: "bi-gear" },
   ]);
 
   bars: ResourceBar[] = [
@@ -116,6 +116,7 @@ export class AppComponent implements OnInit {
     return {
       name: row.info.name || `Process ${row.info.pid}`,
       publisher: row.info.publisher || row.info.path || "Unknown publisher",
+      processGroup: this.classifyProcess(row),
       pid: row.info.pid,
       status: row.info.status,
       cpu: `${row.metrics.cpuPercent.toFixed(1)}%`,
@@ -142,5 +143,21 @@ export class AppComponent implements OnInit {
     }
 
     return `${bytes} B`;
+  }
+
+  private classifyProcess(row: BackendProcessRow): ProcessGroup {
+    const name = row.info.name.toLowerCase();
+    const publisher = row.info.publisher.toLowerCase();
+    const user = row.info.user.toLowerCase();
+
+    if (publisher.includes("microsoft") && /windows|explorer|dwm|shell|search|start|runtime/.test(name)) {
+      return "windows";
+    }
+
+    if (user === "system" || /service|host|daemon|helper|agent|updater|runtime|broker/.test(name)) {
+      return "background";
+    }
+
+    return "apps";
   }
 }
