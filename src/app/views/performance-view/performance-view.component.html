@@ -1,8 +1,4 @@
-<section class="grid h-full min-h-0 min-w-0 gap-2.5 overflow-hidden px-2.5 py-3" [ngClass]="
-    detailsOpen()
-      ? 'grid-cols-[minmax(0,1fr)_auto]'
-      : 'grid-cols-[minmax(0,1fr)]'
-  ">
+<section class="grid h-full min-h-0 min-w-0 overflow-hidden px-2.5 py-3">
     <section class="grid min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden">
         <div class="mb-3">
             <div>
@@ -22,16 +18,4 @@
             </div>
         </div>
     </section>
-    @if (detailsOpen()) {
-    <aside
-      class="min-h-0 w-71.5 overflow-hidden rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-3.25 text-[12px] leading-snug shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] max-[1040px]:w-62.5">
-        <div class="mb-3 flex items-center gap-2">
-            <h2>Details</h2>
-            <button class="ml-auto h-5.5 w-5.5 bg-transparent text-[#9aacba]" type="button" aria-label="Close details" (click)="closeDetails()">
-                <i class="bi bi-x-lg"></i>
-            </button>
-        </div>
-        <mtx-resource-bars [bars]="state.bars()" />
-    </aside>
-    }
 </section>

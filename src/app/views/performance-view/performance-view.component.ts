@@ -1,23 +1,20 @@
-import { NgClass } from "@angular/common";
-import { Component, computed, inject, signal } from "@angular/core";
+import { Component, computed, inject } from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
 import { NavigationEnd, Router, RouterOutlet } from "@angular/router";
 import { filter, map } from "rxjs";
 import { MiniConsumersComponent } from "../../components/mini-consumers/mini-consumers.component";
-import { ResourceBarsComponent } from "../../components/resource-bars/resource-bars.component";
 import { WorkareaStateService } from "../../services/workarea-state.service";
 import { PerformanceResourceNavComponent } from "./components/performance-resource-nav/performance-resource-nav.component";
 import { PerformanceMetric, PerformanceNavItem } from "./performance-view.models";
 
 @Component({
     selector: "mtx-performance-view",
-    imports: [NgClass, RouterOutlet, MiniConsumersComponent, ResourceBarsComponent, PerformanceResourceNavComponent],
+    imports: [RouterOutlet, MiniConsumersComponent, PerformanceResourceNavComponent],
     templateUrl: "./performance-view.component.html",
 })
 export class PerformanceViewComponent {
     state = inject(WorkareaStateService);
     private router = inject(Router);
-    detailsOpen = signal(true);
     private currentUrl = toSignal(this.router.events.pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd), map((event) => event.urlAfterRedirects)), { initialValue: this.router.url });
     selectedMetric = computed<PerformanceMetric>(() => this.metricFromUrl(this.currentUrl()));
 
@@ -40,9 +37,5 @@ export class PerformanceViewComponent {
 
     private isPerformanceMetric(value: string | undefined): value is PerformanceMetric {
         return value === "cpu" || value === "gpu" || value === "memory" || value === "network" || value === "disk";
-    }
-
-    closeDetails(): void {
-        this.detailsOpen.set(false);
     }
 }
