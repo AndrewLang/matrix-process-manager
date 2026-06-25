@@ -167,7 +167,12 @@ fn process_icon_data_url(path: &str) -> Option<String> {
     };
 
     let data_url = if drawn != 0 {
-        let bytes = unsafe { std::slice::from_raw_parts(bits as *const u8, icon_size as usize * icon_size as usize * 4) };
+        let bytes = unsafe {
+            std::slice::from_raw_parts(
+                bits as *const u8,
+                icon_size as usize * icon_size as usize * 4,
+            )
+        };
         let rgba = bytes
             .chunks_exact(4)
             .flat_map(|pixel| [pixel[2], pixel[1], pixel[0], pixel[3]])
@@ -180,9 +185,12 @@ fn process_icon_data_url(path: &str) -> Option<String> {
             ColorType::Rgba8.into(),
         );
 
-        encoded
-            .ok()
-            .map(|_| format!("data:image/png;base64,{}", base64::engine::general_purpose::STANDARD.encode(png)))
+        encoded.ok().map(|_| {
+            format!(
+                "data:image/png;base64,{}",
+                base64::engine::general_purpose::STANDARD.encode(png)
+            )
+        })
     } else {
         None
     };
