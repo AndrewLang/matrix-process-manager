@@ -3,7 +3,7 @@ import { NavigationEnd, Router } from "@angular/router";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { filter } from "rxjs";
-import { BackendProcessRow, BackendProcessSnapshot, MetricCard, NavItem, ProcessGroup, ProcessRow, ResourceBar, SystemInfoItem, UpdateFrequency, ViewId } from "./app.models";
+import { BackendProcessRow, BackendProcessSnapshot, MetricCard, NavItem, ProcessGroup, ProcessRow, ResourceBar, ResourceSample, SystemInfoItem, UpdateFrequency, ViewId } from "./app.models";
 import { CommonDialogComponent } from "./components/common-dialog/common-dialog.component";
 import { SidebarComponent } from "./components/sidebar/sidebar.component";
 import { TitlebarComponent } from "./components/titlebar/titlebar.component";
@@ -26,6 +26,7 @@ export class AppComponent implements OnDestroy, OnInit {
   private refreshTimer?: ReturnType<typeof setInterval>;
   private snapshotInFlight = false;
   private processOrder: number[] = [];
+  private metricHistory: ResourceSample[] = [];
 
   overviewItems: NavItem[] = [
     { id: "dashboard", label: "Dashboard", icon: "bi-speedometer2" },
@@ -267,12 +268,14 @@ export class AppComponent implements OnDestroy, OnInit {
     const diskBytes = rows.reduce((total, row) => total + this.parseBytesPerSecond(row.disk), 0);
     const memoryBytes = Math.max(0, usedMemoryBytes);
     const memoryPercent = totalMemoryBytes > 0 ? Math.min(100, memoryBytes / totalMemoryBytes * 100) : 0;
+    const sample: ResourceSample = { cpu, gpu, memory: memoryPercent, disk, network: 0 };
+    this.metricHistory = [...this.metricHistory.slice(-59), sample];
     const metrics: MetricCard[] = [
-      { label: "CPU", value: `${cpu.toFixed(0)}%`, detail: `${rows.length} visible processes`, accent: "blue", path: this.sparklinePath(cpu) },
-      { label: "GPU", value: `${gpu.toFixed(0)}%`, detail: "GPU engine utilization", accent: "cyan", path: this.sparklinePath(gpu) },
-      { label: "Memory", value: `${memoryPercent.toFixed(0)}%`, detail: this.formatBytes(memoryBytes), accent: "violet", path: this.sparklinePath(memoryPercent) },
-      { label: "Disk", value: `${disk.toFixed(0)}%`, detail: `${this.formatBytes(diskBytes)}/s`, accent: "green", path: this.sparklinePath(disk) },
-      { label: "Network", value: "0%", detail: "Network sampling unavailable", accent: "orange", path: this.sparklinePath(0) },
+      { label: "CPU", value: `${cpu.toFixed(0)}%`, detail: `${rows.length} visible processes`, accent: "blue", path: this.historyPath("cpu") },
+      { label: "GPU", value: `${gpu.toFixed(0)}%`, detail: "GPU engine utilization", accent: "cyan", path: this.historyPath("gpu") },
+      { label: "Memory", value: `${memoryPercent.toFixed(0)}%`, detail: this.formatBytes(memoryBytes), accent: "violet", path: this.historyPath("memory") },
+      { label: "Disk", value: `${disk.toFixed(0)}%`, detail: `${this.formatBytes(diskBytes)}/s`, accent: "green", path: this.historyPath("disk") },
+      { label: "Network", value: "0%", detail: "Network sampling unavailable", accent: "orange", path: this.historyPath("network") },
     ];
     this.metrics.set(metrics);
     this.bars.set(metrics.map((metric) => ({ label: metric.label, value: metric.detail, width: metric.value, accent: metric.accent })));
@@ -296,8 +299,25 @@ export class AppComponent implements OnDestroy, OnInit {
     this.workareaState.systemInfo.set(info);
   }
 
-  private sparklinePath(value: number): string {
-    return Array.from({ length: 10 }, (_, index) => `${18 + index * 23},${76 - Math.max(0, Math.min(100, value + Math.sin(index) * 8)) * 0.62}`).join(" ");
+  private historyPath(metric: keyof ResourceSample): string {
+    const history = this.metricHistory;
+    if (history.length === 0) {
+      return "18,76 224,76";
+    }
+
+    if (history.length === 1) {
+      const y = this.historyY(history[0][metric]);
+      return `18,${y} 224,${y}`;
+    }
+
+    return history.map((sample, index) => {
+      const x = 18 + index * (206 / (history.length - 1));
+      return `${x.toFixed(1)},${this.historyY(sample[metric])}`;
+    }).join(" ");
+  }
+
+  private historyY(value: number): string {
+    return (76 - Math.max(0, Math.min(100, value)) * 0.62).toFixed(1);
   }
 
   private parseBytesPerSecond(value: string): number {

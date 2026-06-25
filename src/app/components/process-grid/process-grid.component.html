@@ -5,10 +5,10 @@
             <col [style.width.px]="column.width" />
             }
         </colgroup>
-        <thead>
+        <thead class="sticky top-0 z-20 bg-[rgba(10,22,33,0.98)]">
             <tr>
                 @for (column of columns(); track column.key; let columnIndex = $index) {
-                <th class="relative select-none">
+                <th class="relative select-none bg-[rgba(10,22,33,0.98)]">
                     {{ column.label }}
                     @if (column.resizable) {
                     <span class="absolute top-0 right-0 h-full w-1 cursor-col-resize hover:bg-(--blue)" (mousedown)="startResize($event, columnIndex)"></span>

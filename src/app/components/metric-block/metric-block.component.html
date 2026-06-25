@@ -12,7 +12,7 @@
     <span class="text-[#aab7c4]">{{ metric().label }}</span>
     <strong class="my-2 mb-1.25 block text-2xl leading-none">{{
       metric().value
-    }}</strong>
+      }}</strong>
     <small class="text-[#aab7c4]">{{ metric().detail }}</small>
   </div>
   <svg class="h-full min-h-0 w-full self-stretch" viewBox="0 0 240 88" preserveAspectRatio="none" aria-hidden="true">
@@ -28,8 +28,6 @@
       <text x="236" y="47.5">50</text>
       <text x="236" y="78.5">0</text>
     </g>
-    <path
-      class="fill-none stroke-current stroke-[3px] [stroke-linecap:round]"
-      [attr.d]="'M ' + metric().path" />
+    <path class="fill-none stroke-current stroke-[1.5px] [stroke-linecap:round]" [attr.d]="'M ' + metric().path" />
   </svg>
 </article>
