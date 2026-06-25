@@ -158,9 +158,7 @@ export class ProcessGridComponent {
     }
 
     private toNameGroups(groups: Map<string, ProcessRow[]>): ProcessNameGroup[] {
-        return Array.from(groups.entries())
-            .map(([name, rows]) => ({ name, rows: [...rows].sort((left, right) => Number.parseFloat(right.cpu) - Number.parseFloat(left.cpu)) }))
-            .sort((left, right) => Number.parseFloat(this.groupCpu(right)) - Number.parseFloat(this.groupCpu(left)) || left.name.localeCompare(right.name));
+        return Array.from(groups.entries()).map(([name, rows]) => ({ name, rows }));
     }
 
     private countRows(groups: Map<string, ProcessRow[]>): number {

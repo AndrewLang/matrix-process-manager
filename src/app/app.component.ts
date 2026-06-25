@@ -25,6 +25,7 @@ export class AppComponent implements OnDestroy, OnInit {
   settingsDialogOpen = signal(false);
   private refreshTimer?: ReturnType<typeof setInterval>;
   private snapshotInFlight = false;
+  private processOrder: number[] = [];
 
   overviewItems: NavItem[] = [
     { id: "dashboard", label: "Dashboard", icon: "bi-speedometer2" },
@@ -125,7 +126,7 @@ export class AppComponent implements OnDestroy, OnInit {
       .then((snapshot) => {
         this.totalProcesses.set(snapshot.totalProcesses);
         const selectedPid = this.workareaState.selectedPid();
-        const rows = snapshot.processes.slice(0, 75).map((row) => this.toProcessRow(row, selectedPid));
+        const rows = this.stabilizeProcessOrder(snapshot.processes).slice(0, 75).map((row) => this.toProcessRow(row, selectedPid));
         this.rows.set(rows);
         this.updateResourceSummary(rows);
       })
@@ -186,6 +187,21 @@ export class AppComponent implements OnDestroy, OnInit {
       iconClass: "bi-window",
       selected: row.info.pid === selectedPid,
     };
+  }
+
+  private stabilizeProcessOrder(processes: BackendProcessRow[]): BackendProcessRow[] {
+    const currentPids = new Set(processes.map((process) => process.info.pid));
+    const knownPids = new Set(this.processOrder);
+    this.processOrder = this.processOrder.filter((pid) => currentPids.has(pid));
+
+    for (const process of processes) {
+      if (!knownPids.has(process.info.pid)) {
+        this.processOrder.push(process.info.pid);
+      }
+    }
+
+    const order = new Map(this.processOrder.map((pid, index) => [pid, index]));
+    return [...processes].sort((left, right) => (order.get(left.info.pid) ?? Number.MAX_SAFE_INTEGER) - (order.get(right.info.pid) ?? Number.MAX_SAFE_INTEGER));
   }
 
   private formatBytes(bytes: number): string {
