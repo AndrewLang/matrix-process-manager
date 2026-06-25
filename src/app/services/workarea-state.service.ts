@@ -1,5 +1,5 @@
 import { Injectable, computed, signal } from "@angular/core";
-import { MetricCard, ProcessRow, ResourceBar, ResourceSample, SystemInfoItem, UpdateFrequency, ViewId } from "../app.models";
+import { BackendGpuAdapterUsage, MetricCard, ProcessRow, ResourceBar, ResourceSample, SystemInfoItem, UpdateFrequency, ViewId } from "../app.models";
 
 @Injectable({ providedIn: "root" })
 export class WorkareaStateService {
@@ -14,6 +14,8 @@ export class WorkareaStateService {
     updateFrequency = signal<UpdateFrequency>("high");
     resourceHistory = signal<ResourceSample[]>([]);
     systemInfo = signal<SystemInfoItem[]>([]);
+    gpuAdapters = signal<BackendGpuAdapterUsage[]>([]);
+    gpuAdapterHistory = signal<BackendGpuAdapterUsage[][]>([]);
 
     selectedRow = computed(() => {
         const rows = this.rows();
@@ -33,6 +35,7 @@ export class WorkareaStateService {
         bars: ResourceBar[];
         activeTitle: string;
         systemInfo?: SystemInfoItem[];
+        gpuAdapters?: BackendGpuAdapterUsage[];
     }): void {
         this.activeView.set(state.activeView);
         this.totalProcesses.set(state.totalProcesses);
@@ -42,6 +45,7 @@ export class WorkareaStateService {
         this.bars.set(state.bars);
         this.activeTitle.set(state.activeTitle);
         this.systemInfo.set(state.systemInfo ?? this.systemInfo());
+        this.gpuAdapters.set(state.gpuAdapters ?? this.gpuAdapters());
         this.recordResourceSample(state.metrics);
     }
 
@@ -52,6 +56,11 @@ export class WorkareaStateService {
     selectProcess(row: ProcessRow): void {
         this.selectedProcess.set(row.name);
         this.selectedPid.set(row.pid);
+    }
+
+    setGpuAdapters(adapters: BackendGpuAdapterUsage[]): void {
+        this.gpuAdapters.set(adapters);
+        this.gpuAdapterHistory.update((history) => [...history.slice(-59), adapters]);
     }
 
     private recordResourceSample(metrics: MetricCard[]): void {

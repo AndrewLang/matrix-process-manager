@@ -1,7 +1,8 @@
 use crate::models::{
-    CommandError, CpuInfo, ProcessInfo, ProcessMetrics, ProcessRow, ProcessSnapshot,
+    CommandError, CpuInfo, GpuAdapterUsage, GpuEngineUsage, ProcessInfo, ProcessMetrics,
+    ProcessRow, ProcessSnapshot,
 };
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::Mutex;
 use sysinfo::{ProcessesToUpdate, System};
 
@@ -143,6 +144,7 @@ impl ProcessProvider for SysinfoProcessProvider {
             used_memory_bytes: system.used_memory(),
             total_memory_bytes: system.total_memory(),
             cpu_info,
+            gpu_adapters: gpu_usage.adapters,
             processes,
         })
     }
@@ -495,6 +497,13 @@ impl CpuUsageCollector {
 struct GpuUsageSnapshot {
     by_pid: HashMap<u32, f32>,
     total_percent: f32,
+    adapters: Vec<GpuAdapterUsage>,
+}
+
+#[derive(Default)]
+struct GpuAdapterAccumulator {
+    engines: HashMap<String, f32>,
+    instance_count: usize,
 }
 
 #[cfg(windows)]
@@ -502,6 +511,7 @@ struct GpuUsageCollector {
     query: windows_sys::Win32::System::Performance::PDH_HQUERY,
     counter: windows_sys::Win32::System::Performance::PDH_HCOUNTER,
     ready: bool,
+    models: Vec<String>,
 }
 
 #[cfg(windows)]
@@ -536,6 +546,7 @@ impl GpuUsageCollector {
             query,
             counter,
             ready: false,
+            models: GpuAdapterModels::read(),
         }
     }
 
@@ -591,7 +602,7 @@ impl GpuUsageCollector {
         }
 
         let mut by_pid = HashMap::new();
-        let mut by_engine = HashMap::<String, f32>::new();
+        let mut by_adapter = BTreeMap::<String, GpuAdapterAccumulator>::new();
         let items = unsafe { std::slice::from_raw_parts(items, item_count as usize) };
 
         for item in items {
@@ -601,29 +612,76 @@ impl GpuUsageCollector {
 
             let name = Self::string_from_wide(item.szName);
             let value = unsafe { item.FmtValue.Anonymous.doubleValue }.max(0.0) as f32;
-            if value <= 0.0 {
-                continue;
+
+            if value > 0.0 {
+                if let Some(pid) = Self::pid_from_instance(&name) {
+                    *by_pid.entry(pid).or_insert(0.0) += value;
+                }
             }
 
-            if let Some(pid) = Self::pid_from_instance(&name) {
-                *by_pid.entry(pid).or_insert(0.0) += value;
-            }
-
+            let adapter_key = Self::adapter_key_from_instance(&name);
             let engine = Self::engine_from_instance(&name);
-            *by_engine.entry(engine).or_insert(0.0) += value;
+            let adapter = by_adapter.entry(adapter_key).or_default();
+            adapter.instance_count += 1;
+            *adapter.engines.entry(engine).or_insert(0.0) += value;
         }
 
         for value in by_pid.values_mut() {
             *value = value.clamp(0.0, 100.0);
         }
 
+        let mut adapter_groups = by_adapter.into_iter().collect::<Vec<_>>();
+        adapter_groups.sort_by(|left, right| {
+            right
+                .1
+                .instance_count
+                .cmp(&left.1.instance_count)
+                .then_with(|| left.0.cmp(&right.0))
+        });
+        if !self.models.is_empty() {
+            adapter_groups.truncate(self.models.len());
+        }
+
+        let adapters = adapter_groups
+            .into_iter()
+            .enumerate()
+            .map(|(adapter_index, (_adapter_key, adapter))| {
+                let mut engines = adapter
+                    .engines
+                    .into_iter()
+                    .map(|(name, utilization_percent)| GpuEngineUsage {
+                        name,
+                        utilization_percent: utilization_percent.clamp(0.0, 100.0),
+                    })
+                    .collect::<Vec<_>>();
+                engines.sort_by(|left, right| left.name.cmp(&right.name));
+                let utilization_percent = engines
+                    .iter()
+                    .map(|engine| engine.utilization_percent)
+                    .fold(0.0, f32::max)
+                    .clamp(0.0, 100.0);
+
+                GpuAdapterUsage {
+                    name: self
+                        .models
+                        .get(adapter_index)
+                        .map(|model| format!("GPU {} - {}", adapter_index, model))
+                        .unwrap_or_else(|| format!("GPU {}", adapter_index)),
+                    adapter_index,
+                    utilization_percent,
+                    engines,
+                }
+            })
+            .collect::<Vec<_>>();
+
         GpuUsageSnapshot {
             by_pid,
-            total_percent: by_engine
-                .values()
-                .copied()
+            total_percent: adapters
+                .iter()
+                .map(|adapter| adapter.utilization_percent)
                 .fold(0.0, f32::max)
                 .clamp(0.0, 100.0),
+            adapters,
         }
     }
 
@@ -662,6 +720,52 @@ impl GpuUsageCollector {
             .and_then(|engine| engine.split('_').next())
             .unwrap_or("unknown")
             .to_string()
+    }
+
+    fn adapter_key_from_instance(value: &str) -> String {
+        if let Some(start) = value.find("luid_") {
+            if let Some(end) = value[start..].find("_phys_") {
+                return value[start..start + end].to_string();
+            }
+        }
+
+        value
+            .split("phys_")
+            .nth(1)
+            .and_then(|adapter| adapter.split('_').next())
+            .map(|adapter| format!("phys_{adapter}"))
+            .unwrap_or_else(|| "unknown".to_string())
+    }
+}
+
+#[cfg(windows)]
+struct GpuAdapterModels;
+
+#[cfg(windows)]
+impl GpuAdapterModels {
+    fn read() -> Vec<String> {
+        use std::os::windows::process::CommandExt;
+
+        std::process::Command::new("powershell")
+            .args([
+                "-NoProfile",
+                "-NonInteractive",
+                "-Command",
+                "Get-CimInstance Win32_VideoController | ForEach-Object { $_.Name }",
+            ])
+            .creation_flags(0x08000000)
+            .output()
+            .ok()
+            .filter(|output| output.status.success())
+            .map(|output| {
+                String::from_utf8_lossy(&output.stdout)
+                    .lines()
+                    .map(str::trim)
+                    .filter(|line| !line.is_empty())
+                    .map(ToOwned::to_owned)
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default()
     }
 }
 

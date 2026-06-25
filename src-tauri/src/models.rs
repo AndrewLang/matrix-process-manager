@@ -50,6 +50,22 @@ pub struct CpuInfo {
 
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct GpuEngineUsage {
+    pub name: String,
+    pub utilization_percent: f32,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GpuAdapterUsage {
+    pub name: String,
+    pub adapter_index: usize,
+    pub utilization_percent: f32,
+    pub engines: Vec<GpuEngineUsage>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ProcessSnapshot {
     pub processes: Vec<ProcessRow>,
     pub total_processes: usize,
@@ -59,6 +75,7 @@ pub struct ProcessSnapshot {
     pub used_memory_bytes: u64,
     pub total_memory_bytes: u64,
     pub cpu_info: CpuInfo,
+    pub gpu_adapters: Vec<GpuAdapterUsage>,
 }
 
 #[derive(Clone, Debug, Serialize)]

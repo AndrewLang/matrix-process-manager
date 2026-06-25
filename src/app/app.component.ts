@@ -181,6 +181,7 @@ export class AppComponent implements OnDestroy, OnInit {
 
         this.totalProcesses.set(snapshot.totalProcesses);
         this.cpuInfo = snapshot.cpuInfo;
+        this.workareaState.setGpuAdapters(snapshot.gpuAdapters);
         const selectedPid = this.workareaState.selectedPid();
         const transformed = await this.transformProcesses(snapshot.processes, selectedPid);
         if (this.isRefreshPaused()) {

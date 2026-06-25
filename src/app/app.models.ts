@@ -75,6 +75,19 @@ export interface BackendProcessSnapshot {
     usedMemoryBytes: number;
     totalMemoryBytes: number;
     cpuInfo: BackendCpuInfo;
+    gpuAdapters: BackendGpuAdapterUsage[];
+}
+
+export interface BackendGpuAdapterUsage {
+    name: string;
+    adapterIndex: number;
+    utilizationPercent: number;
+    engines: BackendGpuEngineUsage[];
+}
+
+export interface BackendGpuEngineUsage {
+    name: string;
+    utilizationPercent: number;
 }
 
 export interface BackendCpuInfo {

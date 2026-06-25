@@ -37,6 +37,10 @@ export class ResourceDetailMonitorComponent {
         return this.state.metrics().find((metric) => metric.label === this.label())?.detail ?? "-";
     }
 
+    lineWidth(): string {
+        return this.metric() === "gpu" ? "0.95px" : "1.7px";
+    }
+
     latest(): number {
         const history = this.state.resourceHistory();
         return history.at(-1)?.[this.metric()] ?? 0;
