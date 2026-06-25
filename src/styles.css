@@ -88,11 +88,11 @@
 
   th:first-child,
   td:first-child {
-    @apply w-8;
+    @apply w-8 px-0 text-center;
   }
 
   input[type="checkbox"] {
-    @apply h-3 w-3 accent-(--blue);
+    @apply mx-auto block h-3.5 w-3.5 accent-(--blue);
   }
 
   dt {
