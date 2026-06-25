@@ -128,7 +128,7 @@ export class AppComponent implements OnDestroy, OnInit {
         const selectedPid = this.workareaState.selectedPid();
         const rows = this.stabilizeProcessOrder(snapshot.processes).slice(0, 75).map((row) => this.toProcessRow(row, selectedPid));
         this.rows.set(rows);
-        this.updateResourceSummary(rows);
+        this.updateResourceSummary(rows, snapshot.totalCpuPercent, snapshot.totalGpuPercent);
       })
       .catch(() => undefined)
       .finally(() => {
@@ -178,7 +178,7 @@ export class AppComponent implements OnDestroy, OnInit {
       pid: row.info.pid,
       status: row.info.status,
       cpu: `${row.metrics.cpuPercent.toFixed(1)}%`,
-      gpu: "0%",
+      gpu: `${row.metrics.gpuPercent.toFixed(1)}%`,
       memory: this.formatBytes(row.metrics.memoryBytes),
       disk: `${this.formatBytes(row.metrics.diskReadBytes + row.metrics.diskWrittenBytes)}/s`,
       network: "0 Mbps",
@@ -255,15 +255,16 @@ export class AppComponent implements OnDestroy, OnInit {
     this.refreshSnapshot();
   }
 
-  private updateResourceSummary(rows: ProcessRow[]): void {
-    const cpu = Math.min(100, rows.reduce((total, row) => total + Number.parseFloat(row.cpu), 0));
+  private updateResourceSummary(rows: ProcessRow[], totalCpuPercent: number, totalGpuPercent: number): void {
+    const cpu = Math.max(0, Math.min(100, totalCpuPercent));
+    const gpu = Math.max(0, Math.min(100, totalGpuPercent));
     const diskBytes = rows.reduce((total, row) => total + this.parseBytesPerSecond(row.disk), 0);
     const memoryBytes = rows.reduce((total, row) => total + this.parseBytes(row.memory), 0);
     const memoryPercent = Math.min(100, memoryBytes / (16 * 1024 * 1024 * 1024) * 100);
     const diskPercent = Math.min(100, diskBytes / (100 * 1024 * 1024) * 100);
     const metrics: MetricCard[] = [
       { label: "CPU", value: `${cpu.toFixed(0)}%`, detail: `${rows.length} visible processes`, accent: "blue", path: this.sparklinePath(cpu) },
-      { label: "GPU", value: "0%", detail: "GPU sampling unavailable", accent: "cyan", path: this.sparklinePath(0) },
+      { label: "GPU", value: `${gpu.toFixed(0)}%`, detail: "GPU engine utilization", accent: "cyan", path: this.sparklinePath(gpu) },
       { label: "Memory", value: `${memoryPercent.toFixed(0)}%`, detail: this.formatBytes(memoryBytes), accent: "violet", path: this.sparklinePath(memoryPercent) },
       { label: "Disk", value: `${diskPercent.toFixed(0)}%`, detail: `${this.formatBytes(diskBytes)}/s`, accent: "green", path: this.sparklinePath(diskPercent) },
       { label: "Network", value: "0%", detail: "Network sampling unavailable", accent: "orange", path: this.sparklinePath(0) },

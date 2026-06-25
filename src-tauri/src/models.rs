@@ -16,6 +16,7 @@ pub struct ProcessInfo {
 #[serde(rename_all = "camelCase")]
 pub struct ProcessMetrics {
     pub cpu_percent: f32,
+    pub gpu_percent: f32,
     pub memory_bytes: u64,
     pub disk_read_bytes: u64,
     pub disk_written_bytes: u64,
@@ -33,6 +34,8 @@ pub struct ProcessRow {
 pub struct ProcessSnapshot {
     pub processes: Vec<ProcessRow>,
     pub total_processes: usize,
+    pub total_cpu_percent: f32,
+    pub total_gpu_percent: f32,
 }
 
 #[derive(Clone, Debug, Serialize)]

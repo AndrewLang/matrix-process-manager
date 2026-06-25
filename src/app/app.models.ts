@@ -69,6 +69,8 @@ export interface StartupApp {
 export interface BackendProcessSnapshot {
     processes: BackendProcessRow[];
     totalProcesses: number;
+    totalCpuPercent: number;
+    totalGpuPercent: number;
 }
 
 export interface BackendProcessRow {
@@ -83,6 +85,7 @@ export interface BackendProcessRow {
     };
     metrics: {
         cpuPercent: number;
+        gpuPercent: number;
         memoryBytes: number;
         diskReadBytes: number;
         diskWrittenBytes: number;
