@@ -1,14 +1,14 @@
 <mtx-resource-detail-monitor [metric]="'gpu'" label="GPU" accent="text-(--cyan)" />
 <article
-  class="mt-2.5 rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+    class="mt-2 rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
     <div class="flex items-center justify-between">
         <h2>GPU Engines</h2>
         <span class="text-[11px] text-(--muted)">{{ metricValue("GPU") }}</span>
     </div>
     @if (gpuAdapters().length > 0) {
-    <div class="mt-3 flex gap-1 overflow-x-auto border-b border-white/8 pb-0">
+    <div class="mt-2 flex gap-1 overflow-x-auto border-b border-white/8 pb-0">
         @for (adapter of gpuAdapters(); track adapter.adapterIndex) {
-        <button type="button" class="min-w-24 border-b-2 px-3 py-2 text-left text-[12px] transition-colors" [class.border-(--cyan)]="isSelected(adapter)"
+        <button type="button" class="min-w-24 border-b-2 px-2.5 py-1.5 text-left text-[12px] transition-colors" [class.border-(--cyan)]="isSelected(adapter)"
           [class.border-transparent]="!isSelected(adapter)" [class.text-[#e5eef7]]="isSelected(adapter)" [class.text-(--muted)]="!isSelected(adapter)"
           (click)="selectAdapter(adapter)">
             <span class="block leading-tight">{{ adapter.name }}</span>
@@ -17,21 +17,21 @@
         }
     </div>
     @if (selectedAdapter(); as adapter) {
-    <section class="mt-3">
-        <div class="mb-2 flex items-center justify-between text-[12px]">
+    <section class="mt-2.5">
+        <div class="mb-1.5 flex items-center justify-between text-[12px]">
             <span>{{ adapter.name }}</span>
             <span class="text-(--cyan)">{{ usage(adapter.utilizationPercent) }}</span>
         </div>
         @if (adapter.engines.length > 0) {
-        <div class="grid gap-2 sm:grid-cols-2">
+        <div class="grid gap-1.5 sm:grid-cols-2">
             @for (engine of adapter.engines; track engine.name) {
             <div>
                 <div class="mb-1 flex justify-between text-[11px]">
                     <span>{{ engine.name }}</span>
                     <span class="text-(--muted)">{{ usage(engine.utilizationPercent) }}</span>
                 </div>
-                <svg
-                  class="h-12 w-full rounded border border-white/6 bg-[linear-gradient(rgba(122,153,181,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(122,153,181,0.08)_1px,transparent_1px)] bg-size-[24px_18px] text-(--cyan)"
+                                <svg
+                                    class="h-8 w-full rounded border border-white/6 bg-[linear-gradient(rgba(122,153,181,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(122,153,181,0.08)_1px,transparent_1px)] bg-size-[24px_18px] text-(--cyan)"
                   viewBox="0 0 120 64" preserveAspectRatio="none">
                     <polyline class="fill-none stroke-current stroke-[0.75px]" [attr.points]="enginePath(adapter.adapterIndex, engine.name)" />
                 </svg>
