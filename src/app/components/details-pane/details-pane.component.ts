@@ -1,13 +1,25 @@
+import { NgClass } from "@angular/common";
 import { Component, input, output } from "@angular/core";
-import { ResourceBar } from "../../app.models";
+import { revealItemInDir } from "@tauri-apps/plugin-opener";
+import { ProcessRow, ResourceBar } from "../../app.models";
 import { ResourceBarsComponent } from "../resource-bars/resource-bars.component";
 
 @Component({
     selector: "mtx-details-pane",
-    imports: [ResourceBarsComponent],
+    imports: [NgClass, ResourceBarsComponent],
+    host: { class: "block h-full min-h-0" },
     templateUrl: "./details-pane.component.html",
 })
 export class DetailsPaneComponent {
+    process = input<ProcessRow | undefined>();
     bars = input.required<ResourceBar[]>();
     closeDetails = output<void>();
+
+    openProcessLocation(process: ProcessRow): void {
+        if (!process.path) {
+            return;
+        }
+
+        revealItemInDir(process.path).catch(() => undefined);
+    }
 }

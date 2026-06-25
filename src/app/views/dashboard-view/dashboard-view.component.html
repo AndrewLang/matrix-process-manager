@@ -39,7 +39,7 @@
                   (processSelected)="selectProcess($event)" />
             </section>
             @if (detailsOpen()) {
-            <mtx-details-pane [bars]="state.bars()" (closeDetails)="closeDetails()" />
+            <mtx-details-pane [process]="state.selectedRow()" [bars]="state.bars()" (closeDetails)="closeDetails()" />
             }
         </div>
     </section>

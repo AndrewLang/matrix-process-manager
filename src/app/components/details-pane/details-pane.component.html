@@ -1,40 +1,52 @@
 <aside
-  class="min-h-0 w-71.5 overflow-hidden rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-3.25 text-[12px] leading-snug shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] max-[1040px]:w-62.5">
-    <div class="flex items-center gap-2.5"><span
-          class="grid h-5.25 w-5.25 flex-none place-items-center rounded-md bg-[linear-gradient(135deg,#1ba5ff,#0f69ff)] text-[10px] font-extrabold text-white"><i
-              class="bi bi-browser-chrome text-[13px]"></i></span>
-        <div class="grid min-w-0"><strong>Google Chrome</strong><small class="overflow-hidden text-ellipsis text-[10px] text-[#8fa0b0]">Google LLC</small>
+  class="h-full min-h-0 w-71.5 overflow-y-auto rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-3.25 text-[12px] leading-snug shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] max-[1040px]:w-62.5">
+    @if (process(); as selectedProcess) {
+    <div class="flex items-center gap-2.5"><span class="grid h-7 w-7 flex-none place-items-center text-[#9fb0c0]">
+            @if (selectedProcess.iconDataUrl) {
+            <img class="h-6 w-6 object-contain" [src]="selectedProcess.iconDataUrl" alt="" />
+            } @else {
+            <i class="bi text-[18px]" [ngClass]="selectedProcess.iconClass"></i>
+            }
+        </span>
+        <div class="grid min-w-0"><strong>{{ selectedProcess.name }}</strong><small class="overflow-hidden text-ellipsis text-[10px] text-[#8fa0b0]">{{
+                selectedProcess.publisher }}</small>
         </div><button class="ml-auto h-5.5 w-5.5 bg-transparent text-[#9aacba]" type="button" aria-label="Expand details"><i
               class="bi bi-arrows-angle-expand"></i></button><button class="h-5.5 w-5.5 bg-transparent text-[#9aacba]" type="button" aria-label="Close details"
           (click)="closeDetails.emit()"><i class="bi bi-x-lg"></i></button>
     </div>
-    <button type="button"
-      class="my-3.25 inline-flex h-7.5 w-full flex-none items-center justify-center gap-1.75 whitespace-nowrap rounded-[5px] border border-[rgba(255,75,67,0.38)] bg-[rgba(16,31,45,0.86)] px-3 py-0 text-(--red)"
-      disabled><i class="bi bi-slash-circle flex-none"></i><span>End Process</span>
-    </button>
+    <div class="my-3.25 grid gap-2">
+        <button type="button"
+          class="inline-flex h-7.5 w-full flex-none items-center justify-center gap-1.75 whitespace-nowrap rounded-[5px] border border-(--border) bg-[rgba(16,31,45,0.86)] px-3 py-0 text-[#cbd7e2] hover:bg-white/6 disabled:opacity-55"
+          [disabled]="!selectedProcess.path" (click)="openProcessLocation(selectedProcess)"><i class="bi bi-folder2-open flex-none"></i><span>Open Process
+                Location</span></button>
+        <button type="button"
+          class="inline-flex h-7.5 w-full flex-none items-center justify-center gap-1.75 whitespace-nowrap rounded-[5px] border border-(--border) bg-[rgba(16,31,45,0.86)] px-3 py-0 text-[#cbd7e2]"
+          disabled><i class="bi bi-slash-circle flex-none"></i><span>End Process</span>
+        </button>
+    </div>
     <div class="flex gap-3.5 overflow-hidden border-b border-(--border)">
         <button class="h-7.75 border-b-2 border-(--blue) bg-transparent text-(--blue)">Overview</button>
         <button class="h-7.75 border-b-2 border-transparent bg-transparent text-[#9fb0c0]">Note</button>
     </div>
     <dl class="my-0 mb-3.5 grid grid-cols-[76px_minmax(0,1fr)] gap-x-2.5 gap-y-3.25 border-b border-(--border) py-3.5">
         <dt>PID</dt>
-        <dd>14532</dd>
-        <dt>Status</dt>
-        <dd><span class="inline-flex h-5 items-center gap-1.25 rounded-[5px] bg-[rgba(34,206,116,0.14)] px-1.75 py-0 text-[#20d779]"><i
-                  class="h-1.25 w-1.25 rounded-full bg-(--green)"></i>Running</span></dd>
+        <dd>{{ selectedProcess.pid }}</dd>
         <dt>User</dt>
-        <dd>john</dd>
-        <dt>Started</dt>
-        <dd>May 18, 2024 10:42:31 AM</dd>
-        <dt>Path</dt>
-        <dd>C:\Program Files\Google\Chrome</dd>
-        <dt>Command Line</dt>
-        <dd>chrome.exe --type=renderer</dd>
-        <dt>Threads</dt>
-        <dd>48</dd>
-        <dt>Handles</dt>
-        <dd>1,203</dd>
+        <dd>{{ selectedProcess.user }}</dd>
+        <dt>Publisher</dt>
+        <dd>{{ selectedProcess.publisher }}</dd>
+        <dt>CPU</dt>
+        <dd>{{ selectedProcess.cpu }}</dd>
+        <dt>Memory</dt>
+        <dd>{{ selectedProcess.memory }}</dd>
+        <dt>Disk</dt>
+        <dd>{{ selectedProcess.disk }}</dd>
+        <dt>Network</dt>
+        <dd>{{ selectedProcess.network }}</dd>
     </dl>
     <h2>Resource Usage</h2>
     <mtx-resource-bars [bars]="bars()" />
+    } @else {
+    <div class="flex h-full items-center justify-center text-(--muted)">No process selected</div>
+    }
 </aside>

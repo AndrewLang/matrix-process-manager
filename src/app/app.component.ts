@@ -139,6 +139,7 @@ export class AppComponent implements OnInit {
       disk: `${this.formatBytes(row.metrics.diskReadBytes + row.metrics.diskWrittenBytes)}/s`,
       network: "0 Mbps",
       user: row.info.user || "system",
+      path: row.info.path,
       iconClass: "bi-window",
       selected: index === 0,
     };

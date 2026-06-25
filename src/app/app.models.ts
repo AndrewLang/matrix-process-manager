@@ -27,6 +27,7 @@ export interface ProcessRow {
     disk: string;
     network: string;
     user: string;
+    path?: string;
     iconClass: string;
     selected?: boolean;
 }

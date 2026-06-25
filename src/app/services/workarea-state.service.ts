@@ -1,4 +1,4 @@
-import { Injectable, signal } from "@angular/core";
+import { Injectable, computed, signal } from "@angular/core";
 import { MetricCard, ProcessRow, ResourceBar, ViewId } from "../app.models";
 
 @Injectable({ providedIn: "root" })
@@ -8,8 +8,18 @@ export class WorkareaStateService {
     metrics = signal<MetricCard[]>([]);
     rows = signal<ProcessRow[]>([]);
     selectedProcess = signal("");
+    selectedPid = signal<number | undefined>(undefined);
     bars = signal<ResourceBar[]>([]);
     activeTitle = signal("Dashboard");
+
+    selectedRow = computed(() => {
+        const rows = this.rows();
+        const selectedPid = this.selectedPid();
+        return rows.find((row) => row.pid === selectedPid)
+            ?? rows.find((row) => row.name === this.selectedProcess())
+            ?? rows.find((row) => row.selected)
+            ?? rows[0];
+    });
 
     setState(state: {
         activeView: ViewId;
@@ -31,5 +41,6 @@ export class WorkareaStateService {
 
     selectProcess(row: ProcessRow): void {
         this.selectedProcess.set(row.name);
+        this.selectedPid.set(row.pid);
     }
 }
