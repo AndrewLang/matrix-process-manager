@@ -1,6 +1,6 @@
 use crate::models::{
-    CommandError, CpuInfo, GpuAdapterUsage, GpuEngineUsage, MemoryInfo, ProcessInfo,
-    ProcessMetrics, ProcessRow, ProcessSnapshot,
+    CommandError, CpuInfo, DiskDriveUsage, GpuAdapterUsage, GpuEngineUsage, MemoryInfo,
+    ProcessInfo, ProcessMetrics, ProcessRow, ProcessSnapshot,
 };
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::Mutex;
@@ -77,7 +77,7 @@ impl ProcessProvider for SysinfoProcessProvider {
             .lock()
             .map(|mut collector| collector.sample())
             .unwrap_or_default();
-        let total_disk_percent = self
+        let disk_usage = self
             .disk_usage
             .lock()
             .map(|mut collector| collector.sample())
@@ -149,12 +149,13 @@ impl ProcessProvider for SysinfoProcessProvider {
             total_processes: processes.len(),
             total_cpu_percent,
             total_gpu_percent: gpu_usage.total_percent,
-            total_disk_percent,
+            total_disk_percent: disk_usage.total_percent,
             used_memory_bytes: system.used_memory(),
             total_memory_bytes: system.total_memory(),
             cpu_info,
             memory_info,
             gpu_adapters: gpu_usage.adapters,
+            disk_drives: disk_usage.drives,
             processes,
         })
     }
@@ -790,11 +791,115 @@ impl Drop for GpuUsageCollector {
     }
 }
 
+#[derive(Default)]
+struct DiskUsageSnapshot {
+    total_percent: f32,
+    drives: Vec<DiskDriveUsage>,
+}
+
+#[derive(Clone, Default)]
+struct DiskDriveDetails {
+    disk_index: usize,
+    name: String,
+    labels: Vec<String>,
+    capacity_bytes: Option<u64>,
+    formatted_bytes: Option<u64>,
+    system_disk: bool,
+    page_file: bool,
+    disk_type: Option<String>,
+}
+
+#[cfg(windows)]
+struct DiskDriveDetailsReader;
+
+#[cfg(windows)]
+impl DiskDriveDetailsReader {
+    fn read() -> Vec<DiskDriveDetails> {
+        use std::os::windows::process::CommandExt;
+
+        let script = "$system=$env:SystemDrive;$pages=@(Get-CimInstance Win32_PageFileUsage|ForEach-Object{$_.Name.Substring(0,2)});Get-CimInstance Win32_DiskDrive|Sort-Object Index|ForEach-Object{$d=$_;$parts=@(Get-CimAssociatedInstance -InputObject $d -Association Win32_DiskDriveToDiskPartition);$logical=@();foreach($p in $parts){$logical+=@(Get-CimAssociatedInstance -InputObject $p -Association Win32_LogicalDiskToPartition)};$formatted=(($logical|Measure-Object -Property Size -Sum).Sum);$labels=($logical|Sort-Object DeviceID|ForEach-Object{$_.DeviceID}) -join ',';$isSystem=@($logical|Where-Object{$_.DeviceID -eq $system}).Count -gt 0;$isPage=@($logical|Where-Object{$pages -contains $_.DeviceID}).Count -gt 0;\"DISK|$($d.Index)|$($d.Caption)|$($d.Size)|$($d.MediaType)|$($d.InterfaceType)|$formatted|$isSystem|$isPage|$labels\"}";
+        let output = std::process::Command::new("powershell")
+            .args(["-NoProfile", "-NonInteractive", "-Command", script])
+            .creation_flags(0x08000000)
+            .output();
+
+        let Ok(output) = output else {
+            return Vec::new();
+        };
+
+        if !output.status.success() {
+            return Vec::new();
+        }
+
+        Self::parse(&String::from_utf8_lossy(&output.stdout))
+    }
+
+    fn parse(output: &str) -> Vec<DiskDriveDetails> {
+        output
+            .lines()
+            .map(str::trim)
+            .filter(|line| !line.is_empty())
+            .filter_map(|line| {
+                let parts = line.split('|').collect::<Vec<_>>();
+                let ["DISK", index, name, capacity, media_type, interface_type, formatted, system_disk, page_file, labels] = parts.as_slice() else {
+                    return None;
+                };
+
+                Some(DiskDriveDetails {
+                    disk_index: index.parse().ok()?,
+                    name: if name.trim().is_empty() {
+                        format!("Disk {index}")
+                    } else {
+                        name.trim().to_string()
+                    },
+                    labels: labels
+                        .split(',')
+                        .map(str::trim)
+                        .filter(|label| !label.is_empty())
+                        .map(ToOwned::to_owned)
+                        .collect(),
+                    capacity_bytes: capacity.parse().ok().filter(|value| *value > 0),
+                    formatted_bytes: formatted.parse().ok().filter(|value| *value > 0),
+                    system_disk: system_disk.eq_ignore_ascii_case("true"),
+                    page_file: page_file.eq_ignore_ascii_case("true"),
+                    disk_type: Self::disk_type(media_type, interface_type),
+                })
+            })
+            .collect()
+    }
+
+    fn disk_type(media_type: &str, interface_type: &str) -> Option<String> {
+        let media = media_type.trim();
+        let interface = interface_type.trim();
+        let kind = if media.to_ascii_lowercase().contains("ssd") {
+            "SSD"
+        } else if media.to_ascii_lowercase().contains("hdd")
+            || media.to_ascii_lowercase().contains("fixed")
+        {
+            "HDD"
+        } else if media.is_empty() {
+            "Disk"
+        } else {
+            media
+        };
+
+        if interface.is_empty() {
+            Some(kind.to_string())
+        } else {
+            Some(format!("{kind} ({interface})"))
+        }
+    }
+}
+
 #[cfg(windows)]
 struct DiskUsageCollector {
     query: windows_sys::Win32::System::Performance::PDH_HQUERY,
-    counter: windows_sys::Win32::System::Performance::PDH_HCOUNTER,
+    active_counter: windows_sys::Win32::System::Performance::PDH_HCOUNTER,
+    response_counter: windows_sys::Win32::System::Performance::PDH_HCOUNTER,
+    read_counter: windows_sys::Win32::System::Performance::PDH_HCOUNTER,
+    write_counter: windows_sys::Win32::System::Performance::PDH_HCOUNTER,
     ready: bool,
+    details: Vec<DiskDriveDetails>,
 }
 
 #[cfg(windows)]
@@ -808,11 +913,26 @@ impl DiskUsageCollector {
         };
 
         let mut query = std::ptr::null_mut();
-        let mut counter = std::ptr::null_mut();
-        let path = GpuUsageCollector::wide("\\PhysicalDisk(_Total)\\% Disk Time");
+        let mut active_counter = std::ptr::null_mut();
+        let mut response_counter = std::ptr::null_mut();
+        let mut read_counter = std::ptr::null_mut();
+        let mut write_counter = std::ptr::null_mut();
         let opened = unsafe { PdhOpenQueryW(std::ptr::null(), 0, &mut query) } == 0;
-        let added =
-            opened && unsafe { PdhAddEnglishCounterW(query, path.as_ptr(), 0, &mut counter) } == 0;
+        let active_path = GpuUsageCollector::wide("\\PhysicalDisk(*)\\% Disk Time");
+        let response_path = GpuUsageCollector::wide("\\PhysicalDisk(*)\\Avg. Disk sec/Transfer");
+        let read_path = GpuUsageCollector::wide("\\PhysicalDisk(*)\\Disk Read Bytes/sec");
+        let write_path = GpuUsageCollector::wide("\\PhysicalDisk(*)\\Disk Write Bytes/sec");
+        let added = opened
+            && unsafe {
+                PdhAddEnglishCounterW(query, active_path.as_ptr(), 0, &mut active_counter)
+            } == 0
+            && unsafe {
+                PdhAddEnglishCounterW(query, response_path.as_ptr(), 0, &mut response_counter)
+            } == 0
+            && unsafe { PdhAddEnglishCounterW(query, read_path.as_ptr(), 0, &mut read_counter) }
+                == 0
+            && unsafe { PdhAddEnglishCounterW(query, write_path.as_ptr(), 0, &mut write_counter) }
+                == 0;
 
         if added {
             unsafe {
@@ -823,48 +943,159 @@ impl DiskUsageCollector {
                 windows_sys::Win32::System::Performance::PdhCloseQuery(query);
             }
             query = std::ptr::null_mut();
+            active_counter = std::ptr::null_mut();
+            response_counter = std::ptr::null_mut();
+            read_counter = std::ptr::null_mut();
+            write_counter = std::ptr::null_mut();
         }
 
         Self {
             query,
-            counter,
+            active_counter,
+            response_counter,
+            read_counter,
+            write_counter,
             ready: false,
+            details: DiskDriveDetailsReader::read(),
         }
     }
 
-    fn sample(&mut self) -> f32 {
-        use windows_sys::Win32::System::Performance::{
-            PdhCollectQueryData, PdhGetFormattedCounterValue, PDH_FMT_COUNTERVALUE, PDH_FMT_DOUBLE,
-        };
+    fn sample(&mut self) -> DiskUsageSnapshot {
+        use windows_sys::Win32::System::Performance::PdhCollectQueryData;
 
-        if self.query.is_null() || self.counter.is_null() {
-            return 0.0;
+        if self.query.is_null()
+            || self.active_counter.is_null()
+            || self.response_counter.is_null()
+            || self.read_counter.is_null()
+            || self.write_counter.is_null()
+        {
+            return DiskUsageSnapshot::default();
         }
 
         if unsafe { PdhCollectQueryData(self.query) } != 0 {
-            return 0.0;
+            return DiskUsageSnapshot::default();
         }
 
         if !self.ready {
             self.ready = true;
-            return 0.0;
+            return DiskUsageSnapshot::default();
         }
 
-        let mut value = PDH_FMT_COUNTERVALUE::default();
+        let active = self.double_counter_array(self.active_counter);
+        let response = self.double_counter_array(self.response_counter);
+        let read = self.double_counter_array(self.read_counter);
+        let write = self.double_counter_array(self.write_counter);
+        let mut drives = active
+            .into_iter()
+            .filter_map(|(instance, active_time_percent)| {
+                let disk_index = Self::disk_index(&instance)?;
+                let details = self
+                    .details
+                    .iter()
+                    .find(|details| details.disk_index == disk_index);
+                let name = details
+                    .map(|details| details.name.clone())
+                    .filter(|name| !name.is_empty())
+                    .unwrap_or_else(|| format!("Disk {disk_index}"));
+
+                Some(DiskDriveUsage {
+                    name,
+                    labels: details
+                        .map(|details| details.labels.clone())
+                        .unwrap_or_default(),
+                    disk_index,
+                    active_time_percent: active_time_percent.clamp(0.0, 100.0) as f32,
+                    average_response_time_ms: response
+                        .get(&instance)
+                        .copied()
+                        .unwrap_or_default()
+                        .max(0.0) as f32
+                        * 1000.0,
+                    read_bytes_per_sec: read.get(&instance).copied().unwrap_or_default().max(0.0)
+                        as u64,
+                    write_bytes_per_sec: write.get(&instance).copied().unwrap_or_default().max(0.0)
+                        as u64,
+                    capacity_bytes: details.and_then(|details| details.capacity_bytes),
+                    formatted_bytes: details.and_then(|details| details.formatted_bytes),
+                    system_disk: details.map(|details| details.system_disk),
+                    page_file: details.map(|details| details.page_file),
+                    disk_type: details.and_then(|details| details.disk_type.clone()),
+                })
+            })
+            .collect::<Vec<_>>();
+
+        drives.sort_by_key(|drive| drive.disk_index);
+
+        DiskUsageSnapshot {
+            total_percent: drives
+                .iter()
+                .map(|drive| drive.active_time_percent)
+                .fold(0.0, f32::max)
+                .clamp(0.0, 100.0),
+            drives,
+        }
+    }
+
+    fn double_counter_array(
+        &self,
+        counter: windows_sys::Win32::System::Performance::PDH_HCOUNTER,
+    ) -> HashMap<String, f64> {
+        use windows_sys::Win32::System::Performance::{
+            PdhGetFormattedCounterArrayW, PDH_FMT_COUNTERVALUE_ITEM_W, PDH_FMT_DOUBLE,
+            PDH_MORE_DATA,
+        };
+
+        let mut buffer_size = 0;
+        let mut item_count = 0;
         let status = unsafe {
-            PdhGetFormattedCounterValue(
-                self.counter,
+            PdhGetFormattedCounterArrayW(
+                counter,
                 PDH_FMT_DOUBLE,
+                &mut buffer_size,
+                &mut item_count,
                 std::ptr::null_mut(),
-                &mut value,
             )
         };
 
-        if status != 0 || value.CStatus != 0 {
-            return 0.0;
+        if status != PDH_MORE_DATA || buffer_size == 0 || item_count == 0 {
+            return HashMap::new();
         }
 
-        unsafe { value.Anonymous.doubleValue }.max(0.0).min(100.0) as f32
+        let mut buffer = vec![0u8; buffer_size as usize];
+        let items = buffer.as_mut_ptr() as *mut PDH_FMT_COUNTERVALUE_ITEM_W;
+        let status = unsafe {
+            PdhGetFormattedCounterArrayW(
+                counter,
+                PDH_FMT_DOUBLE,
+                &mut buffer_size,
+                &mut item_count,
+                items,
+            )
+        };
+
+        if status != 0 {
+            return HashMap::new();
+        }
+
+        unsafe { std::slice::from_raw_parts(items, item_count as usize) }
+            .iter()
+            .filter_map(|item| {
+                if item.FmtValue.CStatus != 0 {
+                    return None;
+                }
+
+                let instance = GpuUsageCollector::string_from_wide(item.szName);
+                if instance == "_Total" {
+                    return None;
+                }
+
+                Some((instance, unsafe { item.FmtValue.Anonymous.doubleValue }))
+            })
+            .collect()
+    }
+
+    fn disk_index(instance: &str) -> Option<usize> {
+        instance.split_whitespace().next()?.parse().ok()
     }
 }
 
@@ -1374,8 +1605,8 @@ impl DiskUsageCollector {
         Self
     }
 
-    fn sample(&mut self) -> f32 {
-        0.0
+    fn sample(&mut self) -> DiskUsageSnapshot {
+        DiskUsageSnapshot::default()
     }
 }
 

@@ -77,6 +77,22 @@ export interface BackendProcessSnapshot {
     cpuInfo: BackendCpuInfo;
     memoryInfo: BackendMemoryInfo;
     gpuAdapters: BackendGpuAdapterUsage[];
+    diskDrives: BackendDiskDriveUsage[];
+}
+
+export interface BackendDiskDriveUsage {
+    name: string;
+    labels: string[];
+    diskIndex: number;
+    activeTimePercent: number;
+    averageResponseTimeMs: number;
+    readBytesPerSec: number;
+    writeBytesPerSec: number;
+    capacityBytes?: number;
+    formattedBytes?: number;
+    systemDisk?: boolean;
+    pageFile?: boolean;
+    diskType?: string;
 }
 
 export interface BackendMemoryInfo {

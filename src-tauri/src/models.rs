@@ -85,6 +85,23 @@ pub struct GpuAdapterUsage {
 
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct DiskDriveUsage {
+    pub name: String,
+    pub labels: Vec<String>,
+    pub disk_index: usize,
+    pub active_time_percent: f32,
+    pub average_response_time_ms: f32,
+    pub read_bytes_per_sec: u64,
+    pub write_bytes_per_sec: u64,
+    pub capacity_bytes: Option<u64>,
+    pub formatted_bytes: Option<u64>,
+    pub system_disk: Option<bool>,
+    pub page_file: Option<bool>,
+    pub disk_type: Option<String>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ProcessSnapshot {
     pub processes: Vec<ProcessRow>,
     pub total_processes: usize,
@@ -96,6 +113,7 @@ pub struct ProcessSnapshot {
     pub cpu_info: CpuInfo,
     pub memory_info: MemoryInfo,
     pub gpu_adapters: Vec<GpuAdapterUsage>,
+    pub disk_drives: Vec<DiskDriveUsage>,
 }
 
 #[derive(Clone, Debug, Serialize)]

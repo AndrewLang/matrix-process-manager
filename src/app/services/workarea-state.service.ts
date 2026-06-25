@@ -1,5 +1,5 @@
 import { Injectable, computed, signal } from "@angular/core";
-import { BackendGpuAdapterUsage, BackendMemoryInfo, MetricCard, ProcessRow, ResourceBar, ResourceSample, SystemInfoItem, UpdateFrequency, ViewId } from "../app.models";
+import { BackendDiskDriveUsage, BackendGpuAdapterUsage, BackendMemoryInfo, MetricCard, ProcessRow, ResourceBar, ResourceSample, SystemInfoItem, UpdateFrequency, ViewId } from "../app.models";
 
 @Injectable({ providedIn: "root" })
 export class WorkareaStateService {
@@ -17,6 +17,8 @@ export class WorkareaStateService {
     memoryInfo = signal<BackendMemoryInfo | undefined>(undefined);
     gpuAdapters = signal<BackendGpuAdapterUsage[]>([]);
     gpuAdapterHistory = signal<BackendGpuAdapterUsage[][]>([]);
+    diskDrives = signal<BackendDiskDriveUsage[]>([]);
+    diskDriveHistory = signal<BackendDiskDriveUsage[][]>([]);
 
     selectedRow = computed(() => {
         const rows = this.rows();
@@ -38,6 +40,7 @@ export class WorkareaStateService {
         systemInfo?: SystemInfoItem[];
         memoryInfo?: BackendMemoryInfo;
         gpuAdapters?: BackendGpuAdapterUsage[];
+        diskDrives?: BackendDiskDriveUsage[];
     }): void {
         this.activeView.set(state.activeView);
         this.totalProcesses.set(state.totalProcesses);
@@ -49,6 +52,7 @@ export class WorkareaStateService {
         this.systemInfo.set(state.systemInfo ?? this.systemInfo());
         this.memoryInfo.set(state.memoryInfo ?? this.memoryInfo());
         this.gpuAdapters.set(state.gpuAdapters ?? this.gpuAdapters());
+        this.diskDrives.set(state.diskDrives ?? this.diskDrives());
         this.recordResourceSample(state.metrics);
     }
 
@@ -68,6 +72,11 @@ export class WorkareaStateService {
 
     setMemoryInfo(info: BackendMemoryInfo): void {
         this.memoryInfo.set(info);
+    }
+
+    setDiskDrives(drives: BackendDiskDriveUsage[]): void {
+        this.diskDrives.set(drives);
+        this.diskDriveHistory.update((history) => [...history.slice(-59), drives]);
     }
 
     private recordResourceSample(metrics: MetricCard[]): void {

@@ -1,1 +1,62 @@
-<mtx-resource-detail-monitor [metric]="'disk'" label="Disk" accent="text-(--green)" />
+<article
+  class="rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+    <div class="flex items-center justify-between">
+        <h2>Physical disks</h2>
+        <div class="flex items-center gap-2">
+            <span class="text-[11px] text-(--muted)">{{ diskDrives().length }} detected</span>
+            <select class="h-7 rounded border border-white/8 bg-[#07131f] px-2 text-[11px] text-[#dfeaf4] outline-none" [value]="sortMode()"
+              (change)="setSortMode($any($event.target).value)" aria-label="Sort disks">
+                <option value="label">Sort by label</option>
+                <option value="index">Sort by index</option>
+            </select>
+        </div>
+    </div>
+    @if (diskDrives().length > 0) {
+    <div class="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+        @for (drive of sortedDiskDrives(); track drive.diskIndex) {
+        <button type="button" class="rounded border p-2 text-left transition-colors" [class.border-(--green)]="isSelected(drive)"
+          [class.border-white/6]="!isSelected(drive)" [class.bg-white/5]="isSelected(drive)" [class.bg-black/10]="!isSelected(drive)"
+          (click)="selectDisk(drive)">
+            <div class="flex items-start justify-between gap-2 text-[12px]">
+                <div class="min-w-0">
+                    <div class="truncate text-[#e5eef7]">Disk {{ drive.diskIndex }} @if (drive.labels.length > 0) { <span class="text-(--green)">{{
+                            drive.labels.join(", ") }}</span> }</div>
+                    <div class="truncate text-[11px] text-(--muted)">{{ drive.name }}</div>
+                </div>
+                <strong class="text-(--green)">{{ usage(drive.activeTimePercent) }}</strong>
+            </div>
+            <svg
+              class="mt-2 h-10 w-full rounded border border-white/6 bg-[linear-gradient(rgba(122,153,181,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(122,153,181,0.08)_1px,transparent_1px)] bg-size-[24px_18px] text-(--green)"
+              viewBox="0 0 120 64" preserveAspectRatio="none">
+                <polygon class="fill-current opacity-14" [attr.points]="diskAreaPath(drive.diskIndex)" />
+                <polyline class="fill-none stroke-current stroke-[0.5px]" [attr.points]="diskPath(drive.diskIndex)" />
+            </svg>
+            <dl class="mt-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 border-t border-white/6 pt-2 text-[11px]">
+                <dt class="text-(--muted)">Active time</dt>
+                <dd class="text-[#e5eef7]">{{ usage(drive.activeTimePercent) }}</dd>
+                <dt class="text-(--muted)">Average response time</dt>
+                <dd class="text-[#e5eef7]">{{ milliseconds(drive.averageResponseTimeMs) }}</dd>
+                <dt class="text-(--muted)">Read speed</dt>
+                <dd class="text-[#e5eef7]">{{ speed(drive.readBytesPerSec) }}</dd>
+                <dt class="text-(--muted)">Write speed</dt>
+                <dd class="text-[#e5eef7]">{{ speed(drive.writeBytesPerSec) }}</dd>
+                <dt class="text-(--muted)">Volumes</dt>
+                <dd class="truncate text-[#e5eef7]">{{ drive.labels.length > 0 ? drive.labels.join(", ") : "Unavailable" }}</dd>
+                <dt class="text-(--muted)">Capacity</dt>
+                <dd class="text-[#e5eef7]">{{ formatBytes(drive.capacityBytes) }}</dd>
+                <dt class="text-(--muted)">Formatted</dt>
+                <dd class="text-[#e5eef7]">{{ formatBytes(drive.formattedBytes) }}</dd>
+                <dt class="text-(--muted)">System disk</dt>
+                <dd class="text-[#e5eef7]">{{ yesNo(drive.systemDisk) }}</dd>
+                <dt class="text-(--muted)">Page file</dt>
+                <dd class="text-[#e5eef7]">{{ yesNo(drive.pageFile) }}</dd>
+                <dt class="text-(--muted)">Type</dt>
+                <dd class="truncate text-[#e5eef7]">{{ drive.diskType ?? "Unavailable" }}</dd>
+            </dl>
+        </button>
+        }
+    </div>
+    } @else {
+    <div class="mt-3 rounded border border-white/6 bg-black/10 p-3 text-[12px] text-(--muted)">Disk sampling unavailable</div>
+    }
+</article>
