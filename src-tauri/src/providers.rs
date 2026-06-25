@@ -1,6 +1,6 @@
 use crate::models::{
-    CommandError, CpuInfo, GpuAdapterUsage, GpuEngineUsage, ProcessInfo, ProcessMetrics,
-    ProcessRow, ProcessSnapshot,
+    CommandError, CpuInfo, GpuAdapterUsage, GpuEngineUsage, MemoryInfo, ProcessInfo,
+    ProcessMetrics, ProcessRow, ProcessSnapshot,
 };
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::Mutex;
@@ -16,6 +16,7 @@ pub struct SysinfoProcessProvider {
     gpu_usage: Mutex<GpuUsageCollector>,
     disk_usage: Mutex<DiskUsageCollector>,
     memory_usage: Mutex<MemoryUsageCollector>,
+    memory_info: Mutex<MemoryInfoCollector>,
 }
 
 impl SysinfoProcessProvider {
@@ -26,6 +27,7 @@ impl SysinfoProcessProvider {
             gpu_usage: Mutex::new(GpuUsageCollector::new()),
             disk_usage: Mutex::new(DiskUsageCollector::new()),
             memory_usage: Mutex::new(MemoryUsageCollector::new()),
+            memory_info: Mutex::new(MemoryInfoCollector::new()),
         }
     }
 }
@@ -85,6 +87,13 @@ impl ProcessProvider for SysinfoProcessProvider {
             .lock()
             .map(|mut collector| collector.sample())
             .unwrap_or_default();
+        let memory_info = self
+            .memory_info
+            .lock()
+            .map(|mut collector| collector.sample(system.total_memory(), system.used_memory()))
+            .unwrap_or_else(|_| {
+                MemoryInfoCollector::fallback(system.total_memory(), system.used_memory())
+            });
         let visible_window_pids = visible_window_process_ids();
 
         let mut processes = system
@@ -144,6 +153,7 @@ impl ProcessProvider for SysinfoProcessProvider {
             used_memory_bytes: system.used_memory(),
             total_memory_bytes: system.total_memory(),
             cpu_info,
+            memory_info,
             gpu_adapters: gpu_usage.adapters,
             processes,
         })
@@ -1017,6 +1027,297 @@ impl Drop for MemoryUsageCollector {
     }
 }
 
+#[derive(Default)]
+struct MemoryHardwareInfo {
+    installed_bytes: Option<u64>,
+    speed_mhz: Option<u64>,
+    slots_used: Option<usize>,
+    slots_total: Option<usize>,
+    form_factor: Option<String>,
+}
+
+#[cfg(windows)]
+struct MemoryInfoCollector {
+    query: windows_sys::Win32::System::Performance::PDH_HQUERY,
+    compressed_counter: windows_sys::Win32::System::Performance::PDH_HCOUNTER,
+    hardware: MemoryHardwareInfo,
+}
+
+#[cfg(windows)]
+unsafe impl Send for MemoryInfoCollector {}
+
+#[cfg(windows)]
+impl MemoryInfoCollector {
+    fn new() -> Self {
+        use windows_sys::Win32::System::Performance::{
+            PdhAddEnglishCounterW, PdhCollectQueryData, PdhOpenQueryW,
+        };
+
+        let mut query = std::ptr::null_mut();
+        let mut compressed_counter = std::ptr::null_mut();
+        let path = GpuUsageCollector::wide("\\Memory\\Compressed Page Count");
+        let opened = unsafe { PdhOpenQueryW(std::ptr::null(), 0, &mut query) } == 0;
+        let added = opened
+            && unsafe { PdhAddEnglishCounterW(query, path.as_ptr(), 0, &mut compressed_counter) }
+                == 0;
+
+        if added {
+            unsafe {
+                PdhCollectQueryData(query);
+            }
+        } else if !query.is_null() {
+            unsafe {
+                windows_sys::Win32::System::Performance::PdhCloseQuery(query);
+            }
+            query = std::ptr::null_mut();
+            compressed_counter = std::ptr::null_mut();
+        }
+
+        Self {
+            query,
+            compressed_counter,
+            hardware: MemoryHardwareReader::read(),
+        }
+    }
+
+    fn sample(&mut self, total_memory_bytes: u64, used_memory_bytes: u64) -> MemoryInfo {
+        let performance = WindowsMemoryPerformance::read();
+        let total_physical = performance
+            .as_ref()
+            .map(|info| info.total_physical_bytes)
+            .filter(|bytes| *bytes > 0)
+            .unwrap_or(total_memory_bytes);
+        let available_bytes = performance
+            .as_ref()
+            .map(|info| info.available_bytes)
+            .unwrap_or_else(|| total_physical.saturating_sub(used_memory_bytes));
+        let compressed_bytes =
+            self.compressed_bytes(performance.as_ref().map(|info| info.page_size));
+
+        MemoryInfo {
+            installed_bytes: self.hardware.installed_bytes,
+            in_use_bytes: total_physical.saturating_sub(available_bytes),
+            compressed_bytes,
+            available_bytes,
+            committed_bytes: performance
+                .as_ref()
+                .map(|info| info.committed_bytes)
+                .unwrap_or(used_memory_bytes),
+            commit_limit_bytes: performance
+                .as_ref()
+                .map(|info| info.commit_limit_bytes)
+                .unwrap_or(total_memory_bytes),
+            cached_bytes: performance
+                .as_ref()
+                .map(|info| info.cached_bytes)
+                .unwrap_or_default(),
+            paged_pool_bytes: performance
+                .as_ref()
+                .map(|info| info.paged_pool_bytes)
+                .unwrap_or_default(),
+            non_paged_pool_bytes: performance
+                .as_ref()
+                .map(|info| info.non_paged_pool_bytes)
+                .unwrap_or_default(),
+            speed_mhz: self.hardware.speed_mhz,
+            slots_used: self.hardware.slots_used,
+            slots_total: self.hardware.slots_total,
+            form_factor: self.hardware.form_factor.clone(),
+            hardware_reserved_bytes: self
+                .hardware
+                .installed_bytes
+                .and_then(|installed| installed.checked_sub(total_physical)),
+        }
+    }
+
+    fn fallback(total_memory_bytes: u64, used_memory_bytes: u64) -> MemoryInfo {
+        MemoryInfo {
+            installed_bytes: Some(total_memory_bytes),
+            in_use_bytes: used_memory_bytes,
+            compressed_bytes: None,
+            available_bytes: total_memory_bytes.saturating_sub(used_memory_bytes),
+            committed_bytes: used_memory_bytes,
+            commit_limit_bytes: total_memory_bytes,
+            cached_bytes: 0,
+            paged_pool_bytes: 0,
+            non_paged_pool_bytes: 0,
+            speed_mhz: None,
+            slots_used: None,
+            slots_total: None,
+            form_factor: None,
+            hardware_reserved_bytes: None,
+        }
+    }
+
+    fn compressed_bytes(&self, page_size: Option<u64>) -> Option<u64> {
+        use windows_sys::Win32::System::Performance::{
+            PdhCollectQueryData, PdhGetFormattedCounterValue, PDH_FMT_COUNTERVALUE, PDH_FMT_LARGE,
+        };
+
+        if self.query.is_null() || self.compressed_counter.is_null() {
+            return None;
+        }
+
+        if unsafe { PdhCollectQueryData(self.query) } != 0 {
+            return None;
+        }
+
+        let mut value = PDH_FMT_COUNTERVALUE::default();
+        let status = unsafe {
+            PdhGetFormattedCounterValue(
+                self.compressed_counter,
+                PDH_FMT_LARGE,
+                std::ptr::null_mut(),
+                &mut value,
+            )
+        };
+
+        if status != 0 || value.CStatus != 0 {
+            return None;
+        }
+
+        let pages = unsafe { value.Anonymous.largeValue };
+        (pages >= 0).then_some(pages as u64 * page_size.unwrap_or(4096))
+    }
+}
+
+#[cfg(windows)]
+impl Drop for MemoryInfoCollector {
+    fn drop(&mut self) {
+        if !self.query.is_null() {
+            unsafe {
+                windows_sys::Win32::System::Performance::PdhCloseQuery(self.query);
+            }
+        }
+    }
+}
+
+#[cfg(windows)]
+struct WindowsMemoryPerformance {
+    total_physical_bytes: u64,
+    available_bytes: u64,
+    committed_bytes: u64,
+    commit_limit_bytes: u64,
+    cached_bytes: u64,
+    paged_pool_bytes: u64,
+    non_paged_pool_bytes: u64,
+    page_size: u64,
+}
+
+#[cfg(windows)]
+impl WindowsMemoryPerformance {
+    fn read() -> Option<Self> {
+        use windows_sys::Win32::System::ProcessStatus::{
+            GetPerformanceInfo, PERFORMANCE_INFORMATION,
+        };
+
+        let mut info = PERFORMANCE_INFORMATION {
+            cb: std::mem::size_of::<PERFORMANCE_INFORMATION>() as u32,
+            ..Default::default()
+        };
+
+        if unsafe { GetPerformanceInfo(&mut info, info.cb) } == 0 {
+            return None;
+        }
+
+        let page_size = info.PageSize as u64;
+        Some(Self {
+            total_physical_bytes: info.PhysicalTotal as u64 * page_size,
+            available_bytes: info.PhysicalAvailable as u64 * page_size,
+            committed_bytes: info.CommitTotal as u64 * page_size,
+            commit_limit_bytes: info.CommitLimit as u64 * page_size,
+            cached_bytes: info.SystemCache as u64 * page_size,
+            paged_pool_bytes: info.KernelPaged as u64 * page_size,
+            non_paged_pool_bytes: info.KernelNonpaged as u64 * page_size,
+            page_size,
+        })
+    }
+}
+
+#[cfg(windows)]
+struct MemoryHardwareReader;
+
+#[cfg(windows)]
+impl MemoryHardwareReader {
+    fn read() -> MemoryHardwareInfo {
+        use std::os::windows::process::CommandExt;
+
+        let script = "$m=@(Get-CimInstance Win32_PhysicalMemory);$a=@(Get-CimInstance Win32_PhysicalMemoryArray);$m|ForEach-Object{\"MODULE|$($_.Capacity)|$($_.ConfiguredClockSpeed)|$($_.Speed)|$($_.FormFactor)\"};\"SLOTS|$((($a|Measure-Object -Property MemoryDevices -Sum).Sum))\"";
+        let output = std::process::Command::new("powershell")
+            .args(["-NoProfile", "-NonInteractive", "-Command", script])
+            .creation_flags(0x08000000)
+            .output();
+
+        let Ok(output) = output else {
+            return MemoryHardwareInfo::default();
+        };
+
+        if !output.status.success() {
+            return MemoryHardwareInfo::default();
+        }
+
+        Self::parse(&String::from_utf8_lossy(&output.stdout))
+    }
+
+    fn parse(output: &str) -> MemoryHardwareInfo {
+        let mut installed_bytes = 0u64;
+        let mut speed_values = Vec::new();
+        let mut form_factor = None;
+        let mut slots_used = 0usize;
+        let mut slots_total = None;
+
+        for line in output
+            .lines()
+            .map(str::trim)
+            .filter(|line| !line.is_empty())
+        {
+            let parts = line.split('|').collect::<Vec<_>>();
+            match parts.as_slice() {
+                ["MODULE", capacity, configured_speed, speed, factor] => {
+                    installed_bytes += capacity.parse::<u64>().unwrap_or_default();
+                    let module_speed = configured_speed
+                        .parse::<u64>()
+                        .ok()
+                        .filter(|value| *value > 0)
+                        .or_else(|| speed.parse::<u64>().ok().filter(|value| *value > 0));
+                    if let Some(module_speed) = module_speed {
+                        speed_values.push(module_speed);
+                    }
+                    form_factor = form_factor.or_else(|| Self::form_factor(factor));
+                    slots_used += 1;
+                }
+                ["SLOTS", slots] => {
+                    slots_total = slots.parse::<usize>().ok().filter(|slots| *slots > 0);
+                }
+                _ => {}
+            }
+        }
+
+        MemoryHardwareInfo {
+            installed_bytes: (installed_bytes > 0).then_some(installed_bytes),
+            speed_mhz: (!speed_values.is_empty())
+                .then(|| speed_values.iter().sum::<u64>() / speed_values.len() as u64),
+            slots_used: (slots_used > 0).then_some(slots_used),
+            slots_total,
+            form_factor,
+        }
+    }
+
+    fn form_factor(value: &str) -> Option<String> {
+        Some(
+            match value.parse::<u16>().ok()? {
+                8 => "DIMM",
+                12 => "SODIMM",
+                13 => "SRIMM",
+                14 => "RIMM",
+                15 => "FB-DIMM",
+                _ => return None,
+            }
+            .to_string(),
+        )
+    }
+}
+
 #[cfg(not(windows))]
 struct MemoryUsageCollector;
 
@@ -1028,6 +1329,39 @@ impl MemoryUsageCollector {
 
     fn sample(&mut self) -> HashMap<u32, u64> {
         HashMap::new()
+    }
+}
+
+#[cfg(not(windows))]
+struct MemoryInfoCollector;
+
+#[cfg(not(windows))]
+impl MemoryInfoCollector {
+    fn new() -> Self {
+        Self
+    }
+
+    fn sample(&mut self, total_memory_bytes: u64, used_memory_bytes: u64) -> MemoryInfo {
+        Self::fallback(total_memory_bytes, used_memory_bytes)
+    }
+
+    fn fallback(total_memory_bytes: u64, used_memory_bytes: u64) -> MemoryInfo {
+        MemoryInfo {
+            installed_bytes: Some(total_memory_bytes),
+            in_use_bytes: used_memory_bytes,
+            compressed_bytes: None,
+            available_bytes: total_memory_bytes.saturating_sub(used_memory_bytes),
+            committed_bytes: used_memory_bytes,
+            commit_limit_bytes: total_memory_bytes,
+            cached_bytes: 0,
+            paged_pool_bytes: 0,
+            non_paged_pool_bytes: 0,
+            speed_mhz: None,
+            slots_used: None,
+            slots_total: None,
+            form_factor: None,
+            hardware_reserved_bytes: None,
+        }
     }
 }
 

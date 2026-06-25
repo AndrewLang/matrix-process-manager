@@ -55,6 +55,7 @@ export class AppComponent implements OnDestroy, OnInit {
   private transformRequestId = 0;
   private pendingTransforms = new Map<number, { resolve: (response: ProcessSnapshotWorkerResponse) => void; reject: () => void }>();
   private windowUnlisteners: Array<() => void> = [];
+  private restoringWindowState = false;
 
   overviewItems: NavItem[] = [
     { id: "dashboard", label: "Dashboard", icon: "bi-speedometer2" },
@@ -128,8 +129,7 @@ export class AppComponent implements OnDestroy, OnInit {
 
   ngOnInit(): void {
     getCurrentWindow().setIcon("/assets/app-icon.png").catch(() => undefined);
-    this.restoreWindowState();
-    this.trackWindowState();
+    this.restoreWindowState().then(() => this.trackWindowState());
     this.restoreRoute();
     this.startProcessWorker();
     this.updateSystemInfo();
@@ -181,6 +181,7 @@ export class AppComponent implements OnDestroy, OnInit {
 
         this.totalProcesses.set(snapshot.totalProcesses);
         this.cpuInfo = snapshot.cpuInfo;
+        this.workareaState.setMemoryInfo(snapshot.memoryInfo);
         this.workareaState.setGpuAdapters(snapshot.gpuAdapters);
         const selectedPid = this.workareaState.selectedPid();
         const transformed = await this.transformProcesses(snapshot.processes, selectedPid);
@@ -252,18 +253,30 @@ export class AppComponent implements OnDestroy, OnInit {
     });
   }
 
-  private restoreWindowState(): void {
+  private async restoreWindowState(): Promise<void> {
     const state = this.loadWindowState();
     const appWindow = getCurrentWindow();
-    const restore = state
-      ? appWindow.setSize(new PhysicalSize(state.width, state.height))
-        .then(() => appWindow.setPosition(new PhysicalPosition(state.x, state.y)))
-        .then(() => state.maximized ? appWindow.maximize() : undefined)
-      : Promise.resolve();
+    this.restoringWindowState = true;
 
-    restore
-      .catch(() => undefined)
-      .finally(() => appWindow.show().catch(() => undefined));
+    try {
+      if (state) {
+        await appWindow.setSize(new PhysicalSize(state.width, state.height));
+        await appWindow.setPosition(new PhysicalPosition(state.x, state.y));
+      }
+
+      await appWindow.show();
+
+      if (state) {
+        await appWindow.setPosition(new PhysicalPosition(state.x, state.y));
+        if (state.maximized) {
+          await appWindow.maximize();
+        }
+      }
+    } catch {
+      appWindow.show().catch(() => undefined);
+    } finally {
+      this.restoringWindowState = false;
+    }
   }
 
   private trackWindowState(): void {
@@ -292,6 +305,10 @@ export class AppComponent implements OnDestroy, OnInit {
   }
 
   private scheduleWindowStateSave(): void {
+    if (this.restoringWindowState) {
+      return;
+    }
+
     if (this.windowSaveTimer) {
       clearTimeout(this.windowSaveTimer);
     }
@@ -300,6 +317,10 @@ export class AppComponent implements OnDestroy, OnInit {
   }
 
   private saveWindowState(): Promise<void> {
+    if (this.restoringWindowState) {
+      return Promise.resolve();
+    }
+
     const appWindow = getCurrentWindow();
     return Promise.all([appWindow.outerPosition(), appWindow.outerSize(), appWindow.isMaximized()])
       .then(([position, size, maximized]) => {

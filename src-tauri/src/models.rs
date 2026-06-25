@@ -50,6 +50,25 @@ pub struct CpuInfo {
 
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct MemoryInfo {
+    pub installed_bytes: Option<u64>,
+    pub in_use_bytes: u64,
+    pub compressed_bytes: Option<u64>,
+    pub available_bytes: u64,
+    pub committed_bytes: u64,
+    pub commit_limit_bytes: u64,
+    pub cached_bytes: u64,
+    pub paged_pool_bytes: u64,
+    pub non_paged_pool_bytes: u64,
+    pub speed_mhz: Option<u64>,
+    pub slots_used: Option<usize>,
+    pub slots_total: Option<usize>,
+    pub form_factor: Option<String>,
+    pub hardware_reserved_bytes: Option<u64>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct GpuEngineUsage {
     pub name: String,
     pub utilization_percent: f32,
@@ -75,6 +94,7 @@ pub struct ProcessSnapshot {
     pub used_memory_bytes: u64,
     pub total_memory_bytes: u64,
     pub cpu_info: CpuInfo,
+    pub memory_info: MemoryInfo,
     pub gpu_adapters: Vec<GpuAdapterUsage>,
 }
 

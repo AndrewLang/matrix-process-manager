@@ -29,6 +29,10 @@ export class ResourceDetailMonitorComponent {
         }).join(" ");
     }
 
+    chartAreaPath(): string {
+        return `0,104 ${this.chartPath()} 320,104`;
+    }
+
     metricValue(): string {
         return this.state.metrics().find((metric) => metric.label === this.label())?.value ?? "0%";
     }
@@ -38,7 +42,7 @@ export class ResourceDetailMonitorComponent {
     }
 
     lineWidth(): string {
-        return this.metric() === "gpu" ? "0.95px" : "1.7px";
+        return this.metric() === "gpu" ? "0.55px" : "0.8px";
     }
 
     latest(): number {

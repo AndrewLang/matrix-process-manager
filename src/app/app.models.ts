@@ -75,7 +75,25 @@ export interface BackendProcessSnapshot {
     usedMemoryBytes: number;
     totalMemoryBytes: number;
     cpuInfo: BackendCpuInfo;
+    memoryInfo: BackendMemoryInfo;
     gpuAdapters: BackendGpuAdapterUsage[];
+}
+
+export interface BackendMemoryInfo {
+    installedBytes?: number;
+    inUseBytes: number;
+    compressedBytes?: number;
+    availableBytes: number;
+    committedBytes: number;
+    commitLimitBytes: number;
+    cachedBytes: number;
+    pagedPoolBytes: number;
+    nonPagedPoolBytes: number;
+    speedMhz?: number;
+    slotsUsed?: number;
+    slotsTotal?: number;
+    formFactor?: string;
+    hardwareReservedBytes?: number;
 }
 
 export interface BackendGpuAdapterUsage {

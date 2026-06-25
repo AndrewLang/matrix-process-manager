@@ -59,4 +59,8 @@ export class GpuMonitorComponent {
             return `${x.toFixed(1)},${(60 - Math.max(0, Math.min(100, value)) * 0.52).toFixed(1)}`;
         }).join(" ");
     }
+
+    engineAreaPath(adapterIndex: number, engineName: string): string {
+        return `0,60 ${this.enginePath(adapterIndex, engineName)} 120,60`;
+    }
 }

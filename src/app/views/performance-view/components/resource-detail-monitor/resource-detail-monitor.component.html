@@ -10,6 +10,7 @@
     <svg
       class="h-76 w-full rounded-[5px] border border-white/6 bg-[linear-gradient(rgba(122,153,181,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(122,153,181,0.08)_1px,transparent_1px)] bg-size-[32px_28px]"
       viewBox="0 0 320 112" preserveAspectRatio="none">
+        <polygon class="fill-current opacity-14" [ngClass]="accent()" [attr.points]="chartAreaPath()" />
         <polyline class="fill-none stroke-current" [ngClass]="accent()" [attr.stroke-width]="lineWidth()" [attr.points]="chartPath()" />
     </svg>
     <div class="mt-2 flex justify-between text-[11px] text-(--muted)">

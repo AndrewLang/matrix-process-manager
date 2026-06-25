@@ -1,1 +1,44 @@
 <mtx-resource-detail-monitor [metric]="'memory'" label="Memory" accent="text-(--violet)" />
+<article
+  class="mt-2.5 rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+    <div class="grid gap-x-8 gap-y-4 text-[13px] text-white min-[1180px]:grid-cols-[minmax(0,1fr)_minmax(220px,0.42fr)]">
+        <div class="grid grid-cols-2 gap-x-8 gap-y-5 max-[720px]:grid-cols-1">
+            <div>
+                <div class="text-(--muted)">In use (Compressed)</div>
+                <strong class="mt-1 block text-xl font-medium leading-none">{{ inUseLabel() }}</strong>
+            </div>
+            <div>
+                <div class="text-(--muted)">Available</div>
+                <strong class="mt-1 block text-xl font-medium leading-none">{{ value("availableBytes") }}</strong>
+            </div>
+            <div>
+                <div class="text-(--muted)">Committed</div>
+                <strong class="mt-1 block text-xl font-medium leading-none">{{ committedLabel() }}</strong>
+            </div>
+            <div>
+                <div class="text-(--muted)">Cached</div>
+                <strong class="mt-1 block text-xl font-medium leading-none">{{ value("cachedBytes") }}</strong>
+            </div>
+            <div>
+                <div class="text-(--muted)">Paged pool</div>
+                <strong class="mt-1 block text-xl font-medium leading-none">{{ value("pagedPoolBytes") }}</strong>
+            </div>
+            <div>
+                <div class="text-(--muted)">Non-paged pool</div>
+                <strong class="mt-1 block text-xl font-medium leading-none">{{ value("nonPagedPoolBytes") }}</strong>
+            </div>
+        </div>
+        <dl class="grid content-start gap-y-2.5 text-[14px] min-[720px]:grid-cols-[auto_minmax(0,1fr)] min-[720px]:gap-x-5">
+            <dt class="text-(--muted)">Installed:</dt>
+            <dd class="font-medium">{{ value("installedBytes") }}</dd>
+            <dt class="text-(--muted)">Speed:</dt>
+            <dd class="font-medium">{{ speedLabel() }}</dd>
+            <dt class="text-(--muted)">Slots used:</dt>
+            <dd class="font-medium">{{ slotsLabel() }}</dd>
+            <dt class="text-(--muted)">Form factor:</dt>
+            <dd class="font-medium">{{ state.memoryInfo()?.formFactor ?? "Unavailable" }}</dd>
+            <dt class="text-(--muted)">Hardware reserved:</dt>
+            <dd class="font-medium">{{ value("hardwareReservedBytes") }}</dd>
+        </dl>
+    </div>
+</article>

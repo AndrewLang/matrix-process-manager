@@ -33,7 +33,8 @@
                 <svg
                   class="h-8 w-full rounded border border-white/6 bg-[linear-gradient(rgba(122,153,181,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(122,153,181,0.08)_1px,transparent_1px)] bg-size-[24px_18px] text-(--cyan)"
                   viewBox="0 0 120 64" preserveAspectRatio="none">
-                    <polyline class="fill-none stroke-current stroke-[0.75px]" [attr.points]="enginePath(adapter.adapterIndex, engine.name)" />
+                    <polygon class="fill-current opacity-14" [attr.points]="engineAreaPath(adapter.adapterIndex, engine.name)" />
+                    <polyline class="fill-none stroke-current stroke-[0.5px]" [attr.points]="enginePath(adapter.adapterIndex, engine.name)" />
                 </svg>
             </div>
             }
