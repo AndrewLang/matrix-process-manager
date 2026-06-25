@@ -1,6 +1,6 @@
 <section class="grid h-full min-h-0 min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-2.5 overflow-hidden px-2.5 py-3">
     @if (activeView() === "dashboard") {
-    <section class="grid min-h-0 min-w-0 grid-rows-[91px_minmax(0,1fr)] gap-2.5 max-[1040px]:grid-rows-[192px_minmax(0,1fr)]">
+    <section class="grid min-h-0 min-w-0 grid-rows-[144px_minmax(0,1fr)] gap-2.5 max-[1040px]:grid-rows-[296px_minmax(0,1fr)]">
         <div class="grid grid-cols-5 gap-2.75 max-[1040px]:grid-cols-2">
             @for (metric of metrics(); track metric.label) {
             <mtx-metric-block [metric]="metric" />
@@ -76,7 +76,7 @@
                   class="h-7.5 rounded-[5px] border border-transparent bg-transparent px-3 py-0 text-[#a8b6c4] hover:bg-white/6">6h</button><button
                   class="h-7.5 rounded-[5px] border border-transparent bg-transparent px-3 py-0 text-[#a8b6c4] hover:bg-white/6">24h</button></div>
         </div>
-        <div class="grid h-26.75 grid-cols-5 gap-2.75 max-[1040px]:grid-cols-2">
+        <div class="grid h-36 grid-cols-5 gap-2.75 max-[1040px]:grid-cols-2">
             @for (metric of metrics(); track metric.label) {
             <mtx-metric-block [metric]="metric" />
             }

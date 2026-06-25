@@ -1,4 +1,5 @@
-<div class="h-full min-h-0 overflow-auto scrollbar-thin [scrollbar-color:rgba(122,153,181,0.34)_transparent] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[rgba(122,153,181,0.34)] [&::-webkit-scrollbar-track]:bg-transparent">
+<div
+  class="h-full min-h-0 overflow-auto scrollbar-thin [scrollbar-color:rgba(122,153,181,0.34)_transparent] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[rgba(122,153,181,0.34)] [&::-webkit-scrollbar-track]:bg-transparent">
     <table>
         <colgroup>
             @for (column of columns(); track column.key) {
@@ -20,7 +21,8 @@
         <tbody>
             @for (section of sections(); track section.key) {
             <tr class="bg-[rgba(10,22,33,0.92)]">
-                <td [attr.colspan]="columns().length" class="sticky top-9.5 z-10 h-8 border-b border-[rgba(122,153,181,0.13)] bg-[rgba(10,22,33,0.96)] px-3 py-0 text-[13px] font-semibold text-[#d6e2ee]">
+                <td [attr.colspan]="columns().length"
+                  class="sticky top-9.5 z-10 h-8 border-b border-[rgba(122,153,181,0.13)] bg-[rgba(10,22,33,0.96)] px-3 py-0 text-[13px] font-semibold text-[#d6e2ee]">
                     <span>{{ section.label }}</span>
                     <span class="ml-1.5 font-normal text-(--muted)">{{ section.count }}</span>
                 </td>
