@@ -9,6 +9,7 @@ pub struct ProcessInfo {
     pub status: String,
     pub user: String,
     pub path: String,
+    pub icon_data_url: Option<String>,
 }
 
 #[derive(Clone, Debug, Serialize)]

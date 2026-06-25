@@ -19,6 +19,7 @@ export interface ProcessRow {
     name: string;
     publisher: string;
     processGroup?: ProcessGroup;
+    iconDataUrl?: string;
     pid: number;
     status: string;
     cpu: string;
@@ -50,6 +51,7 @@ export interface BackendProcessRow {
         status: string;
         user: string;
         path: string;
+        iconDataUrl?: string;
     };
     metrics: {
         cpuPercent: number;

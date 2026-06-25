@@ -97,6 +97,10 @@ export class ProcessGridComponent {
         return group.rows[0]?.iconClass ?? "bi-window";
     }
 
+    groupIconDataUrl(group: ProcessNameGroup): string | undefined {
+        return group.rows.find((row) => row.iconDataUrl)?.iconDataUrl;
+    }
+
     groupMemory(group: ProcessNameGroup): string {
         return group.rows[0]?.memory ?? "";
     }

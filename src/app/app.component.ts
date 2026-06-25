@@ -117,6 +117,7 @@ export class AppComponent implements OnInit {
       name: row.info.name || `Process ${row.info.pid}`,
       publisher: row.info.publisher || row.info.path || "Unknown publisher",
       processGroup: this.classifyProcess(row),
+      iconDataUrl: row.info.iconDataUrl,
       pid: row.info.pid,
       status: row.info.status,
       cpu: `${row.metrics.cpuPercent.toFixed(1)}%`,
