@@ -5,10 +5,11 @@ import { BackendProcessRow, BackendProcessSnapshot, MetricCard, NavItem, Process
 import { SidebarComponent } from "./components/sidebar/sidebar.component";
 import { TitlebarComponent } from "./components/titlebar/titlebar.component";
 import { WorkareaComponent } from "./components/workarea/workarea.component";
+import { SplitterDirective } from "./directives/splitter.directive";
 
 @Component({
-  selector: "app-root",
-  imports: [SidebarComponent, TitlebarComponent, WorkareaComponent],
+  selector: "mtx-root",
+  imports: [SidebarComponent, SplitterDirective, TitlebarComponent, WorkareaComponent],
   templateUrl: "./app.component.html",
   styleUrl: "./app.component.css",
 })
@@ -16,6 +17,7 @@ export class AppComponent implements OnInit {
   activeView = signal<ViewId>("dashboard");
   selectedProcess = signal("Google Chrome");
   totalProcesses = signal(142);
+  sidebarWidth = signal(164);
 
   overviewItems: NavItem[] = [
     { id: "dashboard", label: "Dashboard", icon: "bi-speedometer2" },
@@ -84,6 +86,10 @@ export class AppComponent implements OnInit {
 
   selectProcess(row: ProcessRow): void {
     this.selectedProcess.set(row.name);
+  }
+
+  setSidebarWidth(width: number): void {
+    this.sidebarWidth.set(width);
   }
 
   startDrag(event: MouseEvent): void {

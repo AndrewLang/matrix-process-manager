@@ -11,7 +11,7 @@ interface ProcessColumn {
 }
 
 @Component({
-    selector: "app-process-grid",
+    selector: "mtx-process-grid",
     imports: [NgClass],
     templateUrl: "./process-grid.component.html",
 })

@@ -3,7 +3,7 @@ import { Component, input } from "@angular/core";
 import { MetricCard } from "../../app.models";
 
 @Component({
-    selector: "app-metric-block",
+    selector: "mtx-metric-block",
     imports: [NgClass],
     templateUrl: "./metric-block.component.html",
 })

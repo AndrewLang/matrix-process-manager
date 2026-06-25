@@ -2,7 +2,7 @@ import { Component, output } from "@angular/core";
 import { SearchBoxComponent } from "../search-box/search-box.component";
 
 @Component({
-    selector: "app-titlebar",
+    selector: "mtx-titlebar",
     imports: [SearchBoxComponent],
     templateUrl: "./titlebar.component.html",
 })

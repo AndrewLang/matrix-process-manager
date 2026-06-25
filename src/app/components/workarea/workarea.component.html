@@ -1,9 +1,9 @@
-<section class="grid min-h-0 min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-2.5 overflow-hidden px-2.5 py-3">
+<section class="grid h-full min-h-0 min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-2.5 overflow-hidden px-2.5 py-3">
     @if (activeView() === "dashboard") {
     <section class="grid min-h-0 min-w-0 grid-rows-[91px_minmax(0,1fr)] gap-2.5 max-[1040px]:grid-rows-[192px_minmax(0,1fr)]">
         <div class="grid grid-cols-5 gap-[11px] max-[1040px]:grid-cols-2">
             @for (metric of metrics(); track metric.label) {
-            <app-metric-block [metric]="metric" />
+            <mtx-metric-block [metric]="metric" />
             }
         </div>
 
@@ -12,7 +12,7 @@
               class="grid min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-md border border-[var(--border)] bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                 <div class="flex items-center gap-[9px] border-b border-[var(--border)] p-3">
                     <h1>Processes <span>({{ totalProcesses() }})</span></h1>
-                    <app-search-box [hostClass]="filterSearchClass" placeholder="Filter processes..." />
+                    <mtx-search-box [hostClass]="filterSearchClass" placeholder="Filter processes..." />
                     <button type="button"
                       class="inline-flex h-[30px] flex-none items-center justify-center gap-[7px] whitespace-nowrap rounded-[5px] border border-[var(--border)] bg-[rgba(16,31,45,0.86)] px-3 py-0 hover:bg-white/6 max-[1040px]:w-[30px] max-[1040px]:px-0"><i
                           class="bi bi-sliders flex-none"></i><span class="whitespace-nowrap max-[1040px]:hidden">View Options</span></button>
@@ -20,7 +20,7 @@
                       class="inline-flex h-[30px] flex-none items-center justify-center gap-[7px] whitespace-nowrap rounded-[5px] border border-[rgba(255,75,67,0.38)] bg-[rgba(16,31,45,0.86)] px-3 py-0 text-[var(--red)] max-[1040px]:w-[30px] max-[1040px]:px-0"
                       disabled><i class="bi bi-slash-circle flex-none"></i><span class="whitespace-nowrap max-[1040px]:hidden">End Process</span></button>
                 </div>
-                <app-process-grid [rows]="rows()" [selectedProcess]="selectedProcess()" (processSelected)="processSelected.emit($event)" />
+                <mtx-process-grid [rows]="rows()" [selectedProcess]="selectedProcess()" (processSelected)="processSelected.emit($event)" />
             </section>
             <ng-container [ngTemplateOutlet]="detailsPanel" />
         </div>
@@ -32,7 +32,7 @@
             <div class="flex flex-col items-stretch gap-[9px] border-b border-[var(--border)] p-3">
                 <h1>Processes <span>({{ totalProcesses() }})</span></h1>
                 <div class="flex items-center gap-2">
-                    <app-search-box [hostClass]="wideFilterSearchClass" placeholder="Filter processes..." />
+                    <mtx-search-box [hostClass]="wideFilterSearchClass" placeholder="Filter processes..." />
                     <button type="button"
                       class="inline-flex h-[30px] flex-none items-center justify-center gap-[7px] whitespace-nowrap rounded-[5px] border border-[var(--border)] bg-[rgba(16,31,45,0.86)] px-3 py-0 hover:bg-white/6 max-[1040px]:w-[30px] max-[1040px]:px-0"><i
                           class="bi bi-funnel flex-none"></i><span class="whitespace-nowrap max-[1040px]:hidden">Add Filter</span></button>
@@ -57,7 +57,7 @@
                     <button type="button" class="h-[30px] rounded-[5px] border border-transparent bg-transparent px-3 py-0 text-[#a8b6c4]">System (7)</button>
                 </div>
             </div>
-            <app-process-grid [rows]="rows()" [selectedProcess]="selectedProcess()" (processSelected)="processSelected.emit($event)" />
+            <mtx-process-grid [rows]="rows()" [selectedProcess]="selectedProcess()" (processSelected)="processSelected.emit($event)" />
         </section>
         <ng-container [ngTemplateOutlet]="detailsPanel" />
     </section>
@@ -78,7 +78,7 @@
         </div>
         <div class="grid h-[107px] grid-cols-5 gap-[11px] max-[1040px]:grid-cols-2">
             @for (metric of metrics(); track metric.label) {
-            <app-metric-block [metric]="metric" />
+            <mtx-metric-block [metric]="metric" />
             }
         </div>
         <div class="grid min-h-0 grid-cols-[1.3fr_1.35fr_1.15fr] auto-rows-[193px] gap-[9px]">

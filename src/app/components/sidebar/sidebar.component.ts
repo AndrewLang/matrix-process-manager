@@ -3,8 +3,9 @@ import { Component, input, output } from "@angular/core";
 import { NavItem, ViewId } from "../../app.models";
 
 @Component({
-    selector: "app-sidebar",
+    selector: "mtx-sidebar",
     imports: [NgClass],
+    host: { class: "block h-full min-h-0 overflow-hidden" },
     templateUrl: "./sidebar.component.html",
 })
 export class SidebarComponent {

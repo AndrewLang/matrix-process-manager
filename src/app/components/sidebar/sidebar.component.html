@@ -1,4 +1,4 @@
-<aside class="flex min-h-0 flex-col border-r border-[var(--border)] bg-[rgba(8,19,30,0.72)] px-2.5 pt-[13px] pb-0">
+<aside class="flex h-full min-h-0 flex-col overflow-hidden border-r border-[var(--border)] bg-[rgba(8,19,30,0.72)] px-2.5 pt-[13px] pb-2.5">
     <nav class="flex flex-col gap-[3px]">
         <span class="px-1.5 pt-0 pb-1.5 text-[10px] uppercase text-[#7f91a4]">Overview</span>
         @for (item of overviewItems(); track item.label) {
@@ -11,7 +11,7 @@
         }
     </nav>
 
-    <nav class="mt-[18px] flex flex-col gap-[3px] border-t border-[var(--border)] pt-3.5">
+    <nav class="mt-[18px] flex min-h-0 flex-col gap-[3px] overflow-hidden border-t border-[var(--border)] pt-3.5">
         <span class="px-1.5 pt-0 pb-1.5 text-[10px] uppercase text-[#7f91a4]">Tools</span>
         @for (item of toolItems(); track item.label) {
         <button type="button" class="flex h-8 items-center gap-2.5 rounded-[5px] bg-transparent px-[9px] py-0 text-left text-[#c6d2dd] hover:bg-white/6"
@@ -23,7 +23,7 @@
         }
     </nav>
 
-    <div class="mt-auto grid gap-[5px] rounded-md border border-[var(--border)] bg-[rgba(16,32,47,0.82)] px-[11px] py-[13px]">
+    <div id="systemName" class="mt-auto grid flex-none gap-[5px] rounded-md border border-[var(--border)] bg-[rgba(16,32,47,0.82)] px-[11px] py-[13px]">
         <span class="text-xl text-[#65b8ff]"><i class="bi bi-laptop"></i></span>
         <strong>My Workstation</strong>
         <span class="text-[11px] text-[var(--muted)]">Windows 11 Pro</span>

@@ -6,7 +6,7 @@
         <strong class="text-[13px] tracking-normal">Process Manager</strong>
     </div>
 
-    <app-search-box [hostClass]="searchClass" [inputClass]="searchInputClass" placeholder="Search processes, PID, publisher..." shortcut="Ctrl K" />
+    <mtx-search-box [hostClass]="searchClass" [inputClass]="searchInputClass" placeholder="Search processes, PID, publisher..." shortcut="Ctrl K" />
 
     <div class="absolute right-0 flex h-full items-center gap-2.5" (mousedown)="$event.stopPropagation()" (dblclick)="$event.stopPropagation()">
         <div class="flex items-center gap-1.5">

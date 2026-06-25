@@ -1,7 +1,7 @@
 import { Component, input } from "@angular/core";
 
 @Component({
-    selector: "app-search-box",
+    selector: "mtx-search-box",
     templateUrl: "./search-box.component.html",
 })
 export class SearchBoxComponent {

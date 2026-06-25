@@ -6,8 +6,9 @@ import { ProcessGridComponent } from "../process-grid/process-grid.component";
 import { SearchBoxComponent } from "../search-box/search-box.component";
 
 @Component({
-    selector: "app-workarea",
+    selector: "mtx-workarea",
     imports: [NgClass, NgTemplateOutlet, MetricBlockComponent, ProcessGridComponent, SearchBoxComponent],
+    host: { class: "block h-full min-h-0 overflow-hidden" },
     templateUrl: "./workarea.component.html",
 })
 export class WorkareaComponent {
