@@ -1,1 +1,53 @@
-<mtx-resource-detail-monitor [metric]="'network'" label="Network" accent="text-(--orange)" />
+<article
+  class="rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+    <div class="flex items-center justify-between">
+        <h2>Network adapters</h2>
+        <span class="text-[11px] text-(--muted)">{{ networkAdapters().length }} detected</span>
+    </div>
+    @if (networkAdapters().length > 0) {
+    <div class="mt-3 grid gap-2 md:grid-cols-2">
+        @for (adapter of networkAdapters(); track adapter.adapterIndex) {
+        <button type="button" class="rounded border p-2 text-left transition-colors" [class.border-(--orange)]="isSelected(adapter)"
+          [class.border-white/6]="!isSelected(adapter)" [class.bg-white/5]="isSelected(adapter)" [class.bg-black/10]="!isSelected(adapter)"
+          (click)="selectAdapter(adapter)">
+            <div class="flex items-start justify-between gap-2 text-[12px]">
+                <div class="min-w-0">
+                    <div class="truncate text-[#e5eef7]">{{ adapter.connectionName ?? adapter.name }}</div>
+                    <div class="truncate text-[11px] text-(--muted)">{{ adapter.connectionName ? adapter.name : adapter.adapterType ?? "Network adapter" }}
+                    </div>
+                </div>
+                <strong class="text-(--orange)">{{ traffic(adapter) }}</strong>
+            </div>
+            <svg
+              class="mt-2 h-10 w-full rounded border border-white/6 bg-[linear-gradient(rgba(122,153,181,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(122,153,181,0.08)_1px,transparent_1px)] bg-size-[24px_18px] text-(--orange)"
+              viewBox="0 0 120 64" preserveAspectRatio="none">
+                <polygon class="fill-current opacity-14" [attr.points]="adapterAreaPath(adapter.adapterIndex)" />
+                <polyline class="fill-none stroke-current stroke-[0.5px]" [attr.points]="adapterPath(adapter.adapterIndex)" />
+            </svg>
+            <dl class="mt-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 border-t border-white/6 pt-2 text-[11px]">
+                <dt class="text-(--muted)">Traffic</dt>
+                <dd class="text-[#e5eef7]">{{ traffic(adapter) }}</dd>
+                <dt class="text-(--muted)">Utilization</dt>
+                <dd class="text-[#e5eef7]">{{ usage(adapter.utilizationPercent) }}</dd>
+                <dt class="text-(--muted)">Receive</dt>
+                <dd class="text-[#e5eef7]">{{ speed(adapter.receiveBytesPerSec) }}</dd>
+                <dt class="text-(--muted)">Send</dt>
+                <dd class="text-[#e5eef7]">{{ speed(adapter.sendBytesPerSec) }}</dd>
+                <dt class="text-(--muted)">Link speed</dt>
+                <dd class="text-[#e5eef7]">{{ linkSpeed(adapter.linkSpeedBitsPerSec) }}</dd>
+                <dt class="text-(--muted)">Type</dt>
+                <dd class="truncate text-[#e5eef7]">{{ adapter.adapterType ?? "Unavailable" }}</dd>
+                <dt class="text-(--muted)">MAC</dt>
+                <dd class="truncate text-[#e5eef7]">{{ adapter.macAddress ?? "Unavailable" }}</dd>
+                <dt class="text-(--muted)">IPv4</dt>
+                <dd class="truncate text-[#e5eef7]">{{ adapter.ipv4Addresses.length > 0 ? adapter.ipv4Addresses.join(", ") : "Unavailable" }}</dd>
+                <dt class="text-(--muted)">IPv6</dt>
+                <dd class="truncate text-[#e5eef7]">{{ adapter.ipv6Addresses.length > 0 ? adapter.ipv6Addresses.join(", ") : "Unavailable" }}</dd>
+            </dl>
+        </button>
+        }
+    </div>
+    } @else {
+    <div class="mt-3 rounded border border-white/6 bg-black/10 p-3 text-[12px] text-(--muted)">Network sampling unavailable</div>
+    }
+</article>

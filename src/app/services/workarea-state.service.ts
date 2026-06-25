@@ -1,5 +1,5 @@
 import { Injectable, computed, signal } from "@angular/core";
-import { BackendDiskDriveUsage, BackendGpuAdapterUsage, BackendMemoryInfo, MetricCard, ProcessRow, ResourceBar, ResourceSample, SystemInfoItem, UpdateFrequency, ViewId } from "../app.models";
+import { BackendDiskDriveUsage, BackendGpuAdapterUsage, BackendMemoryInfo, BackendNetworkAdapterUsage, MetricCard, ProcessRow, ResourceBar, ResourceSample, SystemInfoItem, UpdateFrequency, ViewId } from "../app.models";
 
 @Injectable({ providedIn: "root" })
 export class WorkareaStateService {
@@ -19,6 +19,8 @@ export class WorkareaStateService {
     gpuAdapterHistory = signal<BackendGpuAdapterUsage[][]>([]);
     diskDrives = signal<BackendDiskDriveUsage[]>([]);
     diskDriveHistory = signal<BackendDiskDriveUsage[][]>([]);
+    networkAdapters = signal<BackendNetworkAdapterUsage[]>([]);
+    networkAdapterHistory = signal<BackendNetworkAdapterUsage[][]>([]);
 
     selectedRow = computed(() => {
         const rows = this.rows();
@@ -41,6 +43,7 @@ export class WorkareaStateService {
         memoryInfo?: BackendMemoryInfo;
         gpuAdapters?: BackendGpuAdapterUsage[];
         diskDrives?: BackendDiskDriveUsage[];
+        networkAdapters?: BackendNetworkAdapterUsage[];
     }): void {
         this.activeView.set(state.activeView);
         this.totalProcesses.set(state.totalProcesses);
@@ -53,6 +56,7 @@ export class WorkareaStateService {
         this.memoryInfo.set(state.memoryInfo ?? this.memoryInfo());
         this.gpuAdapters.set(state.gpuAdapters ?? this.gpuAdapters());
         this.diskDrives.set(state.diskDrives ?? this.diskDrives());
+        this.networkAdapters.set(state.networkAdapters ?? this.networkAdapters());
         this.recordResourceSample(state.metrics);
     }
 
@@ -77,6 +81,11 @@ export class WorkareaStateService {
     setDiskDrives(drives: BackendDiskDriveUsage[]): void {
         this.diskDrives.set(drives);
         this.diskDriveHistory.update((history) => [...history.slice(-59), drives]);
+    }
+
+    setNetworkAdapters(adapters: BackendNetworkAdapterUsage[]): void {
+        this.networkAdapters.set(adapters);
+        this.networkAdapterHistory.update((history) => [...history.slice(-59), adapters]);
     }
 
     private recordResourceSample(metrics: MetricCard[]): void {

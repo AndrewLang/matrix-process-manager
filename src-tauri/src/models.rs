@@ -102,18 +102,36 @@ pub struct DiskDriveUsage {
 
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct NetworkAdapterUsage {
+    pub name: String,
+    pub adapter_index: usize,
+    pub utilization_percent: f32,
+    pub receive_bytes_per_sec: u64,
+    pub send_bytes_per_sec: u64,
+    pub link_speed_bits_per_sec: Option<u64>,
+    pub connection_name: Option<String>,
+    pub mac_address: Option<String>,
+    pub adapter_type: Option<String>,
+    pub ipv4_addresses: Vec<String>,
+    pub ipv6_addresses: Vec<String>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ProcessSnapshot {
     pub processes: Vec<ProcessRow>,
     pub total_processes: usize,
     pub total_cpu_percent: f32,
     pub total_gpu_percent: f32,
     pub total_disk_percent: f32,
+    pub total_network_percent: f32,
     pub used_memory_bytes: u64,
     pub total_memory_bytes: u64,
     pub cpu_info: CpuInfo,
     pub memory_info: MemoryInfo,
     pub gpu_adapters: Vec<GpuAdapterUsage>,
     pub disk_drives: Vec<DiskDriveUsage>,
+    pub network_adapters: Vec<NetworkAdapterUsage>,
 }
 
 #[derive(Clone, Debug, Serialize)]

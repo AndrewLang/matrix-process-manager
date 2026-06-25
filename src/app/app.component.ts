@@ -184,6 +184,7 @@ export class AppComponent implements OnDestroy, OnInit {
         this.workareaState.setMemoryInfo(snapshot.memoryInfo);
         this.workareaState.setGpuAdapters(snapshot.gpuAdapters);
         this.workareaState.setDiskDrives(snapshot.diskDrives);
+        this.workareaState.setNetworkAdapters(snapshot.networkAdapters);
         const selectedPid = this.workareaState.selectedPid();
         const transformed = await this.transformProcesses(snapshot.processes, selectedPid);
         if (this.isRefreshPaused()) {
@@ -192,7 +193,7 @@ export class AppComponent implements OnDestroy, OnInit {
 
         this.processOrder = transformed.processOrder;
         this.rows.set(transformed.rows);
-        this.updateResourceSummary(transformed.rows, transformed.diskBytes, snapshot.totalCpuPercent, snapshot.totalGpuPercent, snapshot.totalDiskPercent, snapshot.usedMemoryBytes, snapshot.totalMemoryBytes);
+        this.updateResourceSummary(transformed.rows, transformed.diskBytes, snapshot.totalCpuPercent, snapshot.totalGpuPercent, snapshot.totalDiskPercent, snapshot.totalNetworkPercent, snapshot.usedMemoryBytes, snapshot.totalMemoryBytes);
       })
       .catch(() => undefined)
       .finally(() => {
@@ -554,20 +555,21 @@ export class AppComponent implements OnDestroy, OnInit {
     this.refreshSnapshot();
   }
 
-  private updateResourceSummary(rows: ProcessRow[], diskBytes: number, totalCpuPercent: number, totalGpuPercent: number, totalDiskPercent: number, usedMemoryBytes: number, totalMemoryBytes: number): void {
+  private updateResourceSummary(rows: ProcessRow[], diskBytes: number, totalCpuPercent: number, totalGpuPercent: number, totalDiskPercent: number, totalNetworkPercent: number, usedMemoryBytes: number, totalMemoryBytes: number): void {
     const cpu = Math.max(0, Math.min(100, totalCpuPercent));
     const gpu = Math.max(0, Math.min(100, totalGpuPercent));
     const disk = Math.max(0, Math.min(100, totalDiskPercent));
+    const network = Math.max(0, Math.min(100, totalNetworkPercent));
     const memoryBytes = Math.max(0, usedMemoryBytes);
     const memoryPercent = totalMemoryBytes > 0 ? Math.min(100, memoryBytes / totalMemoryBytes * 100) : 0;
-    const sample: ResourceSample = { cpu, gpu, memory: memoryPercent, disk, network: 0 };
+    const sample: ResourceSample = { cpu, gpu, memory: memoryPercent, disk, network };
     this.metricHistory = [...this.metricHistory.slice(-59), sample];
     const metrics: MetricCard[] = [
       { label: "CPU", value: `${cpu.toFixed(0)}%`, detail: "Total CPU usage", accent: "blue", path: this.historyPath("cpu") },
       { label: "GPU", value: `${gpu.toFixed(0)}%`, detail: "GPU engine utilization", accent: "cyan", path: this.historyPath("gpu") },
       { label: "Memory", value: `${memoryPercent.toFixed(0)}%`, detail: this.formatBytes(memoryBytes), accent: "violet", path: this.historyPath("memory") },
       { label: "Disk", value: `${disk.toFixed(0)}%`, detail: `${this.formatBytes(diskBytes)}/s`, accent: "green", path: this.historyPath("disk") },
-      { label: "Network", value: "0%", detail: "Network sampling unavailable", accent: "orange", path: this.historyPath("network") },
+      { label: "Network", value: `${network.toFixed(0)}%`, detail: `${this.formatBytes(this.workareaState.networkAdapters().reduce((total, adapter) => total + adapter.receiveBytesPerSec + adapter.sendBytesPerSec, 0))}/s`, accent: "orange", path: this.historyPath("network") },
     ];
     this.metrics.set(metrics);
     this.bars.set(metrics.map((metric) => ({ label: metric.label, value: metric.detail, width: metric.value, accent: metric.accent })));

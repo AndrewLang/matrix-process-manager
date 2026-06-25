@@ -1,6 +1,6 @@
 use crate::models::{
     CommandError, CpuInfo, DiskDriveUsage, GpuAdapterUsage, GpuEngineUsage, MemoryInfo,
-    ProcessInfo, ProcessMetrics, ProcessRow, ProcessSnapshot,
+    NetworkAdapterUsage, ProcessInfo, ProcessMetrics, ProcessRow, ProcessSnapshot,
 };
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::Mutex;
@@ -15,6 +15,7 @@ pub struct SysinfoProcessProvider {
     cpu_usage: Mutex<CpuUsageCollector>,
     gpu_usage: Mutex<GpuUsageCollector>,
     disk_usage: Mutex<DiskUsageCollector>,
+    network_usage: Mutex<NetworkUsageCollector>,
     memory_usage: Mutex<MemoryUsageCollector>,
     memory_info: Mutex<MemoryInfoCollector>,
 }
@@ -26,6 +27,7 @@ impl SysinfoProcessProvider {
             cpu_usage: Mutex::new(CpuUsageCollector::new()),
             gpu_usage: Mutex::new(GpuUsageCollector::new()),
             disk_usage: Mutex::new(DiskUsageCollector::new()),
+            network_usage: Mutex::new(NetworkUsageCollector::new()),
             memory_usage: Mutex::new(MemoryUsageCollector::new()),
             memory_info: Mutex::new(MemoryInfoCollector::new()),
         }
@@ -79,6 +81,11 @@ impl ProcessProvider for SysinfoProcessProvider {
             .unwrap_or_default();
         let disk_usage = self
             .disk_usage
+            .lock()
+            .map(|mut collector| collector.sample())
+            .unwrap_or_default();
+        let network_usage = self
+            .network_usage
             .lock()
             .map(|mut collector| collector.sample())
             .unwrap_or_default();
@@ -150,12 +157,14 @@ impl ProcessProvider for SysinfoProcessProvider {
             total_cpu_percent,
             total_gpu_percent: gpu_usage.total_percent,
             total_disk_percent: disk_usage.total_percent,
+            total_network_percent: network_usage.total_percent,
             used_memory_bytes: system.used_memory(),
             total_memory_bytes: system.total_memory(),
             cpu_info,
             memory_info,
             gpu_adapters: gpu_usage.adapters,
             disk_drives: disk_usage.drives,
+            network_adapters: network_usage.adapters,
             processes,
         })
     }
@@ -1110,6 +1119,306 @@ impl Drop for DiskUsageCollector {
     }
 }
 
+#[derive(Default)]
+struct NetworkUsageSnapshot {
+    total_percent: f32,
+    adapters: Vec<NetworkAdapterUsage>,
+}
+
+#[derive(Clone, Default)]
+struct NetworkAdapterDetails {
+    adapter_index: Option<usize>,
+    name: String,
+    connection_name: Option<String>,
+    mac_address: Option<String>,
+    adapter_type: Option<String>,
+    link_speed_bits_per_sec: Option<u64>,
+    ipv4_addresses: Vec<String>,
+    ipv6_addresses: Vec<String>,
+}
+
+#[cfg(windows)]
+struct NetworkUsageCollector {
+    query: windows_sys::Win32::System::Performance::PDH_HQUERY,
+    receive_counter: windows_sys::Win32::System::Performance::PDH_HCOUNTER,
+    send_counter: windows_sys::Win32::System::Performance::PDH_HCOUNTER,
+    ready: bool,
+    details: Vec<NetworkAdapterDetails>,
+}
+
+#[cfg(windows)]
+unsafe impl Send for NetworkUsageCollector {}
+
+#[cfg(windows)]
+impl NetworkUsageCollector {
+    fn new() -> Self {
+        use windows_sys::Win32::System::Performance::{
+            PdhAddEnglishCounterW, PdhCollectQueryData, PdhOpenQueryW,
+        };
+
+        let mut query = std::ptr::null_mut();
+        let mut receive_counter = std::ptr::null_mut();
+        let mut send_counter = std::ptr::null_mut();
+        let opened = unsafe { PdhOpenQueryW(std::ptr::null(), 0, &mut query) } == 0;
+        let receive_path = GpuUsageCollector::wide("\\Network Interface(*)\\Bytes Received/sec");
+        let send_path = GpuUsageCollector::wide("\\Network Interface(*)\\Bytes Sent/sec");
+        let added = opened
+            && unsafe {
+                PdhAddEnglishCounterW(query, receive_path.as_ptr(), 0, &mut receive_counter)
+            } == 0
+            && unsafe { PdhAddEnglishCounterW(query, send_path.as_ptr(), 0, &mut send_counter) }
+                == 0;
+
+        if added {
+            unsafe {
+                PdhCollectQueryData(query);
+            }
+        } else if !query.is_null() {
+            unsafe {
+                windows_sys::Win32::System::Performance::PdhCloseQuery(query);
+            }
+            query = std::ptr::null_mut();
+            receive_counter = std::ptr::null_mut();
+            send_counter = std::ptr::null_mut();
+        }
+
+        Self {
+            query,
+            receive_counter,
+            send_counter,
+            ready: false,
+            details: NetworkAdapterDetailsReader::read(),
+        }
+    }
+
+    fn sample(&mut self) -> NetworkUsageSnapshot {
+        use windows_sys::Win32::System::Performance::PdhCollectQueryData;
+
+        if self.query.is_null() || self.receive_counter.is_null() || self.send_counter.is_null() {
+            return NetworkUsageSnapshot::default();
+        }
+
+        if unsafe { PdhCollectQueryData(self.query) } != 0 {
+            return NetworkUsageSnapshot::default();
+        }
+
+        if !self.ready {
+            self.ready = true;
+            return NetworkUsageSnapshot::default();
+        }
+
+        let receive = self.double_counter_array(self.receive_counter);
+        let send = self.double_counter_array(self.send_counter);
+        let mut receive = receive.into_iter().collect::<Vec<_>>();
+        receive.sort_by(|left, right| left.0.cmp(&right.0));
+        let mut adapters = receive
+            .into_iter()
+            .enumerate()
+            .map(|(adapter_index, (instance, receive_bytes_per_sec))| {
+                let details = self
+                    .details
+                    .iter()
+                    .find(|details| Self::matches(&instance, details));
+                let adapter_index = details
+                    .and_then(|details| details.adapter_index)
+                    .unwrap_or(adapter_index);
+                let send_bytes_per_sec =
+                    send.get(&instance).copied().unwrap_or_default().max(0.0) as u64;
+                let receive_bytes_per_sec = receive_bytes_per_sec.max(0.0) as u64;
+                let link_speed_bits_per_sec =
+                    details.and_then(|details| details.link_speed_bits_per_sec);
+                let utilization_percent = link_speed_bits_per_sec
+                    .filter(|speed| *speed > 0)
+                    .map(|speed| {
+                        ((receive_bytes_per_sec + send_bytes_per_sec) as f64 * 8.0 / speed as f64
+                            * 100.0)
+                            .clamp(0.0, 100.0) as f32
+                    })
+                    .unwrap_or_default();
+
+                NetworkAdapterUsage {
+                    name: details
+                        .map(|details| details.name.clone())
+                        .filter(|name| !name.is_empty())
+                        .unwrap_or(instance),
+                    adapter_index,
+                    utilization_percent,
+                    receive_bytes_per_sec,
+                    send_bytes_per_sec,
+                    link_speed_bits_per_sec,
+                    connection_name: details.and_then(|details| details.connection_name.clone()),
+                    mac_address: details.and_then(|details| details.mac_address.clone()),
+                    adapter_type: details.and_then(|details| details.adapter_type.clone()),
+                    ipv4_addresses: details
+                        .map(|details| details.ipv4_addresses.clone())
+                        .unwrap_or_default(),
+                    ipv6_addresses: details
+                        .map(|details| details.ipv6_addresses.clone())
+                        .unwrap_or_default(),
+                }
+            })
+            .collect::<Vec<_>>();
+
+        adapters.sort_by(|left, right| left.name.cmp(&right.name));
+
+        NetworkUsageSnapshot {
+            total_percent: adapters
+                .iter()
+                .map(|adapter| adapter.utilization_percent)
+                .fold(0.0, f32::max)
+                .clamp(0.0, 100.0),
+            adapters,
+        }
+    }
+
+    fn double_counter_array(
+        &self,
+        counter: windows_sys::Win32::System::Performance::PDH_HCOUNTER,
+    ) -> HashMap<String, f64> {
+        use windows_sys::Win32::System::Performance::{
+            PdhGetFormattedCounterArrayW, PDH_FMT_COUNTERVALUE_ITEM_W, PDH_FMT_DOUBLE,
+            PDH_MORE_DATA,
+        };
+
+        let mut buffer_size = 0;
+        let mut item_count = 0;
+        let status = unsafe {
+            PdhGetFormattedCounterArrayW(
+                counter,
+                PDH_FMT_DOUBLE,
+                &mut buffer_size,
+                &mut item_count,
+                std::ptr::null_mut(),
+            )
+        };
+
+        if status != PDH_MORE_DATA || buffer_size == 0 || item_count == 0 {
+            return HashMap::new();
+        }
+
+        let mut buffer = vec![0u8; buffer_size as usize];
+        let items = buffer.as_mut_ptr() as *mut PDH_FMT_COUNTERVALUE_ITEM_W;
+        let status = unsafe {
+            PdhGetFormattedCounterArrayW(
+                counter,
+                PDH_FMT_DOUBLE,
+                &mut buffer_size,
+                &mut item_count,
+                items,
+            )
+        };
+
+        if status != 0 {
+            return HashMap::new();
+        }
+
+        unsafe { std::slice::from_raw_parts(items, item_count as usize) }
+            .iter()
+            .filter_map(|item| {
+                if item.FmtValue.CStatus != 0 {
+                    return None;
+                }
+
+                let instance = GpuUsageCollector::string_from_wide(item.szName);
+                (!instance.is_empty())
+                    .then_some((instance, unsafe { item.FmtValue.Anonymous.doubleValue }))
+            })
+            .collect()
+    }
+
+    fn matches(instance: &str, details: &NetworkAdapterDetails) -> bool {
+        let instance = Self::normalized(instance);
+        let name = Self::normalized(&details.name);
+        let connection = details
+            .connection_name
+            .as_deref()
+            .map(Self::normalized)
+            .unwrap_or_default();
+        !name.is_empty() && (instance.contains(&name) || name.contains(&instance))
+            || !connection.is_empty()
+                && (instance.contains(&connection) || connection.contains(&instance))
+    }
+
+    fn normalized(value: &str) -> String {
+        value
+            .chars()
+            .filter(|character| character.is_ascii_alphanumeric())
+            .flat_map(char::to_lowercase)
+            .collect()
+    }
+}
+
+#[cfg(windows)]
+impl Drop for NetworkUsageCollector {
+    fn drop(&mut self) {
+        if !self.query.is_null() {
+            unsafe {
+                windows_sys::Win32::System::Performance::PdhCloseQuery(self.query);
+            }
+        }
+    }
+}
+
+#[cfg(windows)]
+struct NetworkAdapterDetailsReader;
+
+#[cfg(windows)]
+impl NetworkAdapterDetailsReader {
+    fn read() -> Vec<NetworkAdapterDetails> {
+        use std::os::windows::process::CommandExt;
+
+        let script = "$configs=@{};Get-CimInstance Win32_NetworkAdapterConfiguration | Where-Object { $_.IPEnabled -eq $true } | ForEach-Object { $configs[[string]$_.InterfaceIndex]=$_.IPAddress };Get-CimInstance Win32_NetworkAdapter | Where-Object { $_.PhysicalAdapter -eq $true -and $_.NetEnabled -eq $true } | ForEach-Object { $ips=@($configs[[string]$_.InterfaceIndex]);$ipv4=($ips|Where-Object{$_ -match '^\\d+\\.\\d+\\.\\d+\\.\\d+$'}) -join ',';$ipv6=($ips|Where-Object{$_ -match ':'}) -join ',';\"NIC|$($_.InterfaceIndex)|$($_.Name)|$($_.NetConnectionID)|$($_.MACAddress)|$($_.AdapterType)|$($_.Speed)|$ipv4|$ipv6\" }";
+        let output = std::process::Command::new("powershell")
+            .args(["-NoProfile", "-NonInteractive", "-Command", script])
+            .creation_flags(0x08000000)
+            .output();
+
+        let Ok(output) = output else {
+            return Vec::new();
+        };
+
+        if !output.status.success() {
+            return Vec::new();
+        }
+
+        Self::parse(&String::from_utf8_lossy(&output.stdout))
+    }
+
+    fn parse(output: &str) -> Vec<NetworkAdapterDetails> {
+        output
+            .lines()
+            .map(str::trim)
+            .filter(|line| !line.is_empty())
+            .filter_map(|line| {
+                let parts = line.split('|').collect::<Vec<_>>();
+                let ["NIC", adapter_index, name, connection_name, mac_address, adapter_type, speed, ipv4, ipv6] = parts.as_slice() else {
+                    return None;
+                };
+
+                Some(NetworkAdapterDetails {
+                    adapter_index: adapter_index.parse().ok(),
+                    name: name.trim().to_string(),
+                    connection_name: (!connection_name.trim().is_empty()).then(|| connection_name.trim().to_string()),
+                    mac_address: (!mac_address.trim().is_empty()).then(|| mac_address.trim().to_string()),
+                    adapter_type: (!adapter_type.trim().is_empty()).then(|| adapter_type.trim().to_string()),
+                    link_speed_bits_per_sec: speed.parse().ok().filter(|value| *value > 0),
+                    ipv4_addresses: Self::addresses(ipv4),
+                    ipv6_addresses: Self::addresses(ipv6),
+                })
+            })
+            .collect()
+    }
+
+    fn addresses(value: &str) -> Vec<String> {
+        value
+            .split(',')
+            .map(str::trim)
+            .filter(|address| !address.is_empty())
+            .map(ToOwned::to_owned)
+            .collect()
+    }
+}
+
 #[cfg(windows)]
 struct MemoryUsageCollector {
     query: windows_sys::Win32::System::Performance::PDH_HQUERY,
@@ -1607,6 +1916,20 @@ impl DiskUsageCollector {
 
     fn sample(&mut self) -> DiskUsageSnapshot {
         DiskUsageSnapshot::default()
+    }
+}
+
+#[cfg(not(windows))]
+struct NetworkUsageCollector;
+
+#[cfg(not(windows))]
+impl NetworkUsageCollector {
+    fn new() -> Self {
+        Self
+    }
+
+    fn sample(&mut self) -> NetworkUsageSnapshot {
+        NetworkUsageSnapshot::default()
     }
 }
 

@@ -72,12 +72,28 @@ export interface BackendProcessSnapshot {
     totalCpuPercent: number;
     totalGpuPercent: number;
     totalDiskPercent: number;
+    totalNetworkPercent: number;
     usedMemoryBytes: number;
     totalMemoryBytes: number;
     cpuInfo: BackendCpuInfo;
     memoryInfo: BackendMemoryInfo;
     gpuAdapters: BackendGpuAdapterUsage[];
     diskDrives: BackendDiskDriveUsage[];
+    networkAdapters: BackendNetworkAdapterUsage[];
+}
+
+export interface BackendNetworkAdapterUsage {
+    name: string;
+    adapterIndex: number;
+    utilizationPercent: number;
+    receiveBytesPerSec: number;
+    sendBytesPerSec: number;
+    linkSpeedBitsPerSec?: number;
+    connectionName?: string;
+    macAddress?: string;
+    adapterType?: string;
+    ipv4Addresses: string[];
+    ipv6Addresses: string[];
 }
 
 export interface BackendDiskDriveUsage {
