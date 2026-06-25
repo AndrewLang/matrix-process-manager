@@ -5,7 +5,7 @@
       class="mb-1.5 grid w-full grid-cols-[22px_minmax(0,1fr)] items-center gap-2 rounded-[5px] border px-2.5 py-2 text-left hover:bg-white/6"
       [ngClass]="selectedMetric() === item.key ? 'border-[rgba(23,144,255,0.34)] bg-[rgba(23,144,255,0.14)]' : 'border-transparent bg-transparent'"
       (click)="metricSelected.emit(item.key)">
-        <i class="bi" [ngClass]="[item.icon, item.accent]"></i>
+        <i class="text-xl bi" [ngClass]="[item.icon, item.accent]"></i>
         <span class="grid min-w-0 gap-0.5">
             <strong class="truncate">{{ item.label }}</strong>
             <small class="truncate text-[#9eacba]">{{ metricValue(item.label) }} · {{ metricDetail(item.label) }}</small>

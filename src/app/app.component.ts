@@ -9,6 +9,7 @@ import { SidebarComponent } from "./components/sidebar/sidebar.component";
 import { TitlebarComponent } from "./components/titlebar/titlebar.component";
 import { WorkareaComponent } from "./components/workarea/workarea.component";
 import { SplitterDirective } from "./directives/splitter.directive";
+import { ProcessSnapshotWorkerRequest, ProcessSnapshotWorkerResponse } from "./process-snapshot.worker";
 import { WorkareaStateService } from "./services/workarea-state.service";
 
 @Component({
@@ -25,9 +26,13 @@ export class AppComponent implements OnDestroy, OnInit {
   settingsDialogOpen = signal(false);
   private refreshTimer?: ReturnType<typeof setInterval>;
   private snapshotInFlight = false;
+  private refreshPausedUntil = 0;
   private processOrder: number[] = [];
   private metricHistory: ResourceSample[] = [];
   private cpuInfo?: BackendCpuInfo;
+  private processWorker?: Worker;
+  private transformRequestId = 0;
+  private pendingTransforms = new Map<number, { resolve: (response: ProcessSnapshotWorkerResponse) => void; reject: () => void }>();
 
   overviewItems: NavItem[] = [
     { id: "dashboard", label: "Dashboard", icon: "bi-speedometer2" },
@@ -96,6 +101,7 @@ export class AppComponent implements OnDestroy, OnInit {
 
   ngOnInit(): void {
     getCurrentWindow().setIcon("/assets/app-icon.png").catch(() => undefined);
+    this.startProcessWorker();
     this.updateSystemInfo();
     this.refreshSnapshot();
   }
@@ -104,6 +110,7 @@ export class AppComponent implements OnDestroy, OnInit {
     if (this.refreshTimer) {
       clearInterval(this.refreshTimer);
     }
+    this.processWorker?.terminate();
   }
 
   openSettingsDialog(): void {
@@ -119,19 +126,28 @@ export class AppComponent implements OnDestroy, OnInit {
   }
 
   refreshSnapshot(): void {
-    if (this.snapshotInFlight) {
+    if (this.snapshotInFlight || this.isRefreshPaused()) {
       return;
     }
 
     this.snapshotInFlight = true;
     invoke<BackendProcessSnapshot>("get_process_snapshot")
-      .then((snapshot) => {
+      .then(async (snapshot) => {
+        if (this.isRefreshPaused()) {
+          return;
+        }
+
         this.totalProcesses.set(snapshot.totalProcesses);
         this.cpuInfo = snapshot.cpuInfo;
         const selectedPid = this.workareaState.selectedPid();
-        const rows = this.stabilizeProcessOrder(snapshot.processes).map((row) => this.toProcessRow(row, selectedPid));
-        this.rows.set(rows);
-        this.updateResourceSummary(rows, snapshot.totalCpuPercent, snapshot.totalGpuPercent, snapshot.totalDiskPercent, snapshot.usedMemoryBytes, snapshot.totalMemoryBytes);
+        const transformed = await this.transformProcesses(snapshot.processes, selectedPid);
+        if (this.isRefreshPaused()) {
+          return;
+        }
+
+        this.processOrder = transformed.processOrder;
+        this.rows.set(transformed.rows);
+        this.updateResourceSummary(transformed.rows, transformed.diskBytes, snapshot.totalCpuPercent, snapshot.totalGpuPercent, snapshot.totalDiskPercent, snapshot.usedMemoryBytes, snapshot.totalMemoryBytes);
       })
       .catch(() => undefined)
       .finally(() => {
@@ -152,12 +168,16 @@ export class AppComponent implements OnDestroy, OnInit {
     this.sidebarWidth.set(width);
   }
 
-  startDrag(event: MouseEvent): void {
+  pauseRefreshForDrag(event: MouseEvent): void {
     if (event.button !== 0) {
       return;
     }
 
-    getCurrentWindow().startDragging();
+    this.refreshPausedUntil = Date.now() + 1500;
+  }
+
+  private isRefreshPaused(): boolean {
+    return Date.now() < this.refreshPausedUntil;
   }
 
   minimize(): void {
@@ -170,6 +190,60 @@ export class AppComponent implements OnDestroy, OnInit {
 
   close(): void {
     getCurrentWindow().close();
+  }
+
+  private startProcessWorker(): void {
+    if (typeof Worker === "undefined") {
+      return;
+    }
+
+    this.processWorker = new Worker(new URL("./process-snapshot.worker", import.meta.url), { type: "module" });
+    this.processWorker.onmessage = (event: MessageEvent<ProcessSnapshotWorkerResponse>) => {
+      const pending = this.pendingTransforms.get(event.data.requestId);
+      if (!pending) {
+        return;
+      }
+
+      this.pendingTransforms.delete(event.data.requestId);
+      pending.resolve(event.data);
+    };
+    this.processWorker.onerror = () => {
+      for (const pending of this.pendingTransforms.values()) {
+        pending.reject();
+      }
+      this.pendingTransforms.clear();
+      this.processWorker?.terminate();
+      this.processWorker = undefined;
+    };
+  }
+
+  private transformProcesses(processes: BackendProcessRow[], selectedPid: number | undefined): Promise<ProcessSnapshotWorkerResponse> {
+    if (!this.processWorker) {
+      return Promise.resolve(this.transformProcessesInThread(processes, selectedPid));
+    }
+
+    const requestId = ++this.transformRequestId;
+    const request: ProcessSnapshotWorkerRequest = {
+      requestId,
+      processes,
+      selectedPid,
+      processOrder: this.processOrder,
+    };
+
+    return new Promise<ProcessSnapshotWorkerResponse>((resolve, reject) => {
+      this.pendingTransforms.set(requestId, { resolve, reject });
+      this.processWorker?.postMessage(request);
+    }).catch(() => this.transformProcessesInThread(processes, selectedPid));
+  }
+
+  private transformProcessesInThread(processes: BackendProcessRow[], selectedPid: number | undefined): ProcessSnapshotWorkerResponse {
+    const rows = this.stabilizeProcessOrder(processes).map((row) => this.toProcessRow(row, selectedPid));
+    return {
+      requestId: 0,
+      rows,
+      processOrder: this.processOrder,
+      diskBytes: processes.reduce((total, row) => total + row.metrics.diskReadBytes + row.metrics.diskWrittenBytes, 0),
+    };
   }
 
   private toProcessRow(row: BackendProcessRow, selectedPid: number | undefined): ProcessRow {
@@ -263,11 +337,10 @@ export class AppComponent implements OnDestroy, OnInit {
     this.refreshSnapshot();
   }
 
-  private updateResourceSummary(rows: ProcessRow[], totalCpuPercent: number, totalGpuPercent: number, totalDiskPercent: number, usedMemoryBytes: number, totalMemoryBytes: number): void {
+  private updateResourceSummary(rows: ProcessRow[], diskBytes: number, totalCpuPercent: number, totalGpuPercent: number, totalDiskPercent: number, usedMemoryBytes: number, totalMemoryBytes: number): void {
     const cpu = Math.max(0, Math.min(100, totalCpuPercent));
     const gpu = Math.max(0, Math.min(100, totalGpuPercent));
     const disk = Math.max(0, Math.min(100, totalDiskPercent));
-    const diskBytes = rows.reduce((total, row) => total + this.parseBytesPerSecond(row.disk), 0);
     const memoryBytes = Math.max(0, usedMemoryBytes);
     const memoryPercent = totalMemoryBytes > 0 ? Math.min(100, memoryBytes / totalMemoryBytes * 100) : 0;
     const sample: ResourceSample = { cpu, gpu, memory: memoryPercent, disk, network: 0 };
@@ -351,24 +424,4 @@ export class AppComponent implements OnDestroy, OnInit {
     return `${days}:${hours}:${minutes}:${seconds}`;
   }
 
-  private parseBytesPerSecond(value: string): number {
-    return this.parseBytes(value.replace(/\/s$/, ""));
-  }
-
-  private parseBytes(value: string): number {
-    const amount = Number.parseFloat(value) || 0;
-    if (value.includes("GB")) {
-      return amount * 1024 * 1024 * 1024;
-    }
-
-    if (value.includes("MB")) {
-      return amount * 1024 * 1024;
-    }
-
-    if (value.includes("KB")) {
-      return amount * 1024;
-    }
-
-    return amount;
-  }
 }

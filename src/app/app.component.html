@@ -1,7 +1,7 @@
 <main
   class="grid h-screen w-screen grid-rows-[48px_minmax(0,1fr)_28px] overflow-hidden bg-[rgba(6,14,22,0.96)]">
   <mtx-titlebar
-    (dragStart)="startDrag($event)"
+    (dragStart)="pauseRefreshForDrag($event)"
     (minimizeWindow)="minimize()"
     (toggleMaximizeWindow)="toggleMaximize()"
     (closeWindow)="close()"
