@@ -19,33 +19,57 @@
             <mtx-metric-block [metric]="metric" />
             }
         </div>
-        <div class="grid min-h-0 grid-cols-[1.3fr_1.35fr_1.15fr] auto-rows-[193px] gap-2.25">
+        <div class="grid min-h-0 grid-cols-[1.35fr_1.35fr_1fr] auto-rows-[minmax(193px,auto)] gap-2.25 overflow-auto pr-1">
+            @for (chart of [
+            { title: 'CPU Usage', key: 'cpu', color: 'text-(--blue)' },
+            { title: 'GPU Usage', key: 'gpu', color: 'text-(--cyan)' },
+            { title: 'Memory Usage', key: 'memory', color: 'text-(--violet)' },
+            { title: 'Disk Activity', key: 'disk', color: 'text-(--green)' },
+            { title: 'Network Activity', key: 'network', color: 'text-(--orange)' }
+            ]; track chart.title) {
             <article
               class="rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
-                <h2>CPU Usage</h2>
-                <div class="mt-3 h-36.25 rounded-[5px] text-(--blue) bg-size-[100%_100%,32px_32px]"
-                  style="background-image: linear-gradient(135deg, transparent 0 12%, currentColor 12.5% 13.4%, transparent 13.8% 24%, currentColor 24.4% 25.6%, transparent 26% 41%, currentColor 41.4% 42.8%, transparent 43.2% 60%, currentColor 60.4% 61.4%, transparent 62%), linear-gradient(rgba(122, 153, 181, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(122, 153, 181, 0.08) 1px, transparent 1px)">
+                <h2>{{ chart.title }}</h2>
+                <svg
+                  class="mt-2 h-32 w-full rounded-[5px] bg-[linear-gradient(rgba(122,153,181,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(122,153,181,0.08)_1px,transparent_1px)] bg-size-[32px_28px]"
+                  viewBox="0 0 320 112" preserveAspectRatio="none">
+                    <polyline class="fill-none stroke-current stroke-[2px]" [ngClass]="chart.color" [attr.points]="chartPath($any(chart.key))" />
+                </svg>
+                <div class="mt-2 flex justify-between text-[11px] text-(--muted)"><span>60 seconds</span><strong>{{ metricValue(chart.title.split(' ')[0])
+                        }}</strong><span>Now</span></div>
+            </article>
+            }
+            <article
+              class="col-span-2 rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] max-[1040px]:col-span-1">
+                <div class="flex items-center justify-between">
+                    <h2>CPU Logical Processors</h2><span class="text-[11px] text-(--muted)">{{ logicalProcessors.length }} cores/threads</span>
+                </div>
+                <div class="mt-3 grid grid-cols-4 gap-2 max-[1200px]:grid-cols-2">
+                    @for (core of logicalProcessors; track core) {
+                    <svg
+                      class="h-16 rounded border border-white/6 bg-[linear-gradient(rgba(122,153,181,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(122,153,181,0.08)_1px,transparent_1px)] bg-size-[24px_20px] text-(--blue)"
+                      viewBox="0 0 120 64" preserveAspectRatio="none">
+                        <polyline class="fill-none stroke-current stroke-[1.4px]" [attr.points]="corePath(core)" />
+                    </svg>
+                    }
                 </div>
             </article>
             <article
               class="rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
-                <h2>Memory Usage</h2>
-                <div class="mt-3 h-36.25 rounded-[5px] text-(--violet) bg-size-[100%_100%,32px_32px]"
-                  style="background-image: linear-gradient(to top, rgba(155, 77, 255, 0.32), transparent 72%), linear-gradient(8deg, transparent 0 46%, currentColor 46.4% 47.4%, transparent 47.8%), linear-gradient(rgba(122, 153, 181, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(122, 153, 181, 0.08) 1px, transparent 1px)">
+                <div class="flex items-center justify-between">
+                    <h2>GPU Engines</h2><span class="text-[11px] text-(--muted)">{{ metricValue('GPU') }}</span>
                 </div>
-            </article>
-            <article
-              class="rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
-                <h2>Disk Activity</h2>
-                <div class="mt-3 h-36.25 rounded-[5px] text-(--green) bg-size-[100%_100%,32px_32px]"
-                  style="background-image: linear-gradient(135deg, transparent 0 12%, currentColor 12.5% 13.4%, transparent 13.8% 24%, currentColor 24.4% 25.6%, transparent 26% 41%, currentColor 41.4% 42.8%, transparent 43.2% 60%, currentColor 60.4% 61.4%, transparent 62%), linear-gradient(rgba(122, 153, 181, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(122, 153, 181, 0.08) 1px, transparent 1px)">
-                </div>
-            </article>
-            <article
-              class="rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
-                <h2>Network Activity</h2>
-                <div class="mt-3 h-36.25 rounded-[5px] text-(--orange) bg-size-[100%_100%,32px_32px]"
-                  style="background-image: linear-gradient(135deg, transparent 0 12%, currentColor 12.5% 13.4%, transparent 13.8% 24%, currentColor 24.4% 25.6%, transparent 26% 41%, currentColor 41.4% 42.8%, transparent 43.2% 60%, currentColor 60.4% 61.4%, transparent 62%), linear-gradient(rgba(122, 153, 181, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(122, 153, 181, 0.08) 1px, transparent 1px)">
+                <div class="mt-3 grid gap-2">
+                    @for (engine of gpuEngines; track engine; let index = $index) {
+                    <div>
+                        <div class="mb-1 flex justify-between text-[11px]"><span>{{ engine }}</span><span class="text-(--muted)">{{ latest('gpu').toFixed(0)
+                                }}%</span></div><svg
+                          class="h-12 w-full rounded border border-white/6 bg-[linear-gradient(rgba(122,153,181,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(122,153,181,0.08)_1px,transparent_1px)] bg-size-[24px_18px] text-(--cyan)"
+                          viewBox="0 0 120 64" preserveAspectRatio="none">
+                            <polyline class="fill-none stroke-current stroke-[1.4px]" [attr.points]="enginePath(index)" />
+                        </svg>
+                    </div>
+                    }
                 </div>
             </article>
             <article
@@ -55,9 +79,11 @@
             <article
               class="rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                 <h2>System Summary</h2>
-                <div class="mt-4.5 grid grid-cols-[70px_minmax(0,1fr)_70px_minmax(0,1fr)] gap-3"><span class="text-(--muted)">OS</span><strong>Windows
-                        11 Pro</strong><span class="text-(--muted)">CPU</span><strong>Intel Core i7</strong><span class="text-(--muted)">Memory</span><strong>16
-                        GB DDR4</strong><span class="text-(--muted)">Virtualization</span><strong>Enabled</strong></div>
+                <div class="mt-4.5 grid grid-cols-[90px_minmax(0,1fr)_90px_minmax(0,1fr)] gap-3"><span class="text-(--muted)">CPU</span><strong>{{
+                        metricValue('CPU') }}</strong><span class="text-(--muted)">GPU</span><strong>{{ metricValue('GPU') }}</strong><span
+                      class="text-(--muted)">Memory</span><strong>{{ metricDetail('Memory') }}</strong><span class="text-(--muted)">Disk</span><strong>{{
+                        metricDetail('Disk') }}</strong><span class="text-(--muted)">Network</span><strong>{{ metricDetail('Network') }}</strong><span
+                      class="text-(--muted)">Frequency</span><strong>{{ state.updateFrequency() }}</strong></div>
             </article>
             <article
               class="grid place-items-center rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-3 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">

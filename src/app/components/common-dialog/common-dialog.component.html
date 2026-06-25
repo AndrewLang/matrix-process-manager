@@ -1,0 +1,13 @@
+<div class="fixed inset-0 z-50 grid place-items-center bg-black/45 px-4" (click)="closeDialog.emit()">
+    <section class="w-[min(420px,100%)] rounded-md border border-(--border) bg-[rgba(10,22,33,0.98)] shadow-[0_18px_48px_rgba(0,0,0,0.42)]"
+      (click)="$event.stopPropagation()">
+        <header class="flex h-11 items-center gap-2 border-b border-(--border) px-3.5">
+            <h2>{{ title() }}</h2>
+            <button class="ml-auto grid h-6.5 w-6.5 place-items-center bg-transparent text-[#9aacba] hover:bg-white/6" type="button" aria-label="Close"
+              (click)="closeDialog.emit()"><i class="bi bi-x-lg"></i></button>
+        </header>
+        <div class="p-3.5">
+            <ng-content />
+        </div>
+    </section>
+</div>

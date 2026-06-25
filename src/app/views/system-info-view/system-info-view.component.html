@@ -1,0 +1,15 @@
+<section class="grid h-full min-h-0 min-w-0 gap-2.5 overflow-hidden px-2.5 py-3">
+    <section
+      class="min-h-0 overflow-auto scrollbar-thin [scrollbar-color:rgba(122,153,181,0.34)_transparent] rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-4.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[rgba(122,153,181,0.34)] [&::-webkit-scrollbar-track]:bg-transparent">
+        <h1>System Info</h1>
+        <p>Live process manager host details and current resource summary.</p>
+        <div class="mt-4 grid grid-cols-2 gap-2.5 max-[900px]:grid-cols-1">
+            @for (item of state.systemInfo(); track item.label) {
+            <article class="rounded-md border border-(--border) bg-[rgba(16,31,45,0.64)] p-3">
+                <span class="text-(--muted)">{{ item.label }}</span>
+                <strong class="mt-1 block text-[13px]">{{ item.value }}</strong>
+            </article>
+            }
+        </div>
+    </section>
+</section>

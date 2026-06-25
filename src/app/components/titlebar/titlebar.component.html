@@ -12,7 +12,8 @@
             <button class="h-6.75 w-6.75 rounded-full bg-transparent text-[#b8c4cf] hover:bg-white/6" type="button" aria-label="Refresh">
                 <i class="bi bi-arrow-clockwise"></i>
             </button>
-            <button class="h-6.75 w-6.75 rounded-full bg-transparent text-[#b8c4cf] hover:bg-white/6" type="button" aria-label="Settings">
+            <button class="h-6.75 w-6.75 rounded-full bg-transparent text-[#b8c4cf] hover:bg-white/6" type="button" aria-label="Settings"
+              (click)="settingsRequested.emit()">
                 <i class="bi bi-gear"></i>
             </button>
         </div>

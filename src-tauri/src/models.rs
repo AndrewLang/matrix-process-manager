@@ -37,6 +37,20 @@ pub struct ProcessSnapshot {
 
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct StartupApp {
+    pub name: String,
+    pub publisher: String,
+    pub status: String,
+    pub impact: String,
+    pub startup_type: String,
+    pub source: String,
+    pub command: String,
+    pub path: String,
+    pub delay_seconds: Option<f32>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CommandError {
     pub code: String,
     pub message: String,

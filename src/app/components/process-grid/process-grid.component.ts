@@ -37,6 +37,7 @@ export class ProcessGridComponent {
         { key: "select", label: "", width: 32, minWidth: 32, resizable: false },
         { key: "name", label: "Name", width: 230, minWidth: 150, resizable: true },
         { key: "cpu", label: "CPU", width: 72, minWidth: 60, resizable: true },
+        { key: "gpu", label: "GPU", width: 72, minWidth: 60, resizable: true },
         { key: "memory", label: "Memory", width: 104, minWidth: 82, resizable: true },
         { key: "disk", label: "Disk", width: 102, minWidth: 82, resizable: true },
         { key: "network", label: "Network", width: 104, minWidth: 82, resizable: true },
@@ -89,6 +90,10 @@ export class ProcessGridComponent {
         return `${group.rows.reduce((total, row) => total + Number.parseFloat(row.cpu), 0).toFixed(1)}%`;
     }
 
+    groupGpu(group: ProcessNameGroup): string {
+        return `${group.rows.reduce((total, row) => total + Number.parseFloat(row.gpu), 0).toFixed(1)}%`;
+    }
+
     groupPublisher(group: ProcessNameGroup): string {
         return group.rows[0]?.publisher ?? "Unknown publisher";
     }
@@ -102,7 +107,7 @@ export class ProcessGridComponent {
     }
 
     groupMemory(group: ProcessNameGroup): string {
-        return group.rows[0]?.memory ?? "";
+        return this.formatBytes(group.rows.reduce((total, row) => total + this.parseBytes(row.memory), 0));
     }
 
     isGroupExpanded(section: ProcessSection, group: ProcessNameGroup): boolean {
@@ -154,8 +159,8 @@ export class ProcessGridComponent {
 
     private toNameGroups(groups: Map<string, ProcessRow[]>): ProcessNameGroup[] {
         return Array.from(groups.entries())
-            .map(([name, rows]) => ({ name, rows }))
-            .sort((left, right) => left.name.localeCompare(right.name));
+            .map(([name, rows]) => ({ name, rows: [...rows].sort((left, right) => Number.parseFloat(right.cpu) - Number.parseFloat(left.cpu)) }))
+            .sort((left, right) => Number.parseFloat(this.groupCpu(right)) - Number.parseFloat(this.groupCpu(left)) || left.name.localeCompare(right.name));
     }
 
     private countRows(groups: Map<string, ProcessRow[]>): number {
@@ -164,5 +169,38 @@ export class ProcessGridComponent {
 
     private groupKey(section: ProcessSection, group: ProcessNameGroup): string {
         return `${section.key}:${group.name}`;
+    }
+
+    private parseBytes(value: string): number {
+        const amount = Number.parseFloat(value) || 0;
+        if (value.includes("GB")) {
+            return amount * 1024 * 1024 * 1024;
+        }
+
+        if (value.includes("MB")) {
+            return amount * 1024 * 1024;
+        }
+
+        if (value.includes("KB")) {
+            return amount * 1024;
+        }
+
+        return amount;
+    }
+
+    private formatBytes(bytes: number): string {
+        if (bytes >= 1024 * 1024 * 1024) {
+            return `${(bytes / 1024 / 1024 / 1024).toFixed(2)} GB`;
+        }
+
+        if (bytes >= 1024 * 1024) {
+            return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+        }
+
+        if (bytes >= 1024) {
+            return `${(bytes / 1024).toFixed(1)} KB`;
+        }
+
+        return `${bytes} B`;
     }
 }

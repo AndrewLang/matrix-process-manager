@@ -1,5 +1,5 @@
 import { Injectable, computed, signal } from "@angular/core";
-import { MetricCard, ProcessRow, ResourceBar, ViewId } from "../app.models";
+import { MetricCard, ProcessRow, ResourceBar, ResourceSample, SystemInfoItem, UpdateFrequency, ViewId } from "../app.models";
 
 @Injectable({ providedIn: "root" })
 export class WorkareaStateService {
@@ -11,6 +11,9 @@ export class WorkareaStateService {
     selectedPid = signal<number | undefined>(undefined);
     bars = signal<ResourceBar[]>([]);
     activeTitle = signal("Dashboard");
+    updateFrequency = signal<UpdateFrequency>("normal");
+    resourceHistory = signal<ResourceSample[]>([]);
+    systemInfo = signal<SystemInfoItem[]>([]);
 
     selectedRow = computed(() => {
         const rows = this.rows();
@@ -29,6 +32,7 @@ export class WorkareaStateService {
         selectedProcess: string;
         bars: ResourceBar[];
         activeTitle: string;
+        systemInfo?: SystemInfoItem[];
     }): void {
         this.activeView.set(state.activeView);
         this.totalProcesses.set(state.totalProcesses);
@@ -37,10 +41,32 @@ export class WorkareaStateService {
         this.selectedProcess.set(state.selectedProcess);
         this.bars.set(state.bars);
         this.activeTitle.set(state.activeTitle);
+        this.systemInfo.set(state.systemInfo ?? this.systemInfo());
+        this.recordResourceSample(state.metrics);
+    }
+
+    setUpdateFrequency(frequency: UpdateFrequency): void {
+        this.updateFrequency.set(frequency);
     }
 
     selectProcess(row: ProcessRow): void {
         this.selectedProcess.set(row.name);
         this.selectedPid.set(row.pid);
+    }
+
+    private recordResourceSample(metrics: MetricCard[]): void {
+        const sample: ResourceSample = {
+            cpu: this.metricValue(metrics, "CPU"),
+            gpu: this.metricValue(metrics, "GPU"),
+            memory: this.metricValue(metrics, "Memory"),
+            disk: this.metricValue(metrics, "Disk"),
+            network: this.metricValue(metrics, "Network"),
+        };
+
+        this.resourceHistory.update((history) => [...history.slice(-59), sample]);
+    }
+
+    private metricValue(metrics: MetricCard[], label: string): number {
+        return Number.parseFloat(metrics.find((metric) => metric.label === label)?.value ?? "0") || 0;
     }
 }
