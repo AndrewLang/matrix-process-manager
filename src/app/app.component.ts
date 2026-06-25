@@ -1,4 +1,4 @@
-import { NgTemplateOutlet } from "@angular/common";
+import { NgClass, NgTemplateOutlet } from "@angular/common";
 import { Component, OnInit, computed, signal } from "@angular/core";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -64,7 +64,7 @@ interface BackendProcessRow {
 
 @Component({
   selector: "app-root",
-  imports: [NgTemplateOutlet],
+  imports: [NgClass, NgTemplateOutlet],
   templateUrl: "./app.component.html",
   styleUrl: "./app.component.css",
 })

@@ -28,7 +28,10 @@
     "@angular/build": "22.0.2",
     "@angular/cli": "22.0.2",
     "@angular/compiler-cli": "22.0.2",
+    "@tailwindcss/postcss": "^4.3.1",
     "@tauri-apps/cli": "^2",
+    "postcss": "^8.5.15",
+    "tailwindcss": "^4.3.1",
     "typescript": "~6.0.3"
   }
 }
