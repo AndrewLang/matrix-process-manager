@@ -13,6 +13,7 @@ interface ProcessColumn {
 interface ProcessNameGroup {
     name: string;
     rows: ProcessRow[];
+    processGroup: ProcessGroup;
 }
 
 interface ProcessSection {
@@ -48,23 +49,29 @@ export class ProcessGridComponent {
     ]);
 
     sections = computed<ProcessSection[]>(() => {
-        const sections = new Map<ProcessGroup, Map<string, ProcessRow[]>>([
-            ["apps", new Map<string, ProcessRow[]>()],
-            ["background", new Map<string, ProcessRow[]>()],
-            ["windows", new Map<string, ProcessRow[]>()],
-        ]);
+        const groupsByName = new Map<string, ProcessRow[]>();
 
         for (const row of this.rows()) {
-            const section = sections.get(row.processGroup ?? "apps")!;
-            const nameRows = section.get(row.name) ?? [];
+            const nameRows = groupsByName.get(row.name) ?? [];
             nameRows.push(row);
-            section.set(row.name, nameRows);
+            groupsByName.set(row.name, nameRows);
+        }
+
+        const sections = new Map<ProcessGroup, ProcessNameGroup[]>([
+            ["apps", []],
+            ["background", []],
+            ["windows", []],
+        ]);
+
+        for (const [name, rows] of groupsByName) {
+            const processGroup = this.groupProcessType(rows);
+            sections.get(processGroup)!.push({ name, rows, processGroup });
         }
 
         const processSections: ProcessSection[] = [
-            { key: "apps", label: "Apps", groups: this.toNameGroups(sections.get("apps")!), count: this.countRows(sections.get("apps")!) },
-            { key: "background", label: "Background processes", groups: this.toNameGroups(sections.get("background")!), count: this.countRows(sections.get("background")!) },
-            { key: "windows", label: "Windows processes", groups: this.toNameGroups(sections.get("windows")!), count: this.countRows(sections.get("windows")!) },
+            { key: "apps", label: "Apps", groups: sections.get("apps")!, count: this.countRows(sections.get("apps")!) },
+            { key: "background", label: "Background processes", groups: sections.get("background")!, count: this.countRows(sections.get("background")!) },
+            { key: "windows", label: "Windows processes", groups: sections.get("windows")!, count: this.countRows(sections.get("windows")!) },
         ];
 
         return processSections.filter((section) => section.count > 0);
@@ -107,8 +114,8 @@ export class ProcessGridComponent {
         return group.rows.find((row) => row.iconDataUrl)?.iconDataUrl;
     }
 
-    groupType(section: ProcessSection): string {
-        return this.processTypeLabel(section.key);
+    groupType(group: ProcessNameGroup): string {
+        return this.processTypeLabel(group.processGroup);
     }
 
     rowType(row: ProcessRow): string {
@@ -166,12 +173,20 @@ export class ProcessGridComponent {
         this.resizing = undefined;
     }
 
-    private toNameGroups(groups: Map<string, ProcessRow[]>): ProcessNameGroup[] {
-        return Array.from(groups.entries()).map(([name, rows]) => ({ name, rows }));
+    private groupProcessType(rows: ProcessRow[]): ProcessGroup {
+        if (rows.some((row) => row.processGroup === "apps")) {
+            return "apps";
+        }
+
+        if (rows.some((row) => row.processGroup === "background")) {
+            return "background";
+        }
+
+        return "windows";
     }
 
-    private countRows(groups: Map<string, ProcessRow[]>): number {
-        return Array.from(groups.values()).reduce((total, rows) => total + rows.length, 0);
+    private countRows(groups: ProcessNameGroup[]): number {
+        return groups.reduce((total, group) => total + group.rows.length, 0);
     }
 
     private groupKey(section: ProcessSection, group: ProcessNameGroup): string {

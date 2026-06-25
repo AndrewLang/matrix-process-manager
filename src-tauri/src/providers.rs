@@ -141,7 +141,10 @@ fn visible_window_process_ids() -> HashSet<u32> {
 
     let mut pids = HashSet::new();
     unsafe {
-        EnumWindows(Some(collect_window_pid), &mut pids as *mut HashSet<u32> as LPARAM);
+        EnumWindows(
+            Some(collect_window_pid),
+            &mut pids as *mut HashSet<u32> as LPARAM,
+        );
     }
 
     pids
@@ -450,8 +453,7 @@ impl MemoryUsageCollector {
         let private_path = GpuUsageCollector::wide("\\Process(*)\\Working Set - Private");
         let opened = unsafe { PdhOpenQueryW(std::ptr::null(), 0, &mut query) } == 0;
         let pid_added = opened
-            && unsafe { PdhAddEnglishCounterW(query, pid_path.as_ptr(), 0, &mut pid_counter) }
-                == 0;
+            && unsafe { PdhAddEnglishCounterW(query, pid_path.as_ptr(), 0, &mut pid_counter) } == 0;
         let private_added = pid_added
             && unsafe {
                 PdhAddEnglishCounterW(query, private_path.as_ptr(), 0, &mut private_counter)
@@ -497,7 +499,11 @@ impl MemoryUsageCollector {
                 continue;
             }
 
-            if let Some(bytes) = private_bytes.get(&instance).copied().filter(|bytes| *bytes >= 0) {
+            if let Some(bytes) = private_bytes
+                .get(&instance)
+                .copied()
+                .filter(|bytes| *bytes >= 0)
+            {
                 by_pid.insert(pid as u32, bytes as u64);
             }
         }
@@ -510,8 +516,7 @@ impl MemoryUsageCollector {
         counter: windows_sys::Win32::System::Performance::PDH_HCOUNTER,
     ) -> HashMap<String, i64> {
         use windows_sys::Win32::System::Performance::{
-            PdhGetFormattedCounterArrayW, PDH_FMT_COUNTERVALUE_ITEM_W, PDH_FMT_LARGE,
-            PDH_MORE_DATA,
+            PdhGetFormattedCounterArrayW, PDH_FMT_COUNTERVALUE_ITEM_W, PDH_FMT_LARGE, PDH_MORE_DATA,
         };
 
         let mut buffer_size = 0;
@@ -553,10 +558,9 @@ impl MemoryUsageCollector {
                     return None;
                 }
 
-                Some((
-                    GpuUsageCollector::string_from_wide(item.szName),
-                    unsafe { item.FmtValue.Anonymous.largeValue },
-                ))
+                Some((GpuUsageCollector::string_from_wide(item.szName), unsafe {
+                    item.FmtValue.Anonymous.largeValue
+                }))
             })
             .collect()
     }
