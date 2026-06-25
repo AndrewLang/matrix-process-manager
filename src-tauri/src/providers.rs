@@ -45,6 +45,7 @@ impl ProcessProvider for SysinfoProcessProvider {
             .ok()
             .and_then(|mut collector| collector.sample())
             .unwrap_or_else(|| system.global_cpu_usage());
+        let cache_info = CpuCacheInfo::read();
         let cpu_info = CpuInfo {
             model: system
                 .cpus()
@@ -63,10 +64,10 @@ impl ProcessProvider for SysinfoProcessProvider {
             uptime_seconds: System::uptime(),
             total_threads: total_thread_count(&system),
             total_handles: total_handle_count(&system),
-            virtualization: None,
-            l1_cache_bytes: None,
-            l2_cache_bytes: None,
-            l3_cache_bytes: None,
+            virtualization: cpu_virtualization_status(),
+            l1_cache_bytes: cache_info.l1_bytes,
+            l2_cache_bytes: cache_info.l2_bytes,
+            l3_cache_bytes: cache_info.l3_bytes,
         };
         let gpu_usage = self
             .gpu_usage
@@ -153,6 +154,101 @@ fn average_cpu_frequency(cpus: &[sysinfo::Cpu]) -> u64 {
     }
 
     cpus.iter().map(|cpu| cpu.frequency()).sum::<u64>() / cpus.len() as u64
+}
+
+#[derive(Default)]
+struct CpuCacheInfo {
+    l1_bytes: Option<u64>,
+    l2_bytes: Option<u64>,
+    l3_bytes: Option<u64>,
+}
+
+impl CpuCacheInfo {
+    fn read() -> Self {
+        windows_cpu_cache_info().unwrap_or_default()
+    }
+}
+
+#[cfg(windows)]
+fn windows_cpu_cache_info() -> Option<CpuCacheInfo> {
+    use windows_sys::Win32::System::SystemInformation::{
+        GetLogicalProcessorInformationEx, RelationCache, SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX,
+    };
+
+    let mut byte_count = 0u32;
+    unsafe {
+        GetLogicalProcessorInformationEx(RelationCache, std::ptr::null_mut(), &mut byte_count);
+    }
+
+    if byte_count == 0 {
+        return None;
+    }
+
+    let mut buffer = vec![0u8; byte_count as usize];
+    let info = buffer.as_mut_ptr() as *mut SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX;
+    if unsafe { GetLogicalProcessorInformationEx(RelationCache, info, &mut byte_count) } == 0 {
+        return None;
+    }
+
+    let mut offset = 0usize;
+    let mut cache_info = CpuCacheInfo::default();
+
+    while offset < byte_count as usize {
+        let item = unsafe {
+            std::ptr::read_unaligned(
+                buffer.as_ptr().add(offset) as *const SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX
+            )
+        };
+        let cache = unsafe { item.Anonymous.Cache };
+        match cache.Level {
+            1 => {
+                cache_info.l1_bytes =
+                    Some(cache_info.l1_bytes.unwrap_or_default() + cache.CacheSize as u64)
+            }
+            2 => {
+                cache_info.l2_bytes =
+                    Some(cache_info.l2_bytes.unwrap_or_default() + cache.CacheSize as u64)
+            }
+            3 => {
+                cache_info.l3_bytes =
+                    Some(cache_info.l3_bytes.unwrap_or_default() + cache.CacheSize as u64)
+            }
+            _ => {}
+        }
+
+        if item.Size == 0 {
+            break;
+        }
+        offset += item.Size as usize;
+    }
+
+    Some(cache_info)
+}
+
+#[cfg(not(windows))]
+fn windows_cpu_cache_info() -> Option<CpuCacheInfo> {
+    None
+}
+
+#[cfg(windows)]
+fn cpu_virtualization_status() -> Option<String> {
+    use windows_sys::Win32::System::Threading::{
+        IsProcessorFeaturePresent, PF_VIRT_FIRMWARE_ENABLED,
+    };
+
+    Some(
+        if unsafe { IsProcessorFeaturePresent(PF_VIRT_FIRMWARE_ENABLED) } != 0 {
+            "Enabled"
+        } else {
+            "Disabled"
+        }
+        .to_string(),
+    )
+}
+
+#[cfg(not(windows))]
+fn cpu_virtualization_status() -> Option<String> {
+    None
 }
 
 fn total_thread_count(system: &System) -> usize {
