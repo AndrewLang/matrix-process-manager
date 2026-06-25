@@ -21,6 +21,7 @@ export class WorkareaComponent {
     activeTitle = input.required<string>();
     processSelected = output<ProcessRow>();
     processFilter = signal("");
+    detailsOpen = signal(true);
 
     filteredRows = computed(() => {
         const filter = this.processFilter().trim().toLowerCase();
@@ -37,6 +38,15 @@ export class WorkareaComponent {
         );
     });
 
-    filterSearchClass = "flex h-7.5 flex-1 items-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(15,28,40,0.84)] px-2.5 py-0 text-(--muted)";
-    wideFilterSearchClass = "flex h-7.5 basis-[238px] items-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(15,28,40,0.84)] px-2.5 py-0 text-(--muted)";
+    filterSearchClass = "flex h-7.5 flex-1 items-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(15,28,40,0.84)] px-2.5 py-0 text-[12px] text-(--muted)";
+    wideFilterSearchClass = "flex h-7.5 basis-[238px] items-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(15,28,40,0.84)] px-2.5 py-0 text-[12px] text-(--muted)";
+
+    selectProcess(row: ProcessRow): void {
+        this.detailsOpen.set(true);
+        this.processSelected.emit(row);
+    }
+
+    closeDetails(): void {
+        this.detailsOpen.set(false);
+    }
 }

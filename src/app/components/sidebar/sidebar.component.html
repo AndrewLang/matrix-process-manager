@@ -2,7 +2,7 @@
     <nav class="flex flex-col gap-1">
         <span class="px-2 pt-0 pb-2 text-[11px] uppercase text-[#7f91a4]">Overview</span>
         @for (item of overviewItems(); track item.label) {
-        <button type="button" class="flex h-9 items-center gap-3 rounded-[5px] bg-transparent px-2.5 py-0 text-left text-[13px] text-[#c6d2dd] hover:bg-white/6"
+        <button type="button" class="flex h-9 items-center gap-3 rounded-[5px] bg-transparent px-2.5 py-0 text-left text-[12px] text-[#c6d2dd] hover:bg-white/6"
           [ngClass]="activeView() === item.id ? 'bg-[linear-gradient(90deg,rgba(23,144,255,0.22),rgba(23,144,255,0.08))] text-[#2aa4ff]' : ''"
           (click)="viewChange.emit(item.id)">
             <i class="bi grid w-6 place-items-center text-base text-[#1d9bff]" [ngClass]="item.icon"></i>
@@ -14,7 +14,7 @@
     <nav class="mt-5 flex min-h-0 flex-col gap-1 overflow-hidden border-t border-(--border) pt-4">
         <span class="px-2 pt-0 pb-2 text-[11px] uppercase text-[#7f91a4]">Tools</span>
         @for (item of toolItems(); track item.label) {
-        <button type="button" class="flex h-9 items-center gap-3 rounded-[5px] bg-transparent px-2.5 py-0 text-left text-[13px] text-[#c6d2dd] hover:bg-white/6"
+        <button type="button" class="flex h-9 items-center gap-3 rounded-[5px] bg-transparent px-2.5 py-0 text-left text-[12px] text-[#c6d2dd] hover:bg-white/6"
           [ngClass]="activeView() === item.id ? 'bg-[linear-gradient(90deg,rgba(23,144,255,0.22),rgba(23,144,255,0.08))] text-[#2aa4ff]' : ''"
           (click)="viewChange.emit(item.id)">
             <i class="bi grid w-6 place-items-center text-base text-[#1d9bff]" [ngClass]="item.icon"></i>
@@ -23,7 +23,7 @@
         }
     </nav>
 
-    <div id="systemName" class="mt-auto grid flex-none gap-1.5 rounded-md border border-(--border) bg-[rgba(16,32,47,0.82)] px-3 py-3.5 text-[13px]">
+    <div id="systemName" class="mt-auto grid flex-none gap-1.5 rounded-md border border-(--border) bg-[rgba(16,32,47,0.82)] px-3 py-3.5 text-[12px]">
         <span class="text-xl text-[#65b8ff]"><i class="bi bi-laptop"></i></span>
         <strong>My Workstation</strong>
         <span class="text-xs text-(--muted)">Windows 11 Pro</span>

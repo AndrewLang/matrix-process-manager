@@ -27,7 +27,7 @@
 
   html,
   body {
-    @apply m-0 h-full w-full overflow-hidden;
+    @apply m-0 h-full w-full overflow-hidden text-[12px];
     background:
       radial-gradient(
         circle at 18% 10%,
@@ -70,7 +70,7 @@
   }
 
   h2 {
-    @apply text-[13px];
+    @apply text-[12px];
   }
 
   table {
@@ -79,7 +79,7 @@
 
   th,
   td {
-    @apply h-9.75 overflow-hidden text-ellipsis whitespace-nowrap border-b border-[rgba(122,153,181,0.09)] px-3 py-0 text-left text-[13px] text-[#cbd7e2];
+    @apply h-9.75 overflow-hidden text-ellipsis whitespace-nowrap border-b border-[rgba(122,153,181,0.09)] px-3 py-0 text-left text-[12px] text-[#cbd7e2];
   }
 
   th {
