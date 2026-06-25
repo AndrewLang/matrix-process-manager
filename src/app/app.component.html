@@ -3,10 +3,11 @@
 
     <div class="grid h-full min-h-0 overflow-hidden" [style.gridTemplateColumns]="sidebarWidth() + 'px 4px minmax(0, 1fr)'">
         <mtx-sidebar [overviewItems]="overviewItems" [toolItems]="toolItems" [activeView]="activeView()" (viewChange)="setView($event)" />
-        <div appSplitter [min]="132" [max]="280" (widthChange)="setSidebarWidth($event)" class="relative z-10 h-full cursor-col-resize bg-transparent hover:bg-[rgba(23,144,255,0.35)]">
+        <div appSplitter [min]="132" [max]="280" (widthChange)="setSidebarWidth($event)"
+          class="relative z-10 h-full cursor-col-resize bg-transparent hover:bg-[rgba(23,144,255,0.35)]">
             <span class="absolute top-0 left-1/2 h-full w-px -translate-x-1/2 bg-[rgba(122,153,181,0.15)]"></span>
         </div>
-                <mtx-workarea [activeView]="activeView()" [totalProcesses]="totalProcesses()" [metrics]="metrics" [rows]="rows()" [selectedProcess]="selectedProcess()"
+        <mtx-workarea [activeView]="activeView()" [totalProcesses]="totalProcesses()" [metrics]="metrics" [rows]="rows()" [selectedProcess]="selectedProcess()"
           [bars]="bars" [activeTitle]="activeTitle()" (processSelected)="selectProcess($event)" />
     </div>
 
