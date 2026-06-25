@@ -72,6 +72,8 @@ export class AppComponent implements OnInit {
   activeTitle = computed(() => this.overviewItems.find((item) => item.id === this.activeView())?.label ?? "Dashboard");
 
   ngOnInit(): void {
+    getCurrentWindow().setIcon("/assets/app-icon.png").catch(() => undefined);
+
     invoke<BackendProcessSnapshot>("get_process_snapshot")
       .then((snapshot) => {
         this.totalProcesses.set(snapshot.totalProcesses);

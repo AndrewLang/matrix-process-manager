@@ -1,9 +1,8 @@
 <header class="relative flex h-12 select-none items-center justify-center border-b border-(--border) bg-[rgba(6,14,22,0.82)] py-0 pr-0 pl-3.75"
   data-tauri-drag-region (mousedown)="dragStart.emit($event)" (dblclick)="toggleMaximizeWindow.emit()">
-    <div class="absolute left-3.75 flex items-center gap-2.25" data-tauri-drag-region>
-        <span class="grid h-5 w-5 place-items-center rounded-[5px] bg-[linear-gradient(135deg,#1da4ff,#1264ff)] font-extrabold text-white"><i
-              class="bi bi-grid-3x3-gap-fill text-xs"></i></span>
-        <strong class="text-[12px] tracking-normal">Process Manager</strong>
+    <div class="absolute left-2 flex items-center gap-1" data-tauri-drag-region>
+        <img class="h-7 w-7 rounded-[5px] object-cover" src="assets/app-icon.png" alt="" aria-hidden="true">
+        <strong class="text-[14px] tracking-normal">Process Manager</strong>
     </div>
 
     <mtx-search-box [hostClass]="searchClass" [inputClass]="searchInputClass" placeholder="Search processes, PID, publisher..." shortcut="Ctrl K" />
