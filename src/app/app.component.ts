@@ -128,7 +128,7 @@ export class AppComponent implements OnDestroy, OnInit {
         const selectedPid = this.workareaState.selectedPid();
         const rows = this.stabilizeProcessOrder(snapshot.processes).slice(0, 75).map((row) => this.toProcessRow(row, selectedPid));
         this.rows.set(rows);
-        this.updateResourceSummary(rows, snapshot.totalCpuPercent, snapshot.totalGpuPercent);
+        this.updateResourceSummary(rows, snapshot.totalCpuPercent, snapshot.totalGpuPercent, snapshot.usedMemoryBytes, snapshot.totalMemoryBytes);
       })
       .catch(() => undefined)
       .finally(() => {
@@ -255,12 +255,12 @@ export class AppComponent implements OnDestroy, OnInit {
     this.refreshSnapshot();
   }
 
-  private updateResourceSummary(rows: ProcessRow[], totalCpuPercent: number, totalGpuPercent: number): void {
+  private updateResourceSummary(rows: ProcessRow[], totalCpuPercent: number, totalGpuPercent: number, usedMemoryBytes: number, totalMemoryBytes: number): void {
     const cpu = Math.max(0, Math.min(100, totalCpuPercent));
     const gpu = Math.max(0, Math.min(100, totalGpuPercent));
     const diskBytes = rows.reduce((total, row) => total + this.parseBytesPerSecond(row.disk), 0);
-    const memoryBytes = rows.reduce((total, row) => total + this.parseBytes(row.memory), 0);
-    const memoryPercent = Math.min(100, memoryBytes / (16 * 1024 * 1024 * 1024) * 100);
+    const memoryBytes = Math.max(0, usedMemoryBytes);
+    const memoryPercent = totalMemoryBytes > 0 ? Math.min(100, memoryBytes / totalMemoryBytes * 100) : 0;
     const diskPercent = Math.min(100, diskBytes / (100 * 1024 * 1024) * 100);
     const metrics: MetricCard[] = [
       { label: "CPU", value: `${cpu.toFixed(0)}%`, detail: `${rows.length} visible processes`, accent: "blue", path: this.sparklinePath(cpu) },

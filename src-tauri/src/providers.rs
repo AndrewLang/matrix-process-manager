@@ -29,6 +29,7 @@ impl ProcessProvider for SysinfoProcessProvider {
 
         system.refresh_processes(ProcessesToUpdate::All, true);
         system.refresh_cpu_usage();
+        system.refresh_memory();
         let cpu_count = system.cpus().len().max(1) as f32;
         let total_cpu_percent = system.global_cpu_usage();
         let gpu_usage = self
@@ -61,7 +62,11 @@ impl ProcessProvider for SysinfoProcessProvider {
                     },
                     metrics: ProcessMetrics {
                         cpu_percent: (process.cpu_usage() / cpu_count).clamp(0.0, 100.0),
-                        gpu_percent: gpu_usage.by_pid.get(&process.pid().as_u32()).copied().unwrap_or_default(),
+                        gpu_percent: gpu_usage
+                            .by_pid
+                            .get(&process.pid().as_u32())
+                            .copied()
+                            .unwrap_or_default(),
                         memory_bytes: process.memory(),
                         disk_read_bytes: disk.read_bytes,
                         disk_written_bytes: disk.written_bytes,
@@ -82,6 +87,8 @@ impl ProcessProvider for SysinfoProcessProvider {
             total_processes: processes.len(),
             total_cpu_percent,
             total_gpu_percent: gpu_usage.total_percent,
+            used_memory_bytes: system.used_memory(),
+            total_memory_bytes: system.total_memory(),
             processes,
         })
     }
@@ -106,13 +113,16 @@ unsafe impl Send for GpuUsageCollector {}
 #[cfg(windows)]
 impl GpuUsageCollector {
     fn new() -> Self {
-        use windows_sys::Win32::System::Performance::{PdhAddEnglishCounterW, PdhCollectQueryData, PdhOpenQueryW};
+        use windows_sys::Win32::System::Performance::{
+            PdhAddEnglishCounterW, PdhCollectQueryData, PdhOpenQueryW,
+        };
 
         let mut query = std::ptr::null_mut();
         let mut counter = std::ptr::null_mut();
         let path = Self::wide("\\GPU Engine(*)\\Utilization Percentage");
         let opened = unsafe { PdhOpenQueryW(std::ptr::null(), 0, &mut query) } == 0;
-        let added = opened && unsafe { PdhAddEnglishCounterW(query, path.as_ptr(), 0, &mut counter) } == 0;
+        let added =
+            opened && unsafe { PdhAddEnglishCounterW(query, path.as_ptr(), 0, &mut counter) } == 0;
 
         if added {
             unsafe {
@@ -125,11 +135,18 @@ impl GpuUsageCollector {
             query = std::ptr::null_mut();
         }
 
-        Self { query, counter, ready: false }
+        Self {
+            query,
+            counter,
+            ready: false,
+        }
     }
 
     fn sample(&mut self) -> GpuUsageSnapshot {
-        use windows_sys::Win32::System::Performance::{PdhCollectQueryData, PdhGetFormattedCounterArrayW, PDH_FMT_COUNTERVALUE_ITEM_W, PDH_FMT_DOUBLE, PDH_MORE_DATA};
+        use windows_sys::Win32::System::Performance::{
+            PdhCollectQueryData, PdhGetFormattedCounterArrayW, PDH_FMT_COUNTERVALUE_ITEM_W,
+            PDH_FMT_DOUBLE, PDH_MORE_DATA,
+        };
 
         if self.query.is_null() || self.counter.is_null() {
             return GpuUsageSnapshot::default();
@@ -205,7 +222,11 @@ impl GpuUsageCollector {
 
         GpuUsageSnapshot {
             by_pid,
-            total_percent: by_engine.values().copied().fold(0.0, f32::max).clamp(0.0, 100.0),
+            total_percent: by_engine
+                .values()
+                .copied()
+                .fold(0.0, f32::max)
+                .clamp(0.0, 100.0),
         }
     }
 
