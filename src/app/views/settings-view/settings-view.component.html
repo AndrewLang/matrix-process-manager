@@ -1,86 +1,171 @@
 <section
   class="grid h-full min-h-0 min-w-0 grid-cols-[180px_minmax(0,1fr)_286px] gap-2.5 overflow-hidden px-2.5 py-3 max-[1080px]:grid-cols-[160px_minmax(0,1fr)]">
-    <nav
-      class="grid content-start gap-1 rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-2 text-[12px]">
-        @for (category of categories; track category.label; let first = $first) {
-        <button type="button" class="flex h-8 items-center gap-2 rounded-[5px] bg-transparent px-2 text-left hover:bg-white/6"
-          [class.bg-[rgba(23,144,255,0.16)]]="first" [class.text-(--blue)]="first"><i class="bi" [ngClass]="category.icon"></i>{{ category.label }}</button>
+  <nav
+    class="grid content-start gap-1 rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-2 text-[12px]">
+    @for (category of categories; track category.label; let first = $first) {
+      <button
+        type="button"
+        class="flex h-8 items-center gap-2 rounded-[5px] bg-transparent px-2 text-left hover:bg-white/6"
+        [class.bg-[rgba(23,144,255,0.16)]]="first"
+        [class.text-(--blue)]="first">
+        <i class="bi" [ngClass]="category.icon"></i>{{ category.label }}
+      </button>
+    }
+  </nav>
+  <section
+    class="min-h-0 overflow-auto rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-4.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+    <h1>Settings</h1>
+    <p>Customize Process Manager to fit your preferences.</p>
+    <div
+      class="mt-4 rounded-md border border-(--border) bg-[rgba(16,31,45,0.42)]">
+      <div class="border-b border-(--border) p-3">
+        <h2>General</h2>
+        <p>Basic application settings and behavior.</p>
+      </div>
+      <div class="divide-y divide-white/6 text-[12px]">
+        @for (
+          item of [
+            {
+              label: "Start with Windows",
+              detail:
+                "Launch Process Manager automatically when Windows starts.",
+              enabled: true,
+            },
+            {
+              label: "Minimize to system tray",
+              detail:
+                "Minimize the application to system tray instead of the taskbar.",
+              enabled: true,
+            },
+            {
+              label: "Check for updates automatically",
+              detail: "Check for application updates in the background.",
+              enabled: true,
+            },
+            {
+              label: "Confirm before killing processes",
+              detail: "Show confirmation dialog before terminating a process.",
+              enabled: true,
+            },
+            {
+              label: "Enable analytics",
+              detail:
+                "Help improve Process Manager by sending anonymous usage data.",
+              enabled: false,
+            },
+          ];
+          track item.label
+        ) {
+          <div class="flex items-center gap-4 px-3 py-3">
+            <span class="grid gap-0.5"
+              ><strong>{{ item.label }}</strong
+              ><small class="text-(--muted)">{{ item.detail }}</small></span
+            ><i
+              class="bi ml-auto text-[22px]"
+              [ngClass]="
+                item.enabled
+                  ? 'bi-toggle-on text-(--blue)'
+                  : 'bi-toggle-off text-(--muted)'
+              "></i>
+          </div>
         }
-    </nav>
-    <section
-      class="min-h-0 overflow-auto rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-4.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
-        <h1>Settings</h1>
-        <p>Customize Process Manager to fit your preferences.</p>
-        <div class="mt-4 rounded-md border border-(--border) bg-[rgba(16,31,45,0.42)]">
-            <div class="border-b border-(--border) p-3">
-                <h2>General</h2>
-                <p>Basic application settings and behavior.</p>
-            </div>
-            <div class="divide-y divide-white/6 text-[12px]">
-                @for (item of [
-                { label: 'Start with Windows', detail: 'Launch Process Manager automatically when Windows starts.', enabled: true },
-                { label: 'Minimize to system tray', detail: 'Minimize the application to system tray instead of the taskbar.', enabled: true },
-                { label: 'Check for updates automatically', detail: 'Check for application updates in the background.', enabled: true },
-                { label: 'Confirm before killing processes', detail: 'Show confirmation dialog before terminating a process.', enabled: true },
-                { label: 'Enable analytics', detail: 'Help improve Process Manager by sending anonymous usage data.', enabled: false }
-                ]; track item.label) {
-                <div class="flex items-center gap-4 px-3 py-3"><span class="grid gap-0.5"><strong>{{ item.label }}</strong><small class="text-(--muted)">{{
-                            item.detail }}</small></span><i class="bi ml-auto text-[22px]"
-                      [ngClass]="item.enabled ? 'bi-toggle-on text-(--blue)' : 'bi-toggle-off text-(--muted)'"></i></div>
-                }
-                <div class="flex items-center gap-4 px-3 py-3"><span class="grid gap-0.5"><strong>Update channel</strong><small class="text-(--muted)">Choose
-                            which update channel to use.</small></span><select
-                      class="ml-auto h-7.5 w-36 rounded border border-(--border) bg-[rgba(10,22,33,0.86)] px-2">
-                        <option>Stable</option>
-                        <option>Beta</option>
-                    </select></div>
-                <div class="px-3 py-3">
-                    <div class="mb-2 flex items-center justify-between"><span class="grid gap-0.5"><strong>Resource update frequency</strong><small
-                              class="text-(--muted)">Controls process refresh and performance chart sampling.</small></span><strong class="text-(--blue)">{{
-                            state.updateFrequency() }}</strong></div>
-                    <div class="grid grid-cols-4 gap-2 max-[900px]:grid-cols-2">
-                        @for (frequency of frequencies; track frequency.value) {
-                        <label class="cursor-pointer rounded-md border border-(--border) bg-[rgba(10,22,33,0.62)] p-2 hover:bg-white/6"
-                          [class.border-[rgba(23,144,255,0.45)]]="state.updateFrequency() === frequency.value">
-                            <input class="mr-2" type="radio" name="settingsFrequency" [checked]="state.updateFrequency() === frequency.value"
-                              (change)="state.setUpdateFrequency(frequency.value)"><strong>{{ frequency.label }}</strong><small
-                              class="mt-1 block text-(--muted)">{{ frequency.detail }}</small>
-                        </label>
-                        }
-                    </div>
-                </div>
-            </div>
+        <div class="flex items-center gap-4 px-3 py-3">
+          <span class="grid gap-0.5"
+            ><strong>Update channel</strong
+            ><small class="text-(--muted)"
+              >Choose which update channel to use.</small
+            ></span
+          ><select
+            class="ml-auto h-7.5 w-36 rounded border border-(--border) bg-[rgba(10,22,33,0.86)] px-2">
+            <option>Stable</option>
+            <option>Beta</option>
+          </select>
         </div>
-    </section>
-    <aside
-      class="grid content-start gap-2.5 rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-3 text-[12px] max-[1080px]:hidden">
-        <article class="rounded-md border border-(--border) bg-[rgba(16,31,45,0.42)] p-3">
-            <h2>About Process Manager</h2>
-            <div class="mt-3 flex gap-3">
-                <div class="grid h-11 w-11 place-items-center rounded-md bg-(--blue) text-[22px] font-bold">PM</div>
-                <div><strong>Process Manager</strong>
-                    <p>Version 1.0.0</p>
-                    <p>2026 Process Manager Team</p>
-                </div>
-            </div>
-        </article>
-        <article class="rounded-md border border-(--border) bg-[rgba(16,31,45,0.42)] p-3">
-            <h2>Support</h2>
-            <div class="mt-3 grid gap-2 text-(--muted)"><span><i class="bi bi-book mr-2"></i>Documentation</span><span><i class="bi bi-bug mr-2"></i>Report a
-                    Bug</span><span><i class="bi bi-lightbulb mr-2"></i>Request a Feature</span></div>
-        </article>
-        <article class="rounded-md border border-[rgba(255,75,67,0.3)] bg-[rgba(255,75,67,0.06)] p-3">
-            <h2 class="text-(--red)">Danger Zone</h2>
-            <div class="mt-3 grid gap-3">
-                <div><strong>Reset Settings</strong>
-                    <p class="text-(--muted)">Restore all settings to their defaults.</p><button
-                      class="mt-2 h-7 rounded border border-[rgba(255,75,67,0.4)] bg-transparent px-3 text-(--red)">Reset Settings</button>
-                </div>
-                <div><strong>Clear Application Data</strong>
-                    <p class="text-(--muted)">This will delete local data and cached information.</p><button
-                      class="mt-2 h-7 rounded border border-[rgba(255,75,67,0.4)] bg-transparent px-3 text-(--red)">Clear Data</button>
-                </div>
-            </div>
-        </article>
-    </aside>
+        <div class="px-3 py-3">
+          <div class="mb-2 flex items-center justify-between">
+            <span class="grid gap-0.5"
+              ><strong>Resource update frequency</strong
+              ><small class="text-(--muted)"
+                >Controls process refresh and performance chart sampling.</small
+              ></span
+            ><strong class="text-(--blue)">{{
+              state.updateFrequency()
+            }}</strong>
+          </div>
+          <div class="grid grid-cols-4 gap-2 max-[900px]:grid-cols-2">
+            @for (frequency of frequencies; track frequency.value) {
+              <label
+                class="cursor-pointer rounded-md border border-(--border) bg-[rgba(10,22,33,0.62)] p-2 hover:bg-white/6"
+                [class.border-[rgba(23,144,255,0.45)]]="
+                  state.updateFrequency() === frequency.value
+                ">
+                <input
+                  class="mr-2"
+                  type="radio"
+                  name="settingsFrequency"
+                  [checked]="state.updateFrequency() === frequency.value"
+                  (change)="
+                    state.setUpdateFrequency(frequency.value)
+                  " /><strong>{{ frequency.label }}</strong
+                ><small class="mt-1 block text-(--muted)">{{
+                  frequency.detail
+                }}</small>
+              </label>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <aside
+    class="grid content-start gap-2.5 rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-3 text-[12px] max-[1080px]:hidden">
+    <article
+      class="rounded-md border border-(--border) bg-[rgba(16,31,45,0.42)] p-3">
+      <h2>About Process Manager</h2>
+      <div class="mt-3 flex gap-3">
+        <div
+          class="grid h-11 w-11 place-items-center rounded-md bg-(--blue) text-[22px] font-bold">
+          PM
+        </div>
+        <div>
+          <strong>Process Manager</strong>
+          <p>Version 1.0.0</p>
+          <p>2026 Process Manager Team</p>
+        </div>
+      </div>
+    </article>
+    <article
+      class="rounded-md border border-(--border) bg-[rgba(16,31,45,0.42)] p-3">
+      <h2>Support</h2>
+      <div class="mt-3 grid gap-2 text-(--muted)">
+        <span><i class="bi bi-book mr-2"></i>Documentation</span
+        ><span><i class="bi bi-bug mr-2"></i>Report a Bug</span
+        ><span><i class="bi bi-lightbulb mr-2"></i>Request a Feature</span>
+      </div>
+    </article>
+    <article
+      class="rounded-md border border-[rgba(255,75,67,0.3)] bg-[rgba(255,75,67,0.06)] p-3">
+      <h2 class="text-(--red)">Danger Zone</h2>
+      <div class="mt-3 grid gap-3">
+        <div>
+          <strong>Reset Settings</strong>
+          <p class="text-(--muted)">Restore all settings to their defaults.</p>
+          <button
+            class="mt-2 h-7 rounded border border-[rgba(255,75,67,0.4)] bg-transparent px-3 text-(--red)">
+            Reset Settings
+          </button>
+        </div>
+        <div>
+          <strong>Clear Application Data</strong>
+          <p class="text-(--muted)">
+            This will delete local data and cached information.
+          </p>
+          <button
+            class="mt-2 h-7 rounded border border-[rgba(255,75,67,0.4)] bg-transparent px-3 text-(--red)">
+            Clear Data
+          </button>
+        </div>
+      </div>
+    </article>
+  </aside>
 </section>

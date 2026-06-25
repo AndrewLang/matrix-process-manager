@@ -1,9 +1,19 @@
-<label [class]="hostClass()" (mousedown)="$event.stopPropagation()" (dblclick)="$event.stopPropagation()">
-    <i class="bi bi-search grid w-4 flex-none place-items-center leading-none"></i>
-    <input [class]="inputClass()" type="search" [placeholder]="placeholder()" [value]="value()" (input)="value.set($any($event.target).value)" />
-    @if (shortcut()) {
+<label
+  [class]="hostClass()"
+  (mousedown)="$event.stopPropagation()"
+  (dblclick)="$event.stopPropagation()">
+  <i
+    class="bi bi-search grid w-4 flex-none place-items-center leading-none"></i>
+  <input
+    [class]="inputClass()"
+    type="search"
+    [placeholder]="placeholder()"
+    [value]="value()"
+    (input)="value.set($any($event.target).value)" />
+  @if (shortcut()) {
     <kbd
-      class="flex h-5 min-w-10.5 items-center justify-center rounded border border-[rgba(122,153,181,0.22)] bg-white/5 px-2 py-0 text-[10px] leading-5 text-[#9dacba]">{{
-        shortcut() }}</kbd>
-    }
+      class="flex h-5 min-w-10.5 items-center justify-center rounded border border-[rgba(122,153,181,0.22)] bg-white/5 px-2 py-0 text-[10px] leading-5 text-[#9dacba]"
+      >{{ shortcut() }}</kbd
+    >
+  }
 </label>

@@ -1,10 +1,25 @@
 <div class="mt-3.5 grid gap-3">
-    @for (bar of bars(); track bar.label) {
-    <div class="grid grid-cols-[72px_minmax(54px,1fr)_76px] items-center gap-2.5 text-[12px] text-[#aab8c6]"
-      [ngClass]="{ 'text-(--blue)': bar.accent === 'blue', 'text-(--cyan)': bar.accent === 'cyan', 'text-(--violet)': bar.accent === 'violet', 'text-(--green)': bar.accent === 'green', 'text-(--orange)': bar.accent === 'orange', 'text-(--yellow)': bar.accent === 'yellow' }">
-        <span>{{ bar.label }}</span>
-        <div class="h-1.25 overflow-hidden rounded-full bg-[rgba(120,146,170,0.14)]"><i class="block h-full rounded-[inherit] bg-current"
-              [style.width]="bar.width"></i></div><strong class="text-right font-medium text-[#cbd7e2]">{{ bar.value }}</strong>
+  @for (bar of bars(); track bar.label) {
+    <div
+      class="grid grid-cols-[72px_minmax(54px,1fr)_76px] items-center gap-2.5 text-[12px] text-[#aab8c6]"
+      [ngClass]="{
+        'text-(--blue)': bar.accent === 'blue',
+        'text-(--cyan)': bar.accent === 'cyan',
+        'text-(--violet)': bar.accent === 'violet',
+        'text-(--green)': bar.accent === 'green',
+        'text-(--orange)': bar.accent === 'orange',
+        'text-(--yellow)': bar.accent === 'yellow',
+      }">
+      <span>{{ bar.label }}</span>
+      <div
+        class="h-1.25 overflow-hidden rounded-full bg-[rgba(120,146,170,0.14)]">
+        <i
+          class="block h-full rounded-[inherit] bg-current"
+          [style.width]="bar.width"></i>
+      </div>
+      <strong class="text-right font-medium text-[#cbd7e2]">{{
+        bar.value
+      }}</strong>
     </div>
-    }
+  }
 </div>

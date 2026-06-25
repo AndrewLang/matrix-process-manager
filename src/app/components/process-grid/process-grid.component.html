@@ -1,77 +1,127 @@
 <div class="h-full min-h-0 overflow-auto">
-    <table>
-        <colgroup>
-            @for (column of columns(); track column.key) {
-            <col [style.width.px]="column.width" />
+  <table>
+    <colgroup>
+      @for (column of columns(); track column.key) {
+        <col [style.width.px]="column.width" />
+      }
+    </colgroup>
+    <thead>
+      <tr>
+        @for (column of columns(); track column.key; let columnIndex = $index) {
+          <th class="relative select-none">
+            {{ column.label }}
+            @if (column.resizable) {
+              <span
+                class="absolute top-0 right-0 h-full w-1 cursor-col-resize hover:bg-(--blue)"
+                (mousedown)="startResize($event, columnIndex)"></span>
             }
-        </colgroup>
-        <thead>
-            <tr>
-                @for (column of columns(); track column.key; let columnIndex = $index) {
-                <th class="relative select-none">
-                    {{ column.label }}
-                    @if (column.resizable) {
-                    <span class="absolute top-0 right-0 h-full w-1 cursor-col-resize hover:bg-(--blue)" (mousedown)="startResize($event, columnIndex)"></span>
-                    }
-                </th>
-                }
-            </tr>
-        </thead>
-        <tbody>
-            @for (section of sections(); track section.key) {
-            <tr class="bg-[rgba(10,22,33,0.92)]">
-                <td [attr.colspan]="columns().length"
-                  class="h-8 border-b border-[rgba(122,153,181,0.13)] bg-[rgba(10,22,33,0.96)] px-3 py-0 text-left text-[12px] font-semibold text-[#d6e2ee]">
-                    <span>{{ section.label }}</span>
-                    <span class="ml-1.5 font-normal text-(--muted)">{{ section.count }}</span>
-                </td>
-            </tr>
-            @for (group of section.groups; track group.name) {
-            <tr class="bg-[rgba(10,22,33,0.48)]">
-                <td>
-                    <input type="checkbox" [checked]="group.rows.some(isSelected.bind(this))" />
-                </td>
-                <td>
-                    <div class="flex min-w-0 items-center gap-2.25"><span class="grid h-5.25 w-5.25 flex-none place-items-center text-[#9fb0c0]">
-                            @if (groupIconDataUrl(group); as iconDataUrl) {
-                            <img class="h-4.5 w-4.5 object-contain" [src]="iconDataUrl" alt="" />
-                            } @else {
-                            <i class="bi bi-window text-[13px]"></i>
-                            }
-                        </span>
-                        <div class="grid min-w-0"><strong>{{ group.name }}</strong><small class="overflow-hidden text-ellipsis text-[10px] text-[#8fa0b0]">{{
-                                groupPublisher(group) }} · {{ group.rows.length }} process{{ group.rows.length === 1 ? "" : "es" }}</small></div>
-                    </div>
-                </td>
-                <td class="text-[#249dff]">{{ groupCpu(group) }}</td>
-                <td class="text-[#249dff]">{{ groupGpu(group) }}</td>
-                <td class="text-[#249dff]">{{ groupMemory(group) }}</td>
-                <td></td>
-                <td></td>
-                <td>{{ group.rows.length === 1 ? group.rows[0].pid : "--" }}</td>
-                <td></td>
-                <td class="text-center text-[#97a7b6]"><button class="grid h-full w-full place-items-center bg-transparent text-[#97a7b6] hover:text-[#d6e2ee]"
-                      type="button" [attr.aria-label]="isGroupExpanded(section, group) ? 'Collapse group' : 'Expand group'"
-                      (click)="toggleGroup(section, group)"><i
-                          [ngClass]="isGroupExpanded(section, group) ? 'bi bi-chevron-down' : 'bi bi-chevron-right'"></i></button></td>
-            </tr>
-            @if (isGroupExpanded(section, group)) {
+          </th>
+        }
+      </tr>
+    </thead>
+    <tbody>
+      @for (section of sections(); track section.key) {
+        <tr class="bg-[rgba(10,22,33,0.92)]">
+          <td
+            [attr.colspan]="columns().length"
+            class="h-8 border-b border-[rgba(122,153,181,0.13)] bg-[rgba(10,22,33,0.96)] px-3 py-0 text-left text-[12px] font-semibold text-[#d6e2ee]">
+            <span>{{ section.label }}</span>
+            <span class="ml-1.5 font-normal text-(--muted)">{{
+              section.count
+            }}</span>
+          </td>
+        </tr>
+        @for (group of section.groups; track group.name) {
+          <tr class="bg-[rgba(10,22,33,0.48)]">
+            <td>
+              <input
+                type="checkbox"
+                [checked]="group.rows.some(isSelected.bind(this))" />
+            </td>
+            <td>
+              <div class="flex min-w-0 items-center gap-2.25">
+                <span
+                  class="grid h-5.25 w-5.25 flex-none place-items-center text-[#9fb0c0]">
+                  @if (groupIconDataUrl(group); as iconDataUrl) {
+                    <img
+                      class="h-4.5 w-4.5 object-contain"
+                      [src]="iconDataUrl"
+                      alt="" />
+                  } @else {
+                    <i class="bi bi-window text-[13px]"></i>
+                  }
+                </span>
+                <div class="grid min-w-0">
+                  <strong>{{ group.name }}</strong
+                  ><small
+                    class="overflow-hidden text-ellipsis text-[10px] text-[#8fa0b0]"
+                    >{{ groupPublisher(group) }} ·
+                    {{ group.rows.length }} process{{
+                      group.rows.length === 1 ? "" : "es"
+                    }}</small
+                  >
+                </div>
+              </div>
+            </td>
+            <td class="text-[#249dff]">{{ groupCpu(group) }}</td>
+            <td class="text-[#249dff]">{{ groupGpu(group) }}</td>
+            <td class="text-[#249dff]">{{ groupMemory(group) }}</td>
+            <td></td>
+            <td></td>
+            <td>{{ group.rows.length === 1 ? group.rows[0].pid : "--" }}</td>
+            <td></td>
+            <td class="text-center text-[#97a7b6]">
+              <button
+                class="grid h-full w-full place-items-center bg-transparent text-[#97a7b6] hover:text-[#d6e2ee]"
+                type="button"
+                [attr.aria-label]="
+                  isGroupExpanded(section, group)
+                    ? 'Collapse group'
+                    : 'Expand group'
+                "
+                (click)="toggleGroup(section, group)">
+                <i
+                  [ngClass]="
+                    isGroupExpanded(section, group)
+                      ? 'bi bi-chevron-down'
+                      : 'bi bi-chevron-right'
+                  "></i>
+              </button>
+            </td>
+          </tr>
+          @if (isGroupExpanded(section, group)) {
             @for (row of group.rows; track row.pid) {
-            <tr [ngClass]="isSelected(row) ? 'bg-[linear-gradient(90deg,rgba(23,144,255,0.26),rgba(23,144,255,0.1))]' : ''" (click)="processSelected.emit(row)">
+              <tr
+                [ngClass]="
+                  isSelected(row)
+                    ? 'bg-[linear-gradient(90deg,rgba(23,144,255,0.26),rgba(23,144,255,0.1))]'
+                    : ''
+                "
+                (click)="processSelected.emit(row)">
                 <td>
-                    <input type="checkbox" [checked]="isSelected(row)" />
+                  <input type="checkbox" [checked]="isSelected(row)" />
                 </td>
                 <td>
-                    <div class="flex min-w-0 items-center gap-2.25 pl-6"><span class="grid h-5.25 w-5.25 flex-none place-items-center text-[#9fb0c0]">
-                            @if (row.iconDataUrl) {
-                            <img class="h-4.5 w-4.5 object-contain" [src]="row.iconDataUrl" alt="" />
-                            } @else {
-                            <i class="bi bi-window text-[13px]"></i>
-                            }
-                        </span>
-                        <div class="grid min-w-0"><strong>{{ row.name }}</strong><small class="overflow-hidden text-ellipsis text-[10px] text-[#8fa0b0]">{{
-                                row.publisher }}</small></div>
+                  <div class="flex min-w-0 items-center gap-2.25 pl-6">
+                    <span
+                      class="grid h-5.25 w-5.25 flex-none place-items-center text-[#9fb0c0]">
+                      @if (row.iconDataUrl) {
+                        <img
+                          class="h-4.5 w-4.5 object-contain"
+                          [src]="row.iconDataUrl"
+                          alt="" />
+                      } @else {
+                        <i class="bi bi-window text-[13px]"></i>
+                      }
+                    </span>
+                    <div class="grid min-w-0">
+                      <strong>{{ row.name }}</strong
+                      ><small
+                        class="overflow-hidden text-ellipsis text-[10px] text-[#8fa0b0]"
+                        >{{ row.publisher }}</small
+                      >
                     </div>
+                  </div>
                 </td>
                 <td class="text-[#249dff]">{{ row.cpu }}</td>
                 <td class="text-[#249dff]">{{ row.gpu }}</td>
@@ -80,16 +130,22 @@
                 <td>{{ row.network }}</td>
                 <td>{{ row.pid }}</td>
                 <td>{{ row.user }}</td>
-                <td class="text-center text-[#97a7b6]"><i class="bi bi-three-dots-vertical"></i></td>
-            </tr>
+                <td class="text-center text-[#97a7b6]">
+                  <i class="bi bi-three-dots-vertical"></i>
+                </td>
+              </tr>
             }
-            }
-            }
-            } @empty {
-            <tr>
-                <td [attr.colspan]="columns().length" class="h-20 text-center text-(--muted)">No processes match the current filter</td>
-            </tr>
-            }
-        </tbody>
-    </table>
+          }
+        }
+      } @empty {
+        <tr>
+          <td
+            [attr.colspan]="columns().length"
+            class="h-20 text-center text-(--muted)">
+            No processes match the current filter
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
 </div>

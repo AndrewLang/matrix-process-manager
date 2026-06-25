@@ -1,45 +1,91 @@
-<main class="grid h-screen w-screen grid-rows-[48px_minmax(0,1fr)_28px] overflow-hidden bg-[rgba(6,14,22,0.96)]">
-    <mtx-titlebar (dragStart)="startDrag($event)" (minimizeWindow)="minimize()" (toggleMaximizeWindow)="toggleMaximize()" (closeWindow)="close()"
-      (settingsRequested)="openSettingsDialog()" />
+<main
+  class="grid h-screen w-screen grid-rows-[48px_minmax(0,1fr)_28px] overflow-hidden bg-[rgba(6,14,22,0.96)]">
+  <mtx-titlebar
+    (dragStart)="startDrag($event)"
+    (minimizeWindow)="minimize()"
+    (toggleMaximizeWindow)="toggleMaximize()"
+    (closeWindow)="close()"
+    (settingsRequested)="openSettingsDialog()" />
 
-    <div class="grid h-full min-h-0 overflow-hidden" [style.gridTemplateColumns]="sidebarWidth() + 'px 4px minmax(0, 1fr)'">
-        <mtx-sidebar [overviewItems]="overviewItems" [toolItems]="toolItems" [activeView]="activeView()" (viewChange)="setView($event)" />
+  <div
+    class="grid h-full min-h-0 overflow-hidden"
+    [style.gridTemplateColumns]="sidebarWidth() + 'px 4px minmax(0, 1fr)'">
+    <mtx-sidebar
+      [overviewItems]="overviewItems"
+      [toolItems]="toolItems"
+      [activeView]="activeView()"
+      (viewChange)="setView($event)" />
 
-        <div appSplitter [min]="120" [max]="280" (widthChange)="setSidebarWidth($event)"
-          class="relative z-10 h-full cursor-col-resize bg-transparent hover:bg-[rgba(23,144,255,0.35)]">
-            <span class="absolute top-0 left-1/2 h-full w-px -translate-x-1/2 bg-[rgba(122,153,181,0.15)]"></span>
-        </div>
-
-        <mtx-workarea [activeView]="activeView()" [totalProcesses]="totalProcesses()" [metrics]="metrics()" [rows]="rows()"
-          [selectedProcess]="selectedProcess()" [bars]="bars()" [activeTitle]="activeTitle()" />
+    <div
+      appSplitter
+      [min]="120"
+      [max]="280"
+      (widthChange)="setSidebarWidth($event)"
+      class="relative z-10 h-full cursor-col-resize bg-transparent hover:bg-[rgba(23,144,255,0.35)]">
+      <span
+        class="absolute top-0 left-1/2 h-full w-px -translate-x-1/2 bg-[rgba(122,153,181,0.15)]"></span>
     </div>
 
-    <footer class="flex items-center justify-end gap-5.5 border-t border-(--border) bg-[rgba(7,17,27,0.92)] px-3.5 py-0 text-[#a8b5c2]">
-        <span class="mr-auto flex items-center gap-1.75"><i class="bi bi-check-circle-fill text-(--green)"></i> All systems operational</span>
-        <span>Processes: {{ totalProcesses() }}</span>
-        <span>CPU: {{ metrics()[0].value }}</span>
-        <span>Memory: {{ metrics()[2].value }}</span>
-        <span>Disk: {{ metrics()[3].detail }}</span>
-        <span>Network: {{ metrics()[4].detail }}</span>
-    </footer>
+    <mtx-workarea
+      [activeView]="activeView()"
+      [totalProcesses]="totalProcesses()"
+      [metrics]="metrics()"
+      [rows]="rows()"
+      [selectedProcess]="selectedProcess()"
+      [bars]="bars()"
+      [activeTitle]="activeTitle()" />
+  </div>
 
-    @if (settingsDialogOpen()) {
+  <footer
+    class="flex items-center justify-end gap-5.5 border-t border-(--border) bg-[rgba(7,17,27,0.92)] px-3.5 py-0 text-[#a8b5c2]">
+    <span class="mr-auto flex items-center gap-1.75"
+      ><i class="bi bi-check-circle-fill text-(--green)"></i> All systems
+      operational</span
+    >
+    <span>Processes: {{ totalProcesses() }}</span>
+    <span>CPU: {{ metrics()[0].value }}</span>
+    <span>Memory: {{ metrics()[2].value }}</span>
+    <span>Disk: {{ metrics()[3].detail }}</span>
+    <span>Network: {{ metrics()[4].detail }}</span>
+  </footer>
+
+  @if (settingsDialogOpen()) {
     <mtx-common-dialog title="Settings" (closeDialog)="closeSettingsDialog()">
-        <div class="grid gap-2">
-            <h2>Update frequency</h2>
-            @for (frequency of [
-            { value: 'high', label: 'High', detail: 'Refresh every second' },
-            { value: 'normal', label: 'Normal', detail: 'Refresh every 2 seconds' },
-            { value: 'low', label: 'Low', detail: 'Refresh every 5 seconds' },
-            { value: 'paused', label: 'Paused', detail: 'Stop automatic updates' }
-            ]; track frequency.value) {
-            <label class="flex cursor-pointer items-center gap-3 rounded-md border border-(--border) bg-[rgba(16,31,45,0.62)] px-3 py-2 hover:bg-white/6">
-                <input type="radio" name="dialogFrequency" [checked]="workareaState.updateFrequency() === frequency.value"
-                  (change)="setUpdateFrequency($any(frequency.value))">
-                <span class="grid gap-0.5"><strong>{{ frequency.label }}</strong><small class="text-(--muted)">{{ frequency.detail }}</small></span>
-            </label>
-            }
-        </div>
+      <div class="grid gap-2">
+        <h2>Update frequency</h2>
+        @for (
+          frequency of [
+            { value: "high", label: "High", detail: "Refresh every second" },
+            {
+              value: "normal",
+              label: "Normal",
+              detail: "Refresh every 2 seconds",
+            },
+            { value: "low", label: "Low", detail: "Refresh every 5 seconds" },
+            {
+              value: "paused",
+              label: "Paused",
+              detail: "Stop automatic updates",
+            },
+          ];
+          track frequency.value
+        ) {
+          <label
+            class="flex cursor-pointer items-center gap-3 rounded-md border border-(--border) bg-[rgba(16,31,45,0.62)] px-3 py-2 hover:bg-white/6">
+            <input
+              type="radio"
+              name="dialogFrequency"
+              [checked]="workareaState.updateFrequency() === frequency.value"
+              (change)="setUpdateFrequency($any(frequency.value))" />
+            <span class="grid gap-0.5"
+              ><strong>{{ frequency.label }}</strong
+              ><small class="text-(--muted)">{{
+                frequency.detail
+              }}</small></span
+            >
+          </label>
+        }
+      </div>
     </mtx-common-dialog>
-    }
+  }
 </main>
