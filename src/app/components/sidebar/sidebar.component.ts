@@ -12,5 +12,7 @@ export class SidebarComponent {
     overviewItems = input.required<NavItem[]>();
     toolItems = input.required<NavItem[]>();
     activeView = input.required<ViewId>();
+    workstationName = input("My Workstation");
     viewChange = output<ViewId>();
+    toolSelected = output<NavItem>();
 }

@@ -22,7 +22,7 @@
           activeView() === item.id
             ? 'bg-[linear-gradient(90deg,rgba(23,144,255,0.22),rgba(23,144,255,0.08))] text-[#2aa4ff]'
             : ''
-        " (click)="viewChange.emit(item.id)">
+        " (click)="toolSelected.emit(item)">
       <i class="bi grid w-6 place-items-center text-base text-[#1d9bff]" [ngClass]="item.icon"></i>
       {{ item.label }}
     </button>
@@ -31,7 +31,7 @@
 
   <div id="systemName" class="mt-auto grid flex-none gap-1.5 rounded-md border border-(--border) bg-[rgba(16,32,47,0.82)] px-3 py-3.5 text-[12px]">
     <span class="text-xl text-[#65b8ff]"><i class="bi bi-laptop"></i></span>
-    <strong>My Workstation</strong>
+    <strong>{{ workstationName() }}</strong>
     <span class="text-xs text-(--muted)">Windows 11 Pro</span>
     <span class="text-xs text-(--muted)">Uptime: 5h 42m 18s</span>
   </div>

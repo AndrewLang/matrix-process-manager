@@ -1,6 +1,6 @@
 use crate::models::{
     CommandError, CpuInfo, DiskDriveUsage, GpuAdapterUsage, GpuEngineUsage, MemoryInfo,
-    NetworkAdapterUsage, ProcessInfo, ProcessMetrics, ProcessRow, ProcessSnapshot,
+    NetworkAdapterUsage, ProcessInfo, ProcessMetrics, ProcessRow, ProcessSnapshot, WindowsInfo,
 };
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::Mutex;
@@ -18,6 +18,7 @@ pub struct SysinfoProcessProvider {
     network_usage: Mutex<NetworkUsageCollector>,
     memory_usage: Mutex<MemoryUsageCollector>,
     memory_info: Mutex<MemoryInfoCollector>,
+    windows_info: WindowsInfo,
 }
 
 impl SysinfoProcessProvider {
@@ -30,6 +31,7 @@ impl SysinfoProcessProvider {
             network_usage: Mutex::new(NetworkUsageCollector::new()),
             memory_usage: Mutex::new(MemoryUsageCollector::new()),
             memory_info: Mutex::new(MemoryInfoCollector::new()),
+            windows_info: WindowsInfoReader::read(),
         }
     }
 }
@@ -165,6 +167,7 @@ impl ProcessProvider for SysinfoProcessProvider {
             gpu_adapters: gpu_usage.adapters,
             disk_drives: disk_usage.drives,
             network_adapters: network_usage.adapters,
+            windows_info: self.windows_info.clone(),
             processes,
         })
     }
@@ -176,6 +179,57 @@ fn average_cpu_frequency(cpus: &[sysinfo::Cpu]) -> u64 {
     }
 
     cpus.iter().map(|cpu| cpu.frequency()).sum::<u64>() / cpus.len() as u64
+}
+
+struct WindowsInfoReader;
+
+impl WindowsInfoReader {
+    fn read() -> WindowsInfo {
+        windows_info().unwrap_or_default()
+    }
+}
+
+#[cfg(windows)]
+fn windows_info() -> Option<WindowsInfo> {
+    use std::collections::HashMap;
+    use std::os::windows::process::CommandExt;
+
+    let script = "$cs=Get-CimInstance Win32_ComputerSystem;$os=Get-CimInstance Win32_OperatingSystem;$cv=Get-ItemProperty 'HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion';$crypto=Get-ItemProperty 'HKLM:\\SOFTWARE\\Microsoft\\Cryptography';$installed=try{[Management.ManagementDateTimeConverter]::ToDateTime($os.InstallDate).ToString('M/d/yyyy')}catch{''};$build=if($cv.UBR -ne $null){\"$($cv.CurrentBuild).$($cv.UBR)\"}else{$cv.CurrentBuild};$experience=@($cv.ExperiencePack,$cv.WindowsFeatureExperiencePack,$cv.'Windows Feature Experience Pack')|Where-Object{$_}|Select-Object -First 1;\"deviceName|$env:COMPUTERNAME\";\"manufacturer|$($cs.Manufacturer)\";\"model|$($cs.Model)\";\"systemType|$($os.OSArchitecture)\";\"deviceId|$($crypto.MachineGuid)\";\"productId|$($cv.ProductId)\";\"osEdition|$($cv.ProductName)\";\"osVersion|$($cv.DisplayVersion)\";\"installedOn|$installed\";\"osBuild|$build\";\"experience|$experience\"";
+    let output = std::process::Command::new("powershell")
+        .args(["-NoProfile", "-NonInteractive", "-Command", script])
+        .creation_flags(0x08000000)
+        .output()
+        .ok()?;
+
+    if !output.status.success() {
+        return None;
+    }
+
+    let values = String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .filter_map(|line| line.split_once('|'))
+        .map(|(key, value)| (key.trim().to_string(), value.trim().to_string()))
+        .filter(|(_, value)| !value.is_empty())
+        .collect::<HashMap<_, _>>();
+
+    Some(WindowsInfo {
+        device_name: values.get("deviceName").cloned(),
+        manufacturer: values.get("manufacturer").cloned(),
+        model: values.get("model").cloned(),
+        system_type: values.get("systemType").cloned(),
+        device_id: values.get("deviceId").cloned(),
+        product_id: values.get("productId").cloned(),
+        os_edition: values.get("osEdition").cloned(),
+        os_version: values.get("osVersion").cloned(),
+        installed_on: values.get("installedOn").cloned(),
+        os_build: values.get("osBuild").cloned(),
+        experience: values.get("experience").cloned(),
+    })
+}
+
+#[cfg(not(windows))]
+fn windows_info() -> Option<WindowsInfo> {
+    None
 }
 
 #[derive(Default)]

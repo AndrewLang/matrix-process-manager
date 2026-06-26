@@ -4,7 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { PhysicalPosition, PhysicalSize } from "@tauri-apps/api/dpi";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { filter } from "rxjs";
-import { BackendCpuInfo, BackendProcessRow, BackendProcessSnapshot, MetricCard, NavItem, ProcessGroup, ProcessRow, ResourceBar, ResourceSample, SystemInfoItem, UpdateFrequency, ViewId } from "./app.models";
+import { BackendCpuInfo, BackendProcessRow, BackendProcessSnapshot, BackendWindowsInfo, MetricCard, NativeToolId, NavItem, ProcessGroup, ProcessRow, ResourceBar, ResourceSample, SystemInfoItem, UpdateFrequency, ViewId } from "./app.models";
 import { CommonDialogComponent } from "./components/common-dialog/common-dialog.component";
 import { SidebarComponent } from "./components/sidebar/sidebar.component";
 import { TitlebarComponent } from "./components/titlebar/titlebar.component";
@@ -42,6 +42,7 @@ export class AppComponent implements OnDestroy, OnInit {
   selectedProcess = signal("Google Chrome");
   totalProcesses = signal(142);
   sidebarWidth = signal(this.persistedUiState?.sidebarWidth ?? 200);
+  workstationName = signal("My Workstation");
   settingsDialogOpen = signal(false);
   private refreshTimer?: ReturnType<typeof setInterval>;
   private uiSaveTimer?: ReturnType<typeof setTimeout>;
@@ -51,6 +52,7 @@ export class AppComponent implements OnDestroy, OnInit {
   private processOrder: number[] = [];
   private metricHistory: ResourceSample[] = [];
   private cpuInfo?: BackendCpuInfo;
+  private windowsInfo?: BackendWindowsInfo;
   private processWorker?: Worker;
   private transformRequestId = 0;
   private pendingTransforms = new Map<number, { resolve: (response: ProcessSnapshotWorkerResponse) => void; reject: () => void }>();
@@ -66,10 +68,10 @@ export class AppComponent implements OnDestroy, OnInit {
   ];
 
   toolItems: NavItem[] = [
-    { id: "processes", label: "Task Manager", icon: "bi-window-stack" },
-    { id: "settings", label: "System Setting", icon: "bi-sliders" },
-    { id: "disk", label: "Disk Manager", icon: "bi-device-hdd" },
-    { id: "terminal", label: "Terminal", icon: "bi-terminal" },
+    { id: "processes", label: "Task Manager", icon: "bi-window-stack", nativeTool: "taskManager" },
+    { id: "settings", label: "System Setting", icon: "bi-sliders", nativeTool: "systemSettings" },
+    { id: "disk", label: "Disk Manager", icon: "bi-device-hdd", nativeTool: "diskManager" },
+    { id: "terminal", label: "Terminal", icon: "bi-terminal", nativeTool: "terminal" },
     { id: "more", label: "...", icon: "bi-three-dots" },
   ];
 
@@ -181,6 +183,8 @@ export class AppComponent implements OnDestroy, OnInit {
 
         this.totalProcesses.set(snapshot.totalProcesses);
         this.cpuInfo = snapshot.cpuInfo;
+        this.windowsInfo = snapshot.windowsInfo;
+        this.workstationName.set(snapshot.windowsInfo.deviceName || "My Workstation");
         this.workareaState.setMemoryInfo(snapshot.memoryInfo);
         this.workareaState.setGpuAdapters(snapshot.gpuAdapters);
         this.workareaState.setDiskDrives(snapshot.diskDrives);
@@ -205,6 +209,15 @@ export class AppComponent implements OnDestroy, OnInit {
     this.activeView.set(view);
     this.scheduleUiStateSave(`/${view}`);
     this.router.navigate([view]);
+  }
+
+  openTool(item: NavItem): void {
+    if (!item.nativeTool) {
+      this.setView(item.id);
+      return;
+    }
+
+    invoke<void>("open_native_tool", { toolId: item.nativeTool satisfies NativeToolId }).catch(() => undefined);
   }
 
   selectProcess(row: ProcessRow): void {
@@ -581,6 +594,17 @@ export class AppComponent implements OnDestroy, OnInit {
     const rows = this.rows();
     const info: SystemInfoItem[] = [
       { label: "Platform", value: navigator.platform || "Unknown" },
+      { label: "Device name", value: this.windowsInfo?.deviceName || "Unknown" },
+      { label: "System product name", value: this.windowsInfo?.model || "Unknown" },
+      { label: "Manufacturer", value: this.windowsInfo?.manufacturer || "Unknown" },
+      { label: "System type", value: this.windowsInfo?.systemType || "Unknown" },
+      { label: "Device ID", value: this.windowsInfo?.deviceId || "Unavailable" },
+      { label: "Product ID", value: this.windowsInfo?.productId || "Unavailable" },
+      { label: "Windows edition", value: this.windowsInfo?.osEdition || "Unknown" },
+      { label: "Windows version", value: this.windowsInfo?.osVersion || "Unknown" },
+      { label: "Installed on", value: this.windowsInfo?.installedOn || "Unavailable" },
+      { label: "OS build", value: this.windowsInfo?.osBuild || "Unavailable" },
+      { label: "Experience", value: this.windowsInfo?.experience || "Unavailable" },
       { label: "Logical processors", value: navigator.hardwareConcurrency?.toString() ?? "Unknown" },
       { label: "Device memory", value: `${(navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? "Unknown"} GB` },
       { label: "Visible processes", value: rows.length.toString() },

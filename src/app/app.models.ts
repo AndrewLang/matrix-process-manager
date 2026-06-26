@@ -1,4 +1,5 @@
 export type ViewId = "dashboard" | "processes" | "performance" | "startup" | "system" | "settings" | "disk" | "terminal" | "more";
+export type NativeToolId = "taskManager" | "systemSettings" | "diskManager" | "terminal";
 export type ProcessGroup = "apps" | "background" | "windows";
 export type UpdateFrequency = "high" | "normal" | "low" | "paused";
 
@@ -6,6 +7,7 @@ export interface NavItem {
     id: ViewId;
     label: string;
     icon: string;
+    nativeTool?: NativeToolId;
 }
 
 export interface MetricCard {
@@ -81,6 +83,21 @@ export interface BackendProcessSnapshot {
     gpuAdapters: BackendGpuAdapterUsage[];
     diskDrives: BackendDiskDriveUsage[];
     networkAdapters: BackendNetworkAdapterUsage[];
+    windowsInfo: BackendWindowsInfo;
+}
+
+export interface BackendWindowsInfo {
+    deviceName?: string;
+    manufacturer?: string;
+    model?: string;
+    systemType?: string;
+    deviceId?: string;
+    productId?: string;
+    osEdition?: string;
+    osVersion?: string;
+    installedOn?: string;
+    osBuild?: string;
+    experience?: string;
 }
 
 export interface BackendNetworkAdapterUsage {

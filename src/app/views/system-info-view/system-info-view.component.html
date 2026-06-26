@@ -1,17 +1,47 @@
-<section
-  class="grid h-full min-h-0 min-w-0 gap-2.5 overflow-hidden px-2.5 py-3">
-  <section
-    class="min-h-0 overflow-auto rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-4.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
-    <h1>System Info</h1>
-    <p>Live process manager host details and current resource summary.</p>
-    <div class="mt-4 grid grid-cols-2 gap-2.5 max-[900px]:grid-cols-1">
-      @for (item of state.systemInfo(); track item.label) {
-        <article
-          class="rounded-md border border-(--border) bg-[rgba(16,31,45,0.64)] p-3">
-          <span class="text-(--muted)">{{ item.label }}</span>
-          <strong class="mt-1 block text-[13px]">{{ item.value }}</strong>
-        </article>
-      }
-    </div>
-  </section>
+<section class="grid h-full min-h-0 min-w-0 gap-2.5 overflow-hidden px-2.5 py-3">
+    <section
+      class="min-h-0 overflow-auto rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-4.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+        <h1>System Info</h1>
+        <p>Windows device specifications and operating system details.</p>
+
+        <div class="mt-4 grid gap-2.5 md:grid-cols-2 xl:grid-cols-4">
+            @for (card of hardwareCards(); track card.label) {
+            <article class="min-h-26 rounded-md border border-(--border) bg-[rgba(16,31,45,0.64)] p-3">
+                <span class="flex items-center gap-2 text-[11px] text-(--muted)"><i class="bi" [class]="card.icon"></i>{{ card.label }}</span>
+                <strong class="mt-2 block whitespace-pre-line text-[14px] text-[#e5eef7]">{{ card.value }}</strong>
+                <small class="mt-4 block truncate text-[11px] text-(--muted)">{{ card.detail }}</small>
+            </article>
+            }
+        </div>
+
+        <section class="mt-4 rounded-md border border-(--border) bg-[rgba(16,31,45,0.48)]">
+            <div class="flex items-center justify-between border-b border-(--border) p-3">
+                <div>
+                    <h2>{{ info("Device name") }}</h2>
+                    <p class="text-[11px] text-(--muted)">{{ info("System product name") }}</p>
+                </div>
+            </div>
+            <div class="border-b border-(--border) px-3 py-3">
+                <h2><i class="bi bi-info-circle mr-2 text-(--muted)"></i>Device info</h2>
+            </div>
+            <dl class="grid gap-x-8 gap-y-2 px-6 py-3 text-[12px] sm:grid-cols-[132px_minmax(0,1fr)]">
+                @for (item of deviceInfo(); track item.label) {
+                <dt class="text-[#dce5ee]">{{ item.label }}</dt>
+                <dd class="whitespace-pre-line text-(--muted)">{{ item.value }}</dd>
+                }
+            </dl>
+        </section>
+
+        <section class="mt-2.5 rounded-md border border-(--border) bg-[rgba(16,31,45,0.48)]">
+            <div class="border-b border-(--border) px-3 py-3">
+                <h2><i class="bi bi-windows mr-2 text-(--muted)"></i>Windows info</h2>
+            </div>
+            <dl class="grid gap-x-8 gap-y-2 px-6 py-3 text-[12px] sm:grid-cols-[132px_minmax(0,1fr)]">
+                @for (item of windowsInfo(); track item.label) {
+                <dt class="text-[#dce5ee]">{{ item.label }}</dt>
+                <dd class="text-(--muted)">{{ item.value }}</dd>
+                }
+            </dl>
+        </section>
+    </section>
 </section>

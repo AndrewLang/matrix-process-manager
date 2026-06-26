@@ -116,6 +116,22 @@ pub struct NetworkAdapterUsage {
     pub ipv6_addresses: Vec<String>,
 }
 
+#[derive(Clone, Debug, Default, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WindowsInfo {
+    pub device_name: Option<String>,
+    pub manufacturer: Option<String>,
+    pub model: Option<String>,
+    pub system_type: Option<String>,
+    pub device_id: Option<String>,
+    pub product_id: Option<String>,
+    pub os_edition: Option<String>,
+    pub os_version: Option<String>,
+    pub installed_on: Option<String>,
+    pub os_build: Option<String>,
+    pub experience: Option<String>,
+}
+
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProcessSnapshot {
@@ -132,6 +148,7 @@ pub struct ProcessSnapshot {
     pub gpu_adapters: Vec<GpuAdapterUsage>,
     pub disk_drives: Vec<DiskDriveUsage>,
     pub network_adapters: Vec<NetworkAdapterUsage>,
+    pub windows_info: WindowsInfo,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -160,6 +177,13 @@ impl CommandError {
     pub fn process_snapshot_failed(message: impl Into<String>) -> Self {
         Self {
             code: "processSnapshotFailed".to_string(),
+            message: message.into(),
+        }
+    }
+
+    pub fn native_tool_failed(message: impl Into<String>) -> Self {
+        Self {
+            code: "nativeToolFailed".to_string(),
             message: message.into(),
         }
     }
