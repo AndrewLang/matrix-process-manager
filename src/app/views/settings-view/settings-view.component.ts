@@ -38,6 +38,7 @@ export class SettingsViewComponent {
         { key: "systemSettings", label: "System Settings", detail: "Open Windows Settings to the About page." },
         { key: "diskManager", label: "Disk Manager", detail: "Open Windows Disk Management from the Tools menu." },
         { key: "terminal", label: "Terminal", detail: "Open Windows Terminal from the Tools menu." },
+        { key: "envVariables", label: "Env Variables", detail: "Open Windows Environment Variables from the Tools menu." },
     ];
     aboutItems = [
         { label: "Product", value: "Process Manager" },

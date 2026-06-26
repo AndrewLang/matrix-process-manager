@@ -13,6 +13,7 @@ export class WorkareaStateService {
             systemSettings: true,
             diskManager: true,
             terminal: true,
+            envVariables: true,
         },
     };
 
