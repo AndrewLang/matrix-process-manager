@@ -72,7 +72,6 @@ export class AppComponent implements OnDestroy, OnInit {
     { id: "settings", label: "System Setting", icon: "bi-sliders", nativeTool: "systemSettings" },
     { id: "disk", label: "Disk Manager", icon: "bi-device-hdd", nativeTool: "diskManager" },
     { id: "terminal", label: "Terminal", icon: "bi-terminal", nativeTool: "terminal" },
-    { id: "more", label: "...", icon: "bi-three-dots" },
   ];
 
   metrics = signal<MetricCard[]>([
