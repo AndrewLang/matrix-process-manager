@@ -59,6 +59,7 @@ export class AppComponent implements OnDestroy, OnInit {
   private pendingTransforms = new Map<number, { resolve: (response: ProcessSnapshotWorkerResponse) => void; reject: () => void }>();
   private windowUnlisteners: Array<() => void> = [];
   private restoringWindowState = false;
+  private normalWindowState?: PersistedWindowState;
 
   overviewItems: NavItem[] = [
     { id: "dashboard", label: "Dashboard", icon: "bi-speedometer2" },
@@ -256,7 +257,7 @@ export class AppComponent implements OnDestroy, OnInit {
   minimize(): void {
     const appWindow = getCurrentWindow();
     if (this.workareaState.appSettings().minimizeToTray) {
-      appWindow.hide();
+      this.saveWindowState().finally(() => appWindow.hide());
       return;
     }
 
@@ -290,16 +291,18 @@ export class AppComponent implements OnDestroy, OnInit {
     const state = this.loadWindowState();
     const appWindow = getCurrentWindow();
     this.restoringWindowState = true;
+    this.normalWindowState = state;
 
     try {
       if (state) {
-        await appWindow.setSize(new PhysicalSize(state.width, state.height));
         await appWindow.setPosition(new PhysicalPosition(state.x, state.y));
+        await appWindow.setSize(new PhysicalSize(state.width, state.height));
       }
 
       await appWindow.show();
 
       if (state) {
+        await appWindow.setSize(new PhysicalSize(state.width, state.height));
         await appWindow.setPosition(new PhysicalPosition(state.x, state.y));
         if (state.maximized) {
           await appWindow.maximize();
@@ -308,7 +311,9 @@ export class AppComponent implements OnDestroy, OnInit {
     } catch {
       appWindow.show().catch(() => undefined);
     } finally {
-      this.restoringWindowState = false;
+      setTimeout(() => {
+        this.restoringWindowState = false;
+      }, 300);
     }
   }
 
@@ -316,6 +321,11 @@ export class AppComponent implements OnDestroy, OnInit {
     const appWindow = getCurrentWindow();
     appWindow.onMoved(() => this.scheduleWindowStateSave()).then((unlisten) => this.windowUnlisteners.push(unlisten)).catch(() => undefined);
     appWindow.onResized(() => this.scheduleWindowStateSave()).then((unlisten) => this.windowUnlisteners.push(unlisten)).catch(() => undefined);
+    appWindow.onFocusChanged(({ payload: focused }) => {
+      if (focused && this.workareaState.appSettings().minimizeToTray) {
+        setTimeout(() => this.restoreNormalWindowBounds(), 0);
+      }
+    }).then((unlisten) => this.windowUnlisteners.push(unlisten)).catch(() => undefined);
     appWindow.onCloseRequested(() => this.saveWindowState()).then((unlisten) => this.windowUnlisteners.push(unlisten)).catch(() => undefined);
   }
 
@@ -355,17 +365,47 @@ export class AppComponent implements OnDestroy, OnInit {
     }
 
     const appWindow = getCurrentWindow();
-    return Promise.all([appWindow.outerPosition(), appWindow.outerSize(), appWindow.isMaximized()])
-      .then(([position, size, maximized]) => {
-        this.writeJson(this.windowStateKey, {
+    return Promise.all([appWindow.outerPosition(), appWindow.outerSize(), appWindow.isMaximized(), appWindow.isMinimized(), appWindow.isVisible()])
+      .then(([position, size, maximized, minimized, visible]) => {
+        if (maximized || minimized || !visible) {
+          if (this.normalWindowState) {
+            this.writeJson(this.windowStateKey, { ...this.normalWindowState, maximized } satisfies PersistedWindowState);
+          }
+          return;
+        }
+
+        const next = {
           x: position.x,
           y: position.y,
           width: size.width,
           height: size.height,
           maximized,
-        } satisfies PersistedWindowState);
+        } satisfies PersistedWindowState;
+        this.normalWindowState = next;
+        this.writeJson(this.windowStateKey, next);
       })
       .catch(() => undefined);
+  }
+
+  private async restoreNormalWindowBounds(): Promise<void> {
+    const state = this.normalWindowState ?? this.loadWindowState();
+    if (!state) {
+      return;
+    }
+
+    const appWindow = getCurrentWindow();
+    this.restoringWindowState = true;
+    try {
+      const maximized = await appWindow.isMaximized();
+      if (!maximized) {
+        await appWindow.setSize(new PhysicalSize(state.width, state.height));
+        await appWindow.setPosition(new PhysicalPosition(state.x, state.y));
+      }
+    } finally {
+      setTimeout(() => {
+        this.restoringWindowState = false;
+      }, 300);
+    }
   }
 
   private loadUiState(): PersistedUiState | undefined {
