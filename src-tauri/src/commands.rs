@@ -1,6 +1,15 @@
+use crate::command_knowledge::models::{
+    CommandAutocompleteRequest, CommandAutocompleteSuggestion, CommandIndexResult,
+    FinishCommandExecutionRequest, InstalledApplicationScanResult, StartCommandExecutionRequest,
+    StartCommandExecutionResponse,
+};
 use crate::models::{CommandError, ProcessSnapshot, StartupApp};
+use crate::terminal::models::{
+    TerminalResizeRequest, TerminalSessionInfo, TerminalSessionRequest, TerminalStartRequest,
+    TerminalStartResponse, TerminalStopRequest, TerminalWriteRequest,
+};
 use crate::AppState;
-use tauri::State;
+use tauri::{AppHandle, State};
 
 #[tauri::command]
 pub fn get_process_snapshot(state: State<'_, AppState>) -> Result<ProcessSnapshot, CommandError> {
@@ -25,6 +34,106 @@ pub fn set_start_with_windows(enabled: bool) -> Result<(), CommandError> {
 #[tauri::command]
 pub fn terminate_process(pid: u32) -> Result<(), CommandError> {
     terminate_process_impl(pid)
+}
+
+#[tauri::command]
+pub fn start_terminal_session(
+    state: State<'_, AppState>,
+    app_handle: AppHandle,
+    request: TerminalStartRequest,
+) -> Result<TerminalStartResponse, CommandError> {
+    state.terminal_service.start_session(request, app_handle)
+}
+
+#[tauri::command]
+pub fn write_terminal_input(
+    state: State<'_, AppState>,
+    request: TerminalWriteRequest,
+) -> Result<(), CommandError> {
+    state.terminal_service.write_input(request)
+}
+
+#[tauri::command]
+pub fn resize_terminal_session(
+    state: State<'_, AppState>,
+    request: TerminalResizeRequest,
+) -> Result<(), CommandError> {
+    state.terminal_service.resize_session(request)
+}
+
+#[tauri::command]
+pub fn stop_terminal_session(
+    state: State<'_, AppState>,
+    request: TerminalStopRequest,
+) -> Result<(), CommandError> {
+    state.terminal_service.stop_session(request)
+}
+
+#[tauri::command]
+pub fn get_terminal_session(
+    state: State<'_, AppState>,
+    request: TerminalSessionRequest,
+) -> Result<TerminalSessionInfo, CommandError> {
+    state.terminal_service.get_session(request)
+}
+
+#[tauri::command]
+pub fn get_active_terminal_session(
+    state: State<'_, AppState>,
+) -> Result<Option<TerminalSessionInfo>, CommandError> {
+    state.terminal_service.active_session()
+}
+
+#[tauri::command]
+pub fn set_active_terminal_session(
+    state: State<'_, AppState>,
+    request: TerminalSessionRequest,
+) -> Result<(), CommandError> {
+    state.terminal_service.set_active_session(request)
+}
+
+#[tauri::command]
+pub fn scan_installed_applications(
+    state: State<'_, AppState>,
+) -> Result<InstalledApplicationScanResult, CommandError> {
+    state
+        .command_knowledge_service
+        .scan_installed_applications()
+}
+
+#[tauri::command]
+pub fn index_commands(state: State<'_, AppState>) -> Result<CommandIndexResult, CommandError> {
+    state.command_knowledge_service.index_commands()
+}
+
+#[tauri::command]
+pub fn autocomplete_commands(
+    state: State<'_, AppState>,
+    request: CommandAutocompleteRequest,
+) -> Result<Vec<CommandAutocompleteSuggestion>, CommandError> {
+    state
+        .command_knowledge_service
+        .autocomplete_commands(request)
+}
+
+#[tauri::command]
+pub fn start_command_execution(
+    state: State<'_, AppState>,
+    request: StartCommandExecutionRequest,
+) -> Result<StartCommandExecutionResponse, CommandError> {
+    state
+        .command_knowledge_service
+        .start_command_execution(request)
+}
+
+#[tauri::command]
+pub fn finish_command_execution(
+    state: State<'_, AppState>,
+    request: FinishCommandExecutionRequest,
+) -> Result<(), CommandError> {
+    state
+        .command_knowledge_service
+        .finish_command_execution(request)
 }
 
 #[cfg(windows)]

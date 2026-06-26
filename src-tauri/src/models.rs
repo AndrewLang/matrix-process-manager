@@ -201,4 +201,11 @@ impl CommandError {
             message: message.into(),
         }
     }
+
+    pub fn terminal_failed(message: impl Into<String>) -> Self {
+        Self {
+            code: "terminalFailed".to_string(),
+            message: message.into(),
+        }
+    }
 }

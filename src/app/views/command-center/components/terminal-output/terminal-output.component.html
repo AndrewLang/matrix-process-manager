@@ -1,0 +1,26 @@
+<div #viewport
+  class="h-full min-h-0 overflow-y-auto overflow-x-hidden rounded-md border border-(--border) bg-[#050b12] p-3 font-mono text-[12px] leading-relaxed shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+    @if (lines().length === 0) {
+    <div class="grid h-full place-items-center text-[12px] text-(--muted)">Start a shell to begin.</div>
+    } @else {
+    @if (lines().length > visibleLines().length) {
+    <div class="pb-2 text-[11px] text-(--muted)">{{ lines().length - visibleLines().length }} older lines hidden for performance.</div>
+    }
+    @for (line of visibleLines(); track line.id) {
+    <div class="min-h-4.5 whitespace-pre-wrap wrap-break-word">
+        @for (segment of line.segments; track $index) {
+        <span [ngClass]="[segment.color, segment.bold ? 'font-semibold' : 'font-normal']">
+            @for (part of segmentParts(segment); track $index) {
+            @if (part.kind === "text") {
+            <span>{{ part.text }}</span>
+            } @else {
+            <button type="button" class="rounded bg-transparent text-[#65b8ff] underline decoration-dotted underline-offset-2 hover:text-[#8cc8ff]"
+              (click)="openPart(part)">{{ part.text }}</button>
+            }
+            }
+        </span>
+        }
+    </div>
+    }
+    }
+</div>

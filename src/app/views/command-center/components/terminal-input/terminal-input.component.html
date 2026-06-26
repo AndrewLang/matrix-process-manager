@@ -1,0 +1,102 @@
+<div class="relative min-w-0">
+    @if (autocompleteOpen() && suggestions().length > 0) {
+    <div
+      class="absolute bottom-[calc(100%+8px)] left-0 right-0 z-30 grid max-h-[25rem] grid-cols-[minmax(18rem,0.95fr)_minmax(18rem,1.05fr)] overflow-hidden rounded-md border border-(--border) bg-[rgba(6,14,22,0.98)] font-mono text-[12px] shadow-[0_18px_42px_rgba(0,0,0,0.42)]">
+        <div class="min-h-0 overflow-y-auto border-r border-(--border) py-1">
+            @for (suggestion of suggestions(); track suggestion.commandId) {
+            <button type="button"
+              class="grid w-full grid-cols-[1.5rem_minmax(0,1fr)] gap-x-2 px-2.5 py-2 text-left outline-none transition-colors hover:bg-white/8"
+              [class.bg-white/10]="$index === activeIndex()" (mouseenter)="setActiveIndex($index)" (mousedown)="$event.preventDefault()"
+              (click)="chooseSuggestion(suggestion)">
+                <span class="flex size-5 items-center justify-center rounded border border-white/10 bg-white/6 text-[11px] text-[#8cc8ff]">
+                    <i [class]="suggestion.icon"></i>
+                </span>
+                <span class="min-w-0">
+                    <span class="flex min-w-0 items-center gap-1.5">
+                        <span class="truncate text-[#e2edf6]">{{ suggestion.label }}</span>
+                        @if (suggestion.frequentlyUsed) {
+                        <span
+                          class="rounded border border-[rgba(103,223,155,0.35)] bg-[rgba(103,223,155,0.08)] px-1.5 py-0.5 text-[10px] text-(--green)">frequent</span>
+                        }
+                        @if (suggestion.recentlyUsed) {
+                        <span
+                          class="rounded border border-[rgba(140,200,255,0.35)] bg-[rgba(140,200,255,0.08)] px-1.5 py-0.5 text-[10px] text-[#8cc8ff]">recent</span>
+                        }
+                    </span>
+                    <span class="mt-0.5 block truncate text-[11px] text-(--muted)">{{ suggestion.description || suggestion.commandLine }}</span>
+                </span>
+            </button>
+            }
+        </div>
+        @if (activeSuggestion(); as active) {
+        <aside class="min-h-0 overflow-y-auto p-3 text-[11px] text-(--muted)">
+            <div class="flex min-w-0 items-start gap-2">
+                <span class="flex size-6 shrink-0 items-center justify-center rounded border border-white/10 bg-white/6 text-[#8cc8ff]"><i
+                      [class]="active.icon"></i></span>
+                <div class="min-w-0">
+                    <div class="truncate text-[12px] text-[#e2edf6]">{{ active.commandLine }}</div>
+                    <div class="mt-1 leading-5">{{ active.description || "No description indexed" }}</div>
+                </div>
+            </div>
+
+            <div class="mt-3 grid grid-cols-3 gap-2">
+                <div class="rounded border border-white/8 bg-white/5 px-2 py-1.5">
+                    <div class="text-[10px] uppercase text-(--muted)">Usage</div>
+                    <div class="mt-0.5 text-[#e2edf6]">{{ active.usageCount }}</div>
+                </div>
+                <div class="rounded border border-white/8 bg-white/5 px-2 py-1.5">
+                    <div class="text-[10px] uppercase text-(--muted)">Option</div>
+                    <div class="mt-0.5 truncate text-[#e2edf6]">{{ optionText(active) }}</div>
+                </div>
+                <div class="rounded border border-white/8 bg-white/5 px-2 py-1.5">
+                    <div class="text-[10px] uppercase text-(--muted)">Argument</div>
+                    <div class="mt-0.5 truncate text-[#e2edf6]">{{ argumentText(active) }}</div>
+                </div>
+            </div>
+
+            @if (active.options.length > 0) {
+            <section class="mt-3">
+                <div class="mb-1.5 text-[10px] uppercase tracking-[0.08em] text-(--muted)">Options</div>
+                <div class="grid gap-1.5">
+                    @for (option of active.options; track option.name) {
+                    <div class="grid grid-cols-[minmax(5rem,auto)_minmax(0,1fr)] gap-2 rounded bg-white/5 px-2 py-1.5">
+                        <span class="text-[#8cc8ff]">{{ formatOption(option) }}</span>
+                        <span class="truncate">{{ option.description || "No description" }}</span>
+                    </div>
+                    }
+                </div>
+            </section>
+            }
+
+            @if (active.arguments.length > 0) {
+            <section class="mt-3">
+                <div class="mb-1.5 text-[10px] uppercase tracking-[0.08em] text-(--muted)">Arguments</div>
+                <div class="grid gap-1.5">
+                    @for (argument of active.arguments; track argument.name) {
+                    <div class="grid grid-cols-[minmax(5rem,auto)_minmax(0,1fr)] gap-2 rounded bg-white/5 px-2 py-1.5">
+                        <span class="text-[#ffd166]">{{ argument.name }}{{ argument.required ? " *" : "" }}</span>
+                        <span class="truncate">{{ argument.description || "No description" }}</span>
+                    </div>
+                    }
+                </div>
+            </section>
+            }
+
+            <section class="mt-3">
+                <div class="mb-1.5 text-[10px] uppercase tracking-[0.08em] text-(--muted)">Example</div>
+                <div class="rounded bg-black/25 px-2 py-1.5 text-[#e2edf6]">{{ exampleText(active) }}</div>
+            </section>
+        </aside>
+        }
+    </div>
+    }
+    <div class="flex min-h-10 items-center gap-2 rounded-md border border-(--border) bg-[rgba(5,11,18,0.96)] px-3 font-mono text-[12px]">
+        <span class="text-(--green)">$</span>
+        <input class="h-8 min-w-0 flex-1 bg-transparent text-[#e2edf6] outline-none placeholder:text-(--muted) disabled:opacity-60" type="text"
+          spellcheck="false" placeholder="Enter command" [disabled]="disabled()" [value]="value()" (input)="updateValue($any($event.target).value)"
+          (keydown)="handleKeydown($event)" />
+        @if (autocompleteLoading()) {
+        <span class="text-[11px] text-(--muted)">searching</span>
+        }
+    </div>
+</div>

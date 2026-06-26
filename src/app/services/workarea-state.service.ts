@@ -1,5 +1,5 @@
 import { Injectable, computed, signal } from "@angular/core";
-import { AppSettings, BackendDiskDriveUsage, BackendGpuAdapterUsage, BackendMemoryInfo, BackendNetworkAdapterUsage, MetricCard, ProcessRow, ResourceBar, ResourceSample, SystemInfoItem, UpdateFrequency, ViewId } from "../app.models";
+import { AppSettings, BackendDiskDriveUsage, BackendGpuAdapterUsage, BackendMemoryInfo, BackendNetworkAdapterUsage, IndexingSettings, MetricCard, ProcessRow, ResourceBar, ResourceSample, StorageSettings, SystemInfoItem, TerminalSettings, UpdateFrequency, ViewId } from "../app.models";
 
 @Injectable({ providedIn: "root" })
 export class WorkareaStateService {
@@ -8,6 +8,22 @@ export class WorkareaStateService {
         startWithWindows: false,
         minimizeToTray: false,
         confirmBeforeKillingProcesses: true,
+        terminalSettings: {
+            defaultShell: "system",
+            fontFamily: "Cascadia Mono, Consolas, monospace",
+            fontSize: 12,
+            cursorStyle: "block",
+            opacity: 96,
+            theme: "matrix",
+            historySize: 600,
+            autocompleteDelayMs: 120,
+        },
+        indexingSettings: {
+            schedule: "manual",
+        },
+        storageSettings: {
+            sqliteLocation: "default",
+        },
         toolSettings: {
             taskManager: true,
             systemSettings: true,
@@ -95,6 +111,30 @@ export class WorkareaStateService {
         });
     }
 
+    setTerminalSetting<Key extends keyof TerminalSettings>(key: Key, value: TerminalSettings[Key]): void {
+        this.appSettings.update((settings) => {
+            const next = { ...settings, terminalSettings: { ...settings.terminalSettings, [key]: value } };
+            localStorage.setItem(this.appSettingsKey, JSON.stringify(next));
+            return next;
+        });
+    }
+
+    setIndexingSetting<Key extends keyof IndexingSettings>(key: Key, value: IndexingSettings[Key]): void {
+        this.appSettings.update((settings) => {
+            const next = { ...settings, indexingSettings: { ...settings.indexingSettings, [key]: value } };
+            localStorage.setItem(this.appSettingsKey, JSON.stringify(next));
+            return next;
+        });
+    }
+
+    setStorageSetting<Key extends keyof StorageSettings>(key: Key, value: StorageSettings[Key]): void {
+        this.appSettings.update((settings) => {
+            const next = { ...settings, storageSettings: { ...settings.storageSettings, [key]: value } };
+            localStorage.setItem(this.appSettingsKey, JSON.stringify(next));
+            return next;
+        });
+    }
+
     resetAppSettings(): void {
         this.appSettings.set(this.defaultAppSettings);
         localStorage.setItem(this.appSettingsKey, JSON.stringify(this.defaultAppSettings));
@@ -146,6 +186,9 @@ export class WorkareaStateService {
             return {
                 ...this.defaultAppSettings,
                 ...saved,
+                terminalSettings: { ...this.defaultAppSettings.terminalSettings, ...saved.terminalSettings },
+                indexingSettings: { ...this.defaultAppSettings.indexingSettings, ...saved.indexingSettings },
+                storageSettings: { ...this.defaultAppSettings.storageSettings, ...saved.storageSettings },
                 toolSettings: { ...this.defaultAppSettings.toolSettings, ...saved.toolSettings },
             };
         } catch {

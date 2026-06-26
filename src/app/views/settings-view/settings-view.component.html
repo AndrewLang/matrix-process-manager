@@ -20,6 +20,108 @@
             </div>
 
             @switch (activeCategory()) {
+            @case ("Terminal") {
+            <div class="mt-3 rounded-md border border-(--border) bg-[rgba(16,31,45,0.32)]">
+                <div class="flex min-h-16 items-center gap-4 border-b border-(--border) px-3 py-3">
+                    <span class="grid gap-0.5">
+                        <strong class="text-[13px] text-[#e2eaf2]">Default shell</strong>
+                        <small class="text-[12px] text-(--muted)">Choose the shell Command Center starts with.</small>
+                    </span>
+                    <select
+                      class="ml-auto h-8 w-40 flex-none rounded-md border border-(--border) bg-[rgba(10,22,33,0.86)] px-3 text-[12px] text-[#dfe8f1] outline-none"
+                      [value]="state.appSettings().terminalSettings.defaultShell" (change)="setDefaultShell($any($event.target).value)">
+                        @for (option of shellOptions; track option.value) {
+                        <option [value]="option.value">{{ option.label }}</option>
+                        }
+                    </select>
+                </div>
+                <div class="flex min-h-16 items-center gap-4 border-b border-(--border) px-3 py-3">
+                    <span class="grid gap-0.5">
+                        <strong class="text-[13px] text-[#e2eaf2]">Font</strong>
+                        <small class="text-[12px] text-(--muted)">Terminal font family.</small>
+                    </span>
+                    <input class="ml-auto h-8 w-64 flex-none rounded-md border border-(--border) bg-[rgba(10,22,33,0.86)] px-3 text-[12px] text-[#dfe8f1]"
+                      [value]="state.appSettings().terminalSettings.fontFamily" (change)="setTerminalFont($any($event.target).value)" />
+                </div>
+                <div class="grid gap-3 border-b border-(--border) px-3 py-3 md:grid-cols-2">
+                    <label class="grid gap-1.5">
+                        <span class="text-[13px] text-[#e2eaf2]">Font size</span>
+                        <input class="h-8 rounded-md border border-(--border) bg-[rgba(10,22,33,0.86)] px-3 text-[12px] text-[#dfe8f1]" type="number" min="10"
+                          max="24" [value]="state.appSettings().terminalSettings.fontSize"
+                          (change)="setTerminalNumber('fontSize', $any($event.target).value)" />
+                    </label>
+                    <label class="grid gap-1.5">
+                        <span class="text-[13px] text-[#e2eaf2]">Opacity</span>
+                        <input class="h-8 rounded-md border border-(--border) bg-[rgba(10,22,33,0.86)] px-3 text-[12px] text-[#dfe8f1]" type="number" min="50"
+                          max="100" [value]="state.appSettings().terminalSettings.opacity" (change)="setTerminalNumber('opacity', $any($event.target).value)" />
+                    </label>
+                    <label class="grid gap-1.5">
+                        <span class="text-[13px] text-[#e2eaf2]">History size</span>
+                        <input class="h-8 rounded-md border border-(--border) bg-[rgba(10,22,33,0.86)] px-3 text-[12px] text-[#dfe8f1]" type="number" min="100"
+                          max="5000" [value]="state.appSettings().terminalSettings.historySize"
+                          (change)="setTerminalNumber('historySize', $any($event.target).value)" />
+                    </label>
+                    <label class="grid gap-1.5">
+                        <span class="text-[13px] text-[#e2eaf2]">Autocomplete delay</span>
+                        <input class="h-8 rounded-md border border-(--border) bg-[rgba(10,22,33,0.86)] px-3 text-[12px] text-[#dfe8f1]" type="number" min="0"
+                          max="1000" [value]="state.appSettings().terminalSettings.autocompleteDelayMs"
+                          (change)="setTerminalNumber('autocompleteDelayMs', $any($event.target).value)" />
+                    </label>
+                </div>
+                <div class="grid gap-3 px-3 py-3 md:grid-cols-2">
+                    <label class="grid gap-1.5">
+                        <span class="text-[13px] text-[#e2eaf2]">Cursor style</span>
+                        <select class="h-8 rounded-md border border-(--border) bg-[rgba(10,22,33,0.86)] px-3 text-[12px] text-[#dfe8f1] outline-none"
+                          [value]="state.appSettings().terminalSettings.cursorStyle" (change)="setCursorStyle($any($event.target).value)">
+                            @for (option of cursorStyles; track option.value) {
+                            <option [value]="option.value">{{ option.label }}</option>
+                            }
+                        </select>
+                    </label>
+                    <label class="grid gap-1.5">
+                        <span class="text-[13px] text-[#e2eaf2]">Terminal theme</span>
+                        <select class="h-8 rounded-md border border-(--border) bg-[rgba(10,22,33,0.86)] px-3 text-[12px] text-[#dfe8f1] outline-none"
+                          [value]="state.appSettings().terminalSettings.theme" (change)="setTerminalTheme($any($event.target).value)">
+                            @for (option of terminalThemes; track option.value) {
+                            <option [value]="option.value">{{ option.label }}</option>
+                            }
+                        </select>
+                    </label>
+                </div>
+            </div>
+            }
+            @case ("Indexing") {
+            <div class="mt-3 rounded-md border border-(--border) bg-[rgba(16,31,45,0.32)]">
+                @for (item of indexingSchedules; track item.value) {
+                <button type="button"
+                  class="flex min-h-14 w-full items-center gap-4 border-b border-(--border) px-3 py-3 text-left last:border-b-0 hover:bg-white/5"
+                  (click)="setIndexingSchedule(item.value)">
+                    <span class="grid gap-0.5">
+                        <strong class="text-[13px] text-[#e2eaf2]">{{ item.label }}</strong>
+                        <small class="text-[12px] text-(--muted)">{{ item.detail }}</small>
+                    </span>
+                    <span class="ml-auto grid size-4 place-items-center rounded-full border border-(--border)"
+                      [class.bg-[#1596ff]]="state.appSettings().indexingSettings.schedule === item.value">
+                        @if (state.appSettings().indexingSettings.schedule === item.value) {
+                        <span class="size-1.5 rounded-full bg-white"></span>
+                        }
+                    </span>
+                </button>
+                }
+            </div>
+            }
+            @case ("Storage") {
+            <div class="mt-3 rounded-md border border-(--border) bg-[rgba(16,31,45,0.32)]">
+                <div class="flex min-h-16 items-center gap-4 px-3 py-3">
+                    <span class="grid gap-0.5">
+                        <strong class="text-[13px] text-[#e2eaf2]">SQLite location</strong>
+                        <small class="text-[12px] text-(--muted)">Use default app data storage or enter a custom SQLite file path.</small>
+                    </span>
+                    <input class="ml-auto h-8 w-80 flex-none rounded-md border border-(--border) bg-[rgba(10,22,33,0.86)] px-3 text-[12px] text-[#dfe8f1]"
+                      [value]="state.appSettings().storageSettings.sqliteLocation" (change)="setSqliteLocation($any($event.target).value)" />
+                </div>
+            </div>
+            }
             @case ("Tools") {
             <div class="mt-3 rounded-md border border-(--border) bg-[rgba(16,31,45,0.32)]">
                 @for (item of toolSettings; track item.label) {

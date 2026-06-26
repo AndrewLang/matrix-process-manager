@@ -1,18 +1,24 @@
+mod command_knowledge;
 mod commands;
 mod managers;
 mod models;
 mod providers;
 mod startup;
+mod terminal;
 
+use command_knowledge::service::CommandKnowledgeService;
 use managers::ProcessManager;
 use providers::SysinfoProcessProvider;
 use startup::StartupManager;
 use tauri::tray::{TrayIconBuilder, TrayIconEvent};
 use tauri::Manager;
+use terminal::service::TerminalService;
 
 pub struct AppState {
     process_manager: ProcessManager<SysinfoProcessProvider>,
     startup_manager: StartupManager,
+    terminal_service: TerminalService,
+    command_knowledge_service: CommandKnowledgeService,
 }
 
 impl AppState {
@@ -20,6 +26,9 @@ impl AppState {
         Self {
             process_manager: ProcessManager::new(SysinfoProcessProvider::new()),
             startup_manager: StartupManager::new(),
+            terminal_service: TerminalService::new().expect("terminal service is unavailable"),
+            command_knowledge_service: CommandKnowledgeService::new()
+                .expect("command knowledge service is unavailable"),
         }
     }
 }
@@ -50,11 +59,23 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            commands::autocomplete_commands,
+            commands::finish_command_execution,
             commands::get_process_snapshot,
+            commands::get_active_terminal_session,
             commands::get_startup_apps,
+            commands::get_terminal_session,
+            commands::index_commands,
             commands::open_native_tool,
+            commands::scan_installed_applications,
             commands::set_start_with_windows,
-            commands::terminate_process
+            commands::set_active_terminal_session,
+            commands::start_command_execution,
+            commands::start_terminal_session,
+            commands::stop_terminal_session,
+            commands::terminate_process,
+            commands::resize_terminal_session,
+            commands::write_terminal_input,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

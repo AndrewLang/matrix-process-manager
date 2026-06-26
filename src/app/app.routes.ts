@@ -1,4 +1,5 @@
 import { Routes } from "@angular/router";
+import { CommandCenterViewComponent } from "./views/command-center/command-center-view.component";
 import { DashboardViewComponent } from "./views/dashboard-view/dashboard-view.component";
 import { CpuMonitorComponent } from "./views/performance-view/components/cpu-monitor/cpu-monitor.component";
 import { DiskMonitorComponent } from "./views/performance-view/components/disk-monitor/disk-monitor.component";
@@ -30,6 +31,7 @@ export const routes: Routes = [
     },
     { path: "startup", component: StartupViewComponent },
     { path: "system", component: SystemInfoViewComponent },
+    { path: "command-center", component: CommandCenterViewComponent },
     { path: "settings", component: SettingsViewComponent },
     { path: "disk", component: PlaceholderViewComponent, data: { title: "Disk Manager" } },
     { path: "terminal", component: PlaceholderViewComponent, data: { title: "Terminal" } },

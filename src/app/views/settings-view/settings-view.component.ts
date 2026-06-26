@@ -1,7 +1,7 @@
 import { Component, inject, signal } from "@angular/core";
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { AppSettings, NativeToolId, UpdateFrequency } from "../../app.models";
+import { AppSettings, IndexingSchedule, NativeToolId, TerminalCursorStyle, TerminalDefaultShell, TerminalTheme, UpdateFrequency } from "../../app.models";
 import { WorkareaStateService } from "../../services/workarea-state.service";
 
 type GeneralSettingKey = keyof Pick<AppSettings, "startWithWindows" | "minimizeToTray" | "confirmBeforeKillingProcesses">;
@@ -15,8 +15,34 @@ export class SettingsViewComponent {
     activeCategory = signal("General");
     categories = [
         { label: "General", icon: "bi-gear" },
+        { label: "Terminal", icon: "bi-terminal" },
+        { label: "Indexing", icon: "bi-arrow-repeat" },
+        { label: "Storage", icon: "bi-database" },
         { label: "Tools", icon: "bi-puzzle" },
         { label: "About", icon: "bi-info-circle" },
+    ];
+    shellOptions: Array<{ value: TerminalDefaultShell; label: string }> = [
+        { value: "system", label: "System default" },
+        { value: "powerShell", label: "PowerShell" },
+        { value: "cmd", label: "CMD" },
+        { value: "zsh", label: "zsh" },
+        { value: "bash", label: "bash" },
+    ];
+    cursorStyles: Array<{ value: TerminalCursorStyle; label: string }> = [
+        { value: "block", label: "Block" },
+        { value: "bar", label: "Bar" },
+        { value: "underline", label: "Underline" },
+    ];
+    terminalThemes: Array<{ value: TerminalTheme; label: string }> = [
+        { value: "matrix", label: "Matrix" },
+        { value: "midnight", label: "Midnight" },
+        { value: "slate", label: "Slate" },
+    ];
+    indexingSchedules: Array<{ value: IndexingSchedule; label: string; detail: string }> = [
+        { value: "manual", label: "Manual", detail: "Only index when requested." },
+        { value: "startup", label: "Startup", detail: "Index once when the app starts." },
+        { value: "hourly", label: "Hourly", detail: "Refresh command knowledge every hour." },
+        { value: "daily", label: "Daily", detail: "Refresh command knowledge once per day." },
     ];
     frequencies: { value: UpdateFrequency; label: string; detail: string }[] = [
         { value: "high", label: "High", detail: "Refresh every second" },
@@ -48,6 +74,12 @@ export class SettingsViewComponent {
 
     activeDescription(): string {
         switch (this.activeCategory()) {
+            case "Terminal":
+                return "Configure Command Center terminal behavior and autocomplete.";
+            case "Indexing":
+                return "Configure command knowledge indexing cadence.";
+            case "Storage":
+                return "Configure where command knowledge data is stored.";
             case "Tools":
                 return "Configure external Windows tools and launch behavior.";
             case "About":
@@ -79,6 +111,34 @@ export class SettingsViewComponent {
 
     toggleToolSetting(key: NativeToolId): void {
         this.state.setToolSetting(key, !this.toolEnabled(key));
+    }
+
+    setDefaultShell(value: string): void {
+        this.state.setTerminalSetting("defaultShell", value as TerminalDefaultShell);
+    }
+
+    setTerminalFont(value: string): void {
+        this.state.setTerminalSetting("fontFamily", value);
+    }
+
+    setTerminalNumber(key: "fontSize" | "opacity" | "historySize" | "autocompleteDelayMs", value: string): void {
+        this.state.setTerminalSetting(key, Number(value));
+    }
+
+    setCursorStyle(value: string): void {
+        this.state.setTerminalSetting("cursorStyle", value as TerminalCursorStyle);
+    }
+
+    setTerminalTheme(value: string): void {
+        this.state.setTerminalSetting("theme", value as TerminalTheme);
+    }
+
+    setIndexingSchedule(value: string): void {
+        this.state.setIndexingSetting("schedule", value as IndexingSchedule);
+    }
+
+    setSqliteLocation(value: string): void {
+        this.state.setStorageSetting("sqliteLocation", value.trim() || "default");
     }
 
     openWebsite(url: string | undefined): void {

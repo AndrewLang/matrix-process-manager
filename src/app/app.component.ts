@@ -67,6 +67,7 @@ export class AppComponent implements OnDestroy, OnInit {
     { id: "performance", label: "Performance", icon: "bi-activity" },
     { id: "startup", label: "Startup Apps", icon: "bi-rocket-takeoff" },
     { id: "system", label: "System Info", icon: "bi-info-circle" },
+    { id: "command-center", label: "Command Center", icon: "bi-terminal-plus" },
   ];
 
   toolItems: NavItem[] = [
@@ -474,7 +475,7 @@ export class AppComponent implements OnDestroy, OnInit {
   }
 
   private isPersistedViewId(value: unknown): value is ViewId {
-    return value === "dashboard" || value === "processes" || value === "performance" || value === "startup" || value === "system" || value === "settings" || value === "disk" || value === "terminal" || value === "more";
+    return value === "dashboard" || value === "processes" || value === "performance" || value === "startup" || value === "system" || value === "command-center" || value === "settings" || value === "disk" || value === "terminal" || value === "more";
   }
 
   private isUpdateFrequency(value: unknown): value is UpdateFrequency {

@@ -1,12 +1,38 @@
-export type ViewId = "dashboard" | "processes" | "performance" | "startup" | "system" | "settings" | "disk" | "terminal" | "more";
+export type ViewId = "dashboard" | "processes" | "performance" | "startup" | "system" | "command-center" | "settings" | "disk" | "terminal" | "more";
 export type NativeToolId = "taskManager" | "systemSettings" | "diskManager" | "terminal" | "envVariables";
 export type ProcessGroup = "apps" | "background" | "windows";
 export type UpdateFrequency = "high" | "normal" | "low" | "paused";
+export type TerminalDefaultShell = "system" | "powerShell" | "cmd" | "zsh" | "bash";
+export type TerminalCursorStyle = "block" | "bar" | "underline";
+export type TerminalTheme = "matrix" | "midnight" | "slate";
+export type IndexingSchedule = "manual" | "startup" | "hourly" | "daily";
+
+export interface TerminalSettings {
+    defaultShell: TerminalDefaultShell;
+    fontFamily: string;
+    fontSize: number;
+    cursorStyle: TerminalCursorStyle;
+    opacity: number;
+    theme: TerminalTheme;
+    historySize: number;
+    autocompleteDelayMs: number;
+}
+
+export interface IndexingSettings {
+    schedule: IndexingSchedule;
+}
+
+export interface StorageSettings {
+    sqliteLocation: string;
+}
 
 export interface AppSettings {
     startWithWindows: boolean;
     minimizeToTray: boolean;
     confirmBeforeKillingProcesses: boolean;
+    terminalSettings: TerminalSettings;
+    indexingSettings: IndexingSettings;
+    storageSettings: StorageSettings;
     toolSettings: Record<NativeToolId, boolean>;
 }
 
