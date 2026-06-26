@@ -1,194 +1,155 @@
-<section
-  class="grid h-full min-h-0 min-w-0 grid-cols-[minmax(0,1fr)_286px] gap-2.5 overflow-hidden px-2.5 py-3 max-[1040px]:grid-cols-[minmax(0,1fr)]">
-  <section
-    class="grid min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
-    <div class="grid gap-3 border-b border-(--border) p-3">
-      <div>
-        <h1>Startup Apps</h1>
-        <p>Manage programs that run automatically when you sign in.</p>
-      </div>
-      <div class="grid grid-cols-4 gap-2.25 max-[900px]:grid-cols-2">
-        <article
-          class="rounded-md border border-(--border) bg-[rgba(16,31,45,0.62)] p-3">
-          <span class="text-(--muted)">Total Startup Apps</span
-          ><strong class="mt-1 block text-[22px]">{{ apps().length }}</strong
-          ><small class="text-(--muted)"
-            >All user and system startup entries</small
-          >
-        </article>
-        <article
-          class="rounded-md border border-(--border) bg-[rgba(16,31,45,0.62)] p-3">
-          <span class="text-(--muted)">Enabled</span
-          ><strong class="mt-1 block text-[22px] text-(--green)">{{
-            enabledCount()
-          }}</strong
-          ><small class="text-(--muted)">Will run at next sign-in</small>
-        </article>
-        <article
-          class="rounded-md border border-(--border) bg-[rgba(16,31,45,0.62)] p-3">
-          <span class="text-(--muted)">Disabled</span
-          ><strong class="mt-1 block text-[22px]">{{ disabledCount() }}</strong
-          ><small class="text-(--muted)">Disabled startup entries</small>
-        </article>
-        <article
-          class="rounded-md border border-(--border) bg-[rgba(16,31,45,0.62)] p-3">
-          <span class="text-(--muted)">Impact</span
-          ><strong class="mt-1 block text-[22px] text-(--orange)">{{
-            highImpactCount()
-          }}</strong
-          ><small class="text-(--muted)">High impact apps</small>
-        </article>
-      </div>
-      <div class="flex min-w-0 items-center gap-2 text-[12px]">
-        <mtx-search-box
-          [hostClass]="wideFilterSearchClass"
-          placeholder="Search startup apps..."
-          [(value)]="filter" />
-        <select
-          class="h-7.5 rounded-[5px] border border-(--border) bg-[rgba(16,31,45,0.86)] px-2 text-[#cbd7e2]"
-          [value]="sourceFilter()"
-          (change)="sourceFilter.set($any($event.target).value)">
-          <option>All Sources</option>
-          <option>Registry</option>
-          <option>Startup Folder</option>
-        </select>
-        <select
-          class="h-7.5 rounded-[5px] border border-(--border) bg-[rgba(16,31,45,0.86)] px-2 text-[#cbd7e2]"
-          [value]="impactFilter()"
-          (change)="impactFilter.set($any($event.target).value)">
-          <option>All Impact</option>
-          <option>High</option>
-          <option>Medium</option>
-          <option>Low</option>
-        </select>
-        <button
-          type="button"
-          class="inline-flex h-7.5 items-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(16,31,45,0.86)] px-3 hover:bg-white/6"
-          (click)="toggleDisabled()">
-          <i
-            class="bi"
-            [ngClass]="
+<section class="grid h-full min-h-0 min-w-0 grid-cols-[minmax(0,1fr)_286px] gap-2.5 overflow-hidden px-2.5 py-3 max-[1040px]:grid-cols-[minmax(0,1fr)]">
+    <section
+      class="grid min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+        <div class="grid gap-3 border-b border-(--border) p-3">
+            <div>
+                <h1>Startup Apps</h1>
+                <p>Manage programs that run automatically when you sign in.</p>
+            </div>
+            <div class="grid grid-cols-4 gap-2.25 max-[900px]:grid-cols-2">
+                <article class="rounded-md border border-(--border) bg-[rgba(16,31,45,0.62)] p-3">
+                    <span class="text-(--muted)">Total Startup Apps</span><strong class="mt-1 block text-[22px]">{{ apps().length }}</strong><small
+                      class="text-(--muted)">All user and system startup entries</small>
+                </article>
+                <article class="rounded-md border border-(--border) bg-[rgba(16,31,45,0.62)] p-3">
+                    <span class="text-(--muted)">Enabled</span><strong class="mt-1 block text-[22px] text-(--green)">{{
+                        enabledCount()
+                        }}</strong><small class="text-(--muted)">Will run at next sign-in</small>
+                </article>
+                <article class="rounded-md border border-(--border) bg-[rgba(16,31,45,0.62)] p-3">
+                    <span class="text-(--muted)">Disabled</span><strong class="mt-1 block text-[22px]">{{ disabledCount() }}</strong><small
+                      class="text-(--muted)">Disabled startup entries</small>
+                </article>
+                <article class="rounded-md border border-(--border) bg-[rgba(16,31,45,0.62)] p-3">
+                    <span class="text-(--muted)">Impact</span><strong class="mt-1 block text-[22px] text-(--orange)">{{
+                        highImpactCount()
+                        }}</strong><small class="text-(--muted)">High impact apps</small>
+                </article>
+            </div>
+            <div class="flex min-w-0 items-center gap-2 text-[12px]">
+                <mtx-search-box [hostClass]="wideFilterSearchClass" placeholder="Search startup apps..." [(value)]="filter" />
+                <select class="h-7.5 rounded-[5px] border border-(--border) bg-[rgba(16,31,45,0.86)] px-2 text-[#cbd7e2]" [value]="sourceFilter()"
+                  (change)="sourceFilter.set($any($event.target).value)">
+                    <option>All Sources</option>
+                    <option>Registry</option>
+                    <option>Startup Folder</option>
+                </select>
+                <select class="h-7.5 rounded-[5px] border border-(--border) bg-[rgba(16,31,45,0.86)] px-2 text-[#cbd7e2]" [value]="impactFilter()"
+                  (change)="impactFilter.set($any($event.target).value)">
+                    <option>All Impact</option>
+                    <option>High</option>
+                    <option>Medium</option>
+                    <option>Low</option>
+                </select>
+                <button type="button"
+                  class="inline-flex h-7.5 items-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(16,31,45,0.86)] px-3 hover:bg-white/6"
+                  (click)="toggleDisabled()">
+                    <i class="bi" [ngClass]="
               showDisabled() ? 'bi-toggle-on text-(--blue)' : 'bi-toggle-off'
-            "></i
-          >Show disabled
-        </button>
-        <button
-          type="button"
-          class="ml-auto inline-flex h-7.5 items-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(16,31,45,0.86)] px-3 hover:bg-white/6"
-          (click)="refresh()">
-          <i class="bi bi-arrow-clockwise"></i>Refresh
-        </button>
-      </div>
-    </div>
-    <div class="min-h-0 overflow-auto p-2">
-      <table class="w-full border-collapse text-[12px]">
-        <thead
-          class="sticky top-0 z-10 bg-[rgba(10,22,33,0.98)] text-left text-(--muted)">
-          <tr>
-            <th class="px-2 py-2">Name</th>
-            <th class="px-2 py-2">Publisher</th>
-            <th class="px-2 py-2">Status</th>
-            <th class="px-2 py-2">Impact</th>
-            <th class="px-2 py-2">Startup Type</th>
-            <th class="px-2 py-2">Source</th>
-            <th class="px-2 py-2 text-right">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (app of filteredApps(); track app.name + app.source) {
-            <tr
-              class="cursor-pointer border-t border-white/6 hover:bg-white/5"
-              [ngClass]="
+            "></i>Show disabled
+                </button>
+                <button type="button"
+                  class="ml-auto inline-flex h-7.5 items-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(16,31,45,0.86)] px-3 hover:bg-white/6"
+                  (click)="refresh()">
+                    <i class="bi bi-arrow-clockwise"></i>Refresh
+                </button>
+            </div>
+        </div>
+        <div class="min-h-0 overflow-auto p-2">
+            <table class="w-full table-fixed border-collapse text-[12px]" [style.minWidth.px]="tableWidth()">
+                <colgroup>
+                    @for (column of columns(); track column.key) {
+                    <col [style.width.px]="column.width" />
+                    }
+                </colgroup>
+                <thead class="sticky top-0 z-10 bg-[rgba(10,22,33,0.98)] text-left text-(--muted)">
+                    <tr>
+                        @for (column of columns(); track column.key; let columnIndex = $index) {
+                        <th class="relative select-none px-2 py-2" [ngClass]="column.align === 'right' ? 'text-right' : 'text-left'">
+                            {{ column.label }}
+                            @if (column.resizable) {
+                            <span class="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-(--blue)"
+                              (mousedown)="startResize($event, columnIndex)"></span>
+                            }
+                        </th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (app of filteredApps(); track app.name + app.source) {
+                    <tr class="cursor-pointer border-t border-white/6 hover:bg-white/5" [ngClass]="
                 selectedApp()?.name === app.name
                   ? 'bg-[rgba(23,144,255,0.12)]'
                   : ''
-              "
-              (click)="selectApp(app)">
-              <td class="px-2 py-2">
-                <span class="inline-flex items-center gap-2"
-                  ><i class="bi bi-app-indicator text-(--blue)"></i
-                  >{{ app.name }}</span
-                >
-              </td>
-              <td class="px-2 py-2 text-(--muted)">{{ app.publisher }}</td>
-              <td class="px-2 py-2">
-                <span
-                  class="rounded px-1.5 py-0.5"
-                  [ngClass]="statusClass(app.status)"
-                  >{{ app.status }}</span
-                >
-              </td>
-              <td class="px-2 py-2">
-                <span
-                  class="rounded px-1.5 py-0.5"
-                  [ngClass]="impactClass(app.impact)"
-                  >{{ app.impact }}</span
-                >
-              </td>
-              <td class="px-2 py-2 text-(--muted)">{{ app.startupType }}</td>
-              <td class="px-2 py-2 text-(--muted)">{{ app.source }}</td>
-              <td class="px-2 py-2 text-right">
-                <button
-                  type="button"
-                  class="h-6.5 rounded border border-(--border) bg-transparent px-2 text-(--blue)"
-                  (click)="$event.stopPropagation(); openLocation(app)">
-                  Open
-                </button>
-              </td>
-            </tr>
-          }
-          @if (!loading() && filteredApps().length === 0) {
-            <tr>
-              <td colspan="7" class="px-2 py-8 text-center text-(--muted)">
-                No startup apps found.
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
-  </section>
-  <aside
-    class="grid min-h-0 grid-rows-[auto_auto_auto_minmax(0,1fr)] gap-2.5 overflow-auto rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-3 max-[1040px]:hidden">
-    <div class="grid gap-1">
-      <h2>Details</h2>
-      <strong>{{ selectedApp()?.name ?? "No app selected" }}</strong>
-      <span class="text-(--muted)">{{ selectedApp()?.publisher ?? "" }}</span>
-    </div>
-    <div class="grid gap-2 border-t border-(--border) pt-3 text-[12px]">
-      <div class="flex justify-between">
-        <span class="text-(--muted)">Status</span
-        ><span>{{ selectedApp()?.status ?? "-" }}</span>
-      </div>
-      <div class="flex justify-between">
-        <span class="text-(--muted)">Impact</span
-        ><span>{{ selectedApp()?.impact ?? "-" }}</span>
-      </div>
-      <div class="flex justify-between">
-        <span class="text-(--muted)">Startup Type</span
-        ><span>{{ selectedApp()?.startupType ?? "-" }}</span>
-      </div>
-      <div class="flex justify-between">
-        <span class="text-(--muted)">Source</span
-        ><span>{{ selectedApp()?.source ?? "-" }}</span>
-      </div>
-    </div>
-    <div class="grid gap-2 border-t border-(--border) pt-3 text-[12px]">
-      <span class="text-(--muted)">Command</span
-      ><span class="break-all">{{ selectedApp()?.command ?? "-" }}</span>
-    </div>
-    <div class="grid content-start gap-2 border-t border-(--border) pt-3">
-      <button
-        type="button"
-        class="h-8 rounded-md border border-(--border) bg-[rgba(16,31,45,0.86)] text-(--blue)"
-        (click)="openLocation(selectedApp())">
-        Open File Location</button
-      ><button
-        type="button"
-        class="h-8 rounded-md border border-(--border) bg-[rgba(16,31,45,0.86)] text-(--muted)"
-        disabled>
-        Disable
-      </button>
-    </div>
-  </aside>
+              " (click)="selectApp(app)">
+                        <td class="px-2 py-2 text-left">
+                            <span class="inline-flex max-w-full items-center gap-2">
+                                @if (app.iconDataUrl) {
+                                <img class="h-4.5 w-4.5 flex-none object-contain" [src]="app.iconDataUrl" alt="" />
+                                } @else {
+                                <i class="bi bi-app-indicator flex-none text-(--blue)"></i>
+                                }
+                                <span class="truncate">{{ app.name }}</span>
+                            </span>
+                        </td>
+                        <td class="truncate px-2 py-2 text-(--muted)">{{ app.publisher }}</td>
+                        <td class="px-2 py-2">
+                            <span class="rounded px-1.5 py-0.5" [ngClass]="statusClass(app.status)">{{ app.status }}</span>
+                        </td>
+                        <td class="px-2 py-2">
+                            <span class="rounded px-1.5 py-0.5" [ngClass]="impactClass(app.impact)">{{ app.impact }}</span>
+                        </td>
+                        <td class="truncate px-2 py-2 text-(--muted)">{{ app.startupType }}</td>
+                        <td class="truncate px-2 py-2 text-(--muted)">{{ app.source }}</td>
+                        <td class="px-2 py-2 text-right">
+                            <button type="button" class="h-6.5 rounded border border-(--border) bg-transparent px-2 text-(--blue)"
+                              (click)="$event.stopPropagation(); openLocation(app)">
+                                Open
+                            </button>
+                        </td>
+                    </tr>
+                    }
+                    @if (!loading() && filteredApps().length === 0) {
+                    <tr>
+                        <td colspan="7" class="px-2 py-8 text-center text-(--muted)">
+                            No startup apps found.
+                        </td>
+                    </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+    <aside
+      class="grid min-h-0 grid-rows-[auto_auto_auto_minmax(0,1fr)] gap-2.5 overflow-auto rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-3 max-[1040px]:hidden">
+        <div class="grid gap-1">
+            <h2>Details</h2>
+            <strong>{{ selectedApp()?.name ?? "No app selected" }}</strong>
+            <span class="text-(--muted)">{{ selectedApp()?.publisher ?? "" }}</span>
+        </div>
+        <div class="grid gap-2 border-t border-(--border) pt-3 text-[12px]">
+            <div class="flex justify-between">
+                <span class="text-(--muted)">Status</span><span>{{ selectedApp()?.status ?? "-" }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-(--muted)">Impact</span><span>{{ selectedApp()?.impact ?? "-" }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-(--muted)">Startup Type</span><span>{{ selectedApp()?.startupType ?? "-" }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-(--muted)">Source</span><span>{{ selectedApp()?.source ?? "-" }}</span>
+            </div>
+        </div>
+        <div class="grid gap-2 border-t border-(--border) pt-3 text-[12px]">
+            <span class="text-(--muted)">Command</span><span class="break-all">{{ selectedApp()?.command ?? "-" }}</span>
+        </div>
+        <div class="grid content-start gap-2 border-t border-(--border) pt-3">
+            <button type="button" class="h-8 rounded-md border border-(--border) bg-[rgba(16,31,45,0.86)] text-(--blue)" (click)="openLocation(selectedApp())">
+                Open File Location</button><button type="button" class="h-8 rounded-md border border-(--border) bg-[rgba(16,31,45,0.86)] text-(--muted)"
+              disabled>
+                Disable
+            </button>
+        </div>
+    </aside>
 </section>

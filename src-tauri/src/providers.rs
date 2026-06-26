@@ -123,7 +123,7 @@ impl ProcessProvider for SysinfoProcessProvider {
                             .map(|user_id| user_id.to_string())
                             .unwrap_or_default(),
                         has_visible_window: visible_window_pids.contains(&process.pid().as_u32()),
-                        icon_data_url: process_icon_data_url(&path),
+                        icon_data_url: file_icon_data_url(&path),
                         path,
                     },
                     metrics: ProcessMetrics {
@@ -1948,7 +1948,7 @@ impl GpuUsageCollector {
 }
 
 #[cfg(windows)]
-fn process_icon_data_url(path: &str) -> Option<String> {
+pub(crate) fn file_icon_data_url(path: &str) -> Option<String> {
     use base64::Engine;
     use image::{codecs::png::PngEncoder, ColorType, ImageEncoder};
     use std::ffi::OsStr;
@@ -2080,6 +2080,6 @@ fn process_icon_data_url(path: &str) -> Option<String> {
 }
 
 #[cfg(not(windows))]
-fn process_icon_data_url(_path: &str) -> Option<String> {
+pub(crate) fn file_icon_data_url(_path: &str) -> Option<String> {
     None
 }

@@ -57,6 +57,7 @@ export interface SystemInfoItem {
 export interface StartupApp {
     name: string;
     publisher: string;
+    iconDataUrl?: string;
     status: string;
     impact: string;
     startupType: string;

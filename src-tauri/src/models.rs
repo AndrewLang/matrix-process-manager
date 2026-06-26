@@ -139,6 +139,7 @@ pub struct ProcessSnapshot {
 pub struct StartupApp {
     pub name: String,
     pub publisher: String,
+    pub icon_data_url: Option<String>,
     pub status: String,
     pub impact: String,
     pub startup_type: String,
