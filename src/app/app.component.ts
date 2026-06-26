@@ -12,6 +12,7 @@ import { WorkareaComponent } from "./components/workarea/workarea.component";
 import { SplitterDirective } from "./directives/splitter.directive";
 import { ProcessSnapshotWorkerRequest, ProcessSnapshotWorkerResponse } from "./process-snapshot.worker";
 import { WorkareaStateService } from "./services/workarea-state.service";
+import { SettingsViewComponent } from "./views/settings-view/settings-view.component";
 
 interface PersistedUiState {
   activeView: ViewId;
@@ -30,7 +31,7 @@ interface PersistedWindowState {
 
 @Component({
   selector: "mtx-root",
-  imports: [CommonDialogComponent, SidebarComponent, SplitterDirective, TitlebarComponent, WorkareaComponent],
+  imports: [CommonDialogComponent, SettingsViewComponent, SidebarComponent, SplitterDirective, TitlebarComponent, WorkareaComponent],
   templateUrl: "./app.component.html",
   styleUrl: "./app.component.css",
 })
@@ -73,6 +74,8 @@ export class AppComponent implements OnDestroy, OnInit {
     { id: "disk", label: "Disk Manager", icon: "bi-device-hdd", nativeTool: "diskManager" },
     { id: "terminal", label: "Terminal", icon: "bi-terminal", nativeTool: "terminal" },
   ];
+
+  enabledToolItems = computed(() => this.toolItems.filter((item) => !item.nativeTool || this.workareaState.appSettings().toolSettings[item.nativeTool]));
 
   metrics = signal<MetricCard[]>([
     { label: "CPU", value: "18%", detail: "2.42 GHz", accent: "blue", path: "55,72 75,36 92,70 112,26 126,64 148,54 164,12 180,58 203,46 224,70" },
@@ -168,6 +171,11 @@ export class AppComponent implements OnDestroy, OnInit {
     this.scheduleUiStateSave(this.router.url);
   }
 
+  resetSettings(): void {
+    this.workareaState.resetAppSettings();
+    invoke<void>("set_start_with_windows", { enabled: false }).catch(() => undefined);
+  }
+
   refreshSnapshot(): void {
     if (this.snapshotInFlight || this.isRefreshPaused()) {
       return;
@@ -216,6 +224,10 @@ export class AppComponent implements OnDestroy, OnInit {
       return;
     }
 
+    if (!this.workareaState.appSettings().toolSettings[item.nativeTool]) {
+      return;
+    }
+
     invoke<void>("open_native_tool", { toolId: item.nativeTool satisfies NativeToolId }).catch(() => undefined);
   }
 
@@ -241,7 +253,13 @@ export class AppComponent implements OnDestroy, OnInit {
   }
 
   minimize(): void {
-    getCurrentWindow().minimize();
+    const appWindow = getCurrentWindow();
+    if (this.workareaState.appSettings().minimizeToTray) {
+      appWindow.hide();
+      return;
+    }
+
+    appWindow.minimize();
   }
 
   toggleMaximize(): void {

@@ -3,6 +3,13 @@ export type NativeToolId = "taskManager" | "systemSettings" | "diskManager" | "t
 export type ProcessGroup = "apps" | "background" | "windows";
 export type UpdateFrequency = "high" | "normal" | "low" | "paused";
 
+export interface AppSettings {
+    startWithWindows: boolean;
+    minimizeToTray: boolean;
+    confirmBeforeKillingProcesses: boolean;
+    toolSettings: Record<NativeToolId, boolean>;
+}
+
 export interface NavItem {
     id: ViewId;
     label: string;

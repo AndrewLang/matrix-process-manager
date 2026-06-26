@@ -17,6 +17,76 @@ pub fn open_native_tool(tool_id: String) -> Result<(), CommandError> {
     open_native_tool_impl(&tool_id)
 }
 
+#[tauri::command]
+pub fn set_start_with_windows(enabled: bool) -> Result<(), CommandError> {
+    set_start_with_windows_impl(enabled)
+}
+
+#[tauri::command]
+pub fn terminate_process(pid: u32) -> Result<(), CommandError> {
+    terminate_process_impl(pid)
+}
+
+#[cfg(windows)]
+fn set_start_with_windows_impl(enabled: bool) -> Result<(), CommandError> {
+    use winreg::enums::HKEY_CURRENT_USER;
+    use winreg::RegKey;
+
+    let run_key = RegKey::predef(HKEY_CURRENT_USER)
+        .open_subkey_with_flags(
+            "Software\\Microsoft\\Windows\\CurrentVersion\\Run",
+            winreg::enums::KEY_SET_VALUE,
+        )
+        .map_err(|error| CommandError::settings_failed(error.to_string()))?;
+
+    if enabled {
+        let path = std::env::current_exe()
+            .map_err(|error| CommandError::settings_failed(error.to_string()))?;
+        run_key
+            .set_value("Matrix Process Manager", &format!("\"{}\"", path.display()))
+            .map_err(|error| CommandError::settings_failed(error.to_string()))
+    } else {
+        match run_key.delete_value("Matrix Process Manager") {
+            Ok(()) => Ok(()),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+            Err(error) => Err(CommandError::settings_failed(error.to_string())),
+        }
+    }
+}
+
+#[cfg(not(windows))]
+fn set_start_with_windows_impl(_: bool) -> Result<(), CommandError> {
+    Err(CommandError::settings_failed(
+        "start with Windows is only available on Windows",
+    ))
+}
+
+#[cfg(windows)]
+fn terminate_process_impl(pid: u32) -> Result<(), CommandError> {
+    use std::os::windows::process::CommandExt;
+
+    let status = std::process::Command::new("taskkill.exe")
+        .args(["/PID", &pid.to_string(), "/F"])
+        .creation_flags(0x08000000)
+        .status()
+        .map_err(|error| CommandError::process_action_failed(error.to_string()))?;
+
+    if status.success() {
+        Ok(())
+    } else {
+        Err(CommandError::process_action_failed(format!(
+            "taskkill exited with {status}"
+        )))
+    }
+}
+
+#[cfg(not(windows))]
+fn terminate_process_impl(_: u32) -> Result<(), CommandError> {
+    Err(CommandError::process_action_failed(
+        "process termination is only available on Windows",
+    ))
+}
+
 #[cfg(windows)]
 fn open_native_tool_impl(tool_id: &str) -> Result<(), CommandError> {
     use std::os::windows::process::CommandExt;

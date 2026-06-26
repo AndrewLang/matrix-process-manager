@@ -1,5 +1,6 @@
 import { NgClass } from "@angular/common";
 import { Component, HostListener, computed, inject, signal } from "@angular/core";
+import { invoke } from "@tauri-apps/api/core";
 import { MetricCard, ProcessRow, ResourceSample } from "../../app.models";
 import { DetailsPaneComponent } from "../../components/details-pane/details-pane.component";
 import { ProcessGridComponent } from "../../components/process-grid/process-grid.component";
@@ -37,6 +38,21 @@ export class ProcessesViewComponent {
 
     closeViewOptions(): void {
         this.viewOptionsOpen.set(false);
+    }
+
+    endProcess(row: ProcessRow | undefined): void {
+        if (!row) {
+            return;
+        }
+
+        if (this.state.appSettings().confirmBeforeKillingProcesses && !window.confirm(`End ${row.name}?`)) {
+            return;
+        }
+
+        invoke<void>("terminate_process", { pid: row.pid }).then(() => {
+            this.state.rows.update((rows) => rows.filter((process) => process.pid !== row.pid));
+            this.state.totalProcesses.update((total) => Math.max(0, total - 1));
+        }).catch(() => undefined);
     }
 
     @HostListener("document:click")

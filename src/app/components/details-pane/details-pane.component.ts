@@ -14,6 +14,7 @@ export class DetailsPaneComponent {
     process = input<ProcessRow | undefined>();
     bars = input.required<ResourceBar[]>();
     closeDetails = output<void>();
+    endProcess = output<ProcessRow>();
 
     openProcessLocation(process: ProcessRow): void {
         if (!process.path) {

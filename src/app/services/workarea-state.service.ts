@@ -1,8 +1,21 @@
 import { Injectable, computed, signal } from "@angular/core";
-import { BackendDiskDriveUsage, BackendGpuAdapterUsage, BackendMemoryInfo, BackendNetworkAdapterUsage, MetricCard, ProcessRow, ResourceBar, ResourceSample, SystemInfoItem, UpdateFrequency, ViewId } from "../app.models";
+import { AppSettings, BackendDiskDriveUsage, BackendGpuAdapterUsage, BackendMemoryInfo, BackendNetworkAdapterUsage, MetricCard, ProcessRow, ResourceBar, ResourceSample, SystemInfoItem, UpdateFrequency, ViewId } from "../app.models";
 
 @Injectable({ providedIn: "root" })
 export class WorkareaStateService {
+    private readonly appSettingsKey = "matrix-process-manager.app-settings";
+    private readonly defaultAppSettings: AppSettings = {
+        startWithWindows: false,
+        minimizeToTray: false,
+        confirmBeforeKillingProcesses: true,
+        toolSettings: {
+            taskManager: true,
+            systemSettings: true,
+            diskManager: true,
+            terminal: true,
+        },
+    };
+
     activeView = signal<ViewId>("dashboard");
     totalProcesses = signal(0);
     metrics = signal<MetricCard[]>([]);
@@ -21,6 +34,7 @@ export class WorkareaStateService {
     diskDriveHistory = signal<BackendDiskDriveUsage[][]>([]);
     networkAdapters = signal<BackendNetworkAdapterUsage[]>([]);
     networkAdapterHistory = signal<BackendNetworkAdapterUsage[][]>([]);
+    appSettings = signal<AppSettings>(this.loadAppSettings());
 
     selectedRow = computed(() => {
         const rows = this.rows();
@@ -64,6 +78,27 @@ export class WorkareaStateService {
         this.updateFrequency.set(frequency);
     }
 
+    setAppSetting<Key extends keyof AppSettings>(key: Key, value: AppSettings[Key]): void {
+        this.appSettings.update((settings) => {
+            const next = { ...settings, [key]: value };
+            localStorage.setItem(this.appSettingsKey, JSON.stringify(next));
+            return next;
+        });
+    }
+
+    setToolSetting(toolId: keyof AppSettings["toolSettings"], enabled: boolean): void {
+        this.appSettings.update((settings) => {
+            const next = { ...settings, toolSettings: { ...settings.toolSettings, [toolId]: enabled } };
+            localStorage.setItem(this.appSettingsKey, JSON.stringify(next));
+            return next;
+        });
+    }
+
+    resetAppSettings(): void {
+        this.appSettings.set(this.defaultAppSettings);
+        localStorage.setItem(this.appSettingsKey, JSON.stringify(this.defaultAppSettings));
+    }
+
     selectProcess(row: ProcessRow): void {
         this.selectedProcess.set(row.name);
         this.selectedPid.set(row.pid);
@@ -102,5 +137,18 @@ export class WorkareaStateService {
 
     private metricValue(metrics: MetricCard[], label: string): number {
         return Number.parseFloat(metrics.find((metric) => metric.label === label)?.value ?? "0") || 0;
+    }
+
+    private loadAppSettings(): AppSettings {
+        try {
+            const saved = JSON.parse(localStorage.getItem(this.appSettingsKey) ?? "{}");
+            return {
+                ...this.defaultAppSettings,
+                ...saved,
+                toolSettings: { ...this.defaultAppSettings.toolSettings, ...saved.toolSettings },
+            };
+        } catch {
+            return this.defaultAppSettings;
+        }
     }
 }

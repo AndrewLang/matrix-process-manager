@@ -187,4 +187,18 @@ impl CommandError {
             message: message.into(),
         }
     }
+
+    pub fn settings_failed(message: impl Into<String>) -> Self {
+        Self {
+            code: "settingsFailed".to_string(),
+            message: message.into(),
+        }
+    }
+
+    pub fn process_action_failed(message: impl Into<String>) -> Self {
+        Self {
+            code: "processActionFailed".to_string(),
+            message: message.into(),
+        }
+    }
 }

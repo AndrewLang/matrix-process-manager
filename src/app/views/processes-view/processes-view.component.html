@@ -71,7 +71,7 @@
                     </div>
                     <button type="button"
                       class="inline-flex h-7.5 flex-none items-center justify-center gap-1.75 whitespace-nowrap rounded-[5px] border border-[rgba(255,75,67,0.38)] bg-[rgba(16,31,45,0.86)] px-3 py-0 text-(--red) max-[1040px]:w-7.5 max-[1040px]:px-0"
-                      disabled>
+                      [disabled]="!state.selectedRow()" (click)="endProcess(state.selectedRow())">
                         <i class="bi bi-slash-circle flex-none"></i><span class="whitespace-nowrap max-[1040px]:hidden">End Process</span>
                     </button>
                 </div>
@@ -97,7 +97,7 @@
               (processSelected)="selectProcess($event)" />
         </section>
         @if (detailsOpen()) {
-        <mtx-details-pane [process]="state.selectedRow()" [bars]="state.bars()" (closeDetails)="closeDetails()" />
+        <mtx-details-pane [process]="state.selectedRow()" [bars]="state.bars()" (closeDetails)="closeDetails()" (endProcess)="endProcess($event)" />
         }
     </section>
 </section>
