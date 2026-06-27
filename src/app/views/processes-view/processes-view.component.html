@@ -100,4 +100,31 @@
         <mtx-details-pane [process]="state.selectedRow()" [bars]="state.bars()" (closeDetails)="closeDetails()" (endProcess)="endProcess($event)" />
         }
     </section>
+
+    @if (processPendingEnd(); as process) {
+    <mtx-common-dialog title="End process" panelClass="w-[min(420px,calc(100vw-32px))]" (closeDialog)="cancelEndProcess()">
+        <div class="grid gap-4 text-[12px] text-[#cbd7e2]">
+            <div class="flex gap-3">
+                <span class="grid h-9 w-9 flex-none place-items-center rounded-md border border-[rgba(255,75,67,0.35)] bg-[rgba(255,75,67,0.12)] text-(--red)">
+                    <i class="bi bi-exclamation-triangle"></i>
+                </span>
+                <div class="grid gap-1">
+                    <strong class="text-[13px] text-[#f1f6fb]">End {{ process.name }}?</strong>
+                    <span class="text-[#9aacba]">This will terminate PID {{ process.pid }} immediately. Unsaved work in this process may be lost.</span>
+                </div>
+            </div>
+            <footer class="flex items-center justify-end gap-2 border-t border-(--border) pt-3">
+                <button type="button" class="h-8 rounded-md border border-(--border) bg-transparent px-4 text-[12px] text-[#cbd7e2] hover:bg-white/6"
+                  (click)="cancelEndProcess()">
+                    Cancel
+                </button>
+                <button type="button"
+                  class="h-8 rounded-md border border-[rgba(255,75,67,0.65)] bg-[rgba(255,75,67,0.18)] px-4 text-[12px] font-medium text-(--red) hover:bg-[rgba(255,75,67,0.26)]"
+                  (click)="confirmEndProcess()">
+                    End Process
+                </button>
+            </footer>
+        </div>
+    </mtx-common-dialog>
+    }
 </section>

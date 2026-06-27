@@ -2,6 +2,7 @@ import { NgClass } from "@angular/common";
 import { Component, HostListener, computed, inject, signal } from "@angular/core";
 import { invoke } from "@tauri-apps/api/core";
 import { MetricCard, ProcessRow, ResourceSample } from "../../app.models";
+import { CommonDialogComponent } from "../../components/common-dialog/common-dialog.component";
 import { DetailsPaneComponent } from "../../components/details-pane/details-pane.component";
 import { ProcessGridComponent } from "../../components/process-grid/process-grid.component";
 import { SearchBoxComponent } from "../../components/search-box/search-box.component";
@@ -9,7 +10,7 @@ import { WorkareaStateService } from "../../services/workarea-state.service";
 
 @Component({
     selector: "mtx-processes-view",
-    imports: [NgClass, DetailsPaneComponent, ProcessGridComponent, SearchBoxComponent],
+    imports: [NgClass, CommonDialogComponent, DetailsPaneComponent, ProcessGridComponent, SearchBoxComponent],
     templateUrl: "./processes-view.component.html",
 })
 export class ProcessesViewComponent {
@@ -17,6 +18,7 @@ export class ProcessesViewComponent {
     processFilter = signal("");
     detailsOpen = signal(true);
     viewOptionsOpen = signal(false);
+    processPendingEnd = signal<ProcessRow | undefined>(undefined);
 
     summaryMetrics = computed(() => this.metricOrder().map((label) => this.metric(label)).filter((metric): metric is MetricCard => Boolean(metric)));
     filteredRows = computed(() => this.filterRows(this.state.rows(), this.processFilter()));
@@ -45,7 +47,26 @@ export class ProcessesViewComponent {
             return;
         }
 
-        if (this.state.appSettings().confirmBeforeKillingProcesses && !window.confirm(`End ${row.name}?`)) {
+        if (this.state.appSettings().confirmBeforeKillingProcesses) {
+            this.processPendingEnd.set(row);
+            return;
+        }
+
+        this.terminateProcess(row);
+    }
+
+    cancelEndProcess(): void {
+        this.processPendingEnd.set(undefined);
+    }
+
+    confirmEndProcess(): void {
+        const row = this.processPendingEnd();
+        this.processPendingEnd.set(undefined);
+        this.terminateProcess(row);
+    }
+
+    private terminateProcess(row: ProcessRow | undefined): void {
+        if (!row) {
             return;
         }
 
