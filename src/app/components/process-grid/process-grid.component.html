@@ -29,11 +29,12 @@
                 </td>
             </tr>
             @for (group of section.groups; track group.name) {
-            <tr class="bg-[rgba(10,22,33,0.48)]">
+            <tr class="bg-[rgba(10,22,33,0.48)]"
+              [ngClass]="group.rows.some(isSelected.bind(this)) ? 'bg-[linear-gradient(90deg,rgba(23,144,255,0.2),rgba(23,144,255,0.08))]' : ''">
                 <td>
                     <input type="checkbox" [checked]="group.rows.some(isSelected.bind(this))" />
                 </td>
-                <td>
+                <td class="cursor-pointer" (click)="selectGroup(group)">
                     <div class="flex min-w-0 items-center gap-2.25">
                         <button class="grid h-5.25 w-5.25 flex-none place-items-center bg-transparent text-[#97a7b6] hover:text-[#d6e2ee]" type="button"
                           [attr.aria-label]="
@@ -85,7 +86,7 @@
                 <td>
                     <input type="checkbox" [checked]="isSelected(row)" />
                 </td>
-                <td>
+                <td class="cursor-pointer">
                     <div class="flex min-w-0 items-center gap-2.25 pl-12">
                         <span class="grid h-5.25 w-5.25 flex-none place-items-center text-[#9fb0c0]">
                             @if (row.iconDataUrl) {

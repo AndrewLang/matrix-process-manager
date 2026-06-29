@@ -30,7 +30,7 @@ interface ProcessSection {
 })
 export class ProcessGridComponent {
     rows = input.required<ProcessRow[]>();
-    selectedProcess = input.required<string>();
+    selectedProcess = input<ProcessRow | undefined>();
     processSelected = output<ProcessRow>();
     collapsedGroups = signal<ReadonlySet<string>>(new Set());
 
@@ -91,7 +91,14 @@ export class ProcessGridComponent {
     }
 
     isSelected(row: ProcessRow): boolean {
-        return row.selected || this.selectedProcess() === row.name;
+        return this.selectedProcess()?.pid === row.pid;
+    }
+
+    selectGroup(group: ProcessNameGroup): void {
+        const row = group.rows[0];
+        if (row) {
+            this.processSelected.emit(row);
+        }
     }
 
     groupCpu(group: ProcessNameGroup): string {

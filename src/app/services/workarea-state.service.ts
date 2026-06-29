@@ -58,8 +58,7 @@ export class WorkareaStateService {
         const selectedPid = this.selectedPid();
         return rows.find((row) => row.pid === selectedPid)
             ?? rows.find((row) => row.name === this.selectedProcess())
-            ?? rows.find((row) => row.selected)
-            ?? rows[0];
+            ?? rows.find((row) => row.selected);
     });
 
     setState(state: {
