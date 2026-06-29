@@ -1,5 +1,5 @@
 import { NgClass } from "@angular/common";
-import { Component, computed, inject } from "@angular/core";
+import { Component, computed, inject, signal } from "@angular/core";
 import { Router } from "@angular/router";
 import { MetricCard, ProcessRow, ResourceSample } from "../../app.models";
 import { TopResourceConsumersComponent } from "../../components/top-resource-consumers/top-resource-consumers.component";
@@ -14,6 +14,7 @@ import { PerformanceMetric } from "../performance-view/performance-view.models";
 export class DashboardViewComponent {
     state = inject(WorkareaStateService);
     private router = inject(Router);
+    detailsOpen = signal(true);
 
     summaryMetrics = computed(() => this.metricOrder().map((label) => this.metric(label)).filter((metric): metric is MetricCard => Boolean(metric)));
     topConsumers = computed(() => this.state.rows().slice(0, 5));
@@ -86,6 +87,10 @@ export class DashboardViewComponent {
         if (metric) {
             this.router.navigate(["performance", metric]);
         }
+    }
+
+    closeDetails(): void {
+        this.detailsOpen.set(false);
     }
 
     chartPath(metric: keyof ResourceSample, width = 320, height = 112): string {

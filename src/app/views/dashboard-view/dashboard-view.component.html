@@ -1,4 +1,5 @@
-<section class="grid h-full min-h-0 min-w-0 grid-cols-[minmax(0,1fr)_236px] gap-2.5 overflow-hidden px-2.5 py-3 max-[1180px]:grid-cols-[minmax(0,1fr)]">
+<section class="grid h-full min-h-0 min-w-0 gap-2.5 overflow-hidden px-2.5 py-3 max-[1180px]:grid-cols-[minmax(0,1fr)]"
+  [ngClass]="detailsOpen() ? 'grid-cols-[minmax(0,1fr)_236px]' : 'grid-cols-[minmax(0,1fr)]'">
     <section class="grid min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] gap-2.5 overflow-hidden">
         <div>
             <div>
@@ -72,11 +73,12 @@
         </div>
     </section>
 
+    @if (detailsOpen()) {
     <aside
       class="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-md border border-(--border) bg-[linear-gradient(180deg,rgba(13,28,42,0.96),rgba(8,18,29,0.92))] max-[1180px]:hidden">
         <div class="flex items-center justify-between border-b border-(--border) p-3">
             <h2>Details</h2>
-            <button type="button" class="text-(--muted)"><i class="bi bi-x-lg"></i></button>
+            <button type="button" class="text-(--muted)" aria-label="Close details" (click)="closeDetails()"><i class="bi bi-x-lg"></i></button>
         </div>
         <div class="min-h-0 overflow-auto p-3">
             <section class="grid gap-2.5 border-b border-white/6 pb-3">
@@ -126,4 +128,5 @@
             </section>
         </div>
     </aside>
+    }
 </section>
