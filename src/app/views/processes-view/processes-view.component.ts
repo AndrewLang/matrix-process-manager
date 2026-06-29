@@ -82,7 +82,7 @@ export class ProcessesViewComponent {
     }
 
     metricOrder(): string[] {
-        return ["CPU", "Memory", "Disk", "Network"];
+        return ["CPU", "GPU", "Memory", "Disk", "Network"];
     }
 
     metric(label: string): MetricCard | undefined {
