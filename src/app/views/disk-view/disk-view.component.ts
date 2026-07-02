@@ -1,8 +1,11 @@
 import { Component, OnInit, computed, inject, signal } from "@angular/core";
 import { invoke } from "@tauri-apps/api/core";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
-import { BackendDiskDriveUsage, DiskCleanupResult, DiskCleanupScan, DiskCleanupTarget, DiskVolumeUsage } from "../../app.models";
+import { BackendDiskDriveUsage, DiskCleanupResult, DiskCleanupScan, DiskCleanupTarget, DiskUsageInsight, DiskVolumeUsage } from "../../app.models";
 import { WorkareaStateService } from "../../services/workarea-state.service";
+
+type DiskDetailTab = "insights" | "candidates";
+type DiskDetailViewMode = "cards" | "table";
 
 @Component({
     selector: "mtx-disk-view",
@@ -16,6 +19,8 @@ export class DiskViewComponent implements OnInit {
     loading = signal(false);
     cleaning = signal(false);
     error = signal("");
+    activeTab = signal<DiskDetailTab>("candidates");
+    detailViewMode = signal<DiskDetailViewMode>("cards");
     lastReleasedBytes = signal<number | undefined>(undefined);
 
     systemVolume = computed(() => this.scan()?.volumes.find((volume) => volume.systemDrive) ?? this.scan()?.volumes[0]);
@@ -25,6 +30,10 @@ export class DiskViewComponent implements OnInit {
     allCleanupTargets = computed(() => [...(this.scan()?.targets ?? [])].sort((left, right) => right.bytes - left.bytes));
     cleanupTargets = computed(() => this.allCleanupTargets().filter((target) => this.targetOnVolume(target, this.selectedVolume()?.label)));
     visibleCleanupTargets = computed(() => this.cleanupTargets().filter((target) => target.exists || target.bytes > 0));
+    usageInsights = computed(() => [...(this.scan()?.usageInsights ?? [])].filter((insight) => this.pathOnVolume(insight.path, this.selectedVolume()?.label)).sort((left, right) => right.bytes - left.bytes));
+    largeAppInsights = computed(() => this.usageInsights().filter((insight) => insight.category === "Apps over 1 GB"));
+    cacheInsights = computed(() => this.usageInsights().filter((insight) => insight.category !== "Apps over 1 GB"));
+    insightBytes = computed(() => this.usageInsights().reduce((total, insight) => total + insight.bytes, 0));
     selectedTargets = computed(() => this.cleanupTargets().filter((target) => this.selectedTargetIds().includes(target.id)));
     selectedBytes = computed(() => this.selectedTargets().reduce((total, target) => total + target.bytes, 0));
     cleanableBytes = computed(() => this.cleanupTargets().reduce((total, target) => total + target.bytes, 0));
@@ -57,9 +66,21 @@ export class DiskViewComponent implements OnInit {
         this.selectedTargetIds.set(this.allCleanupTargets().filter((target) => this.targetOnVolume(target, volume.label) && target.exists && target.bytes > 0).map((target) => target.id));
     }
 
+    setActiveTab(tab: DiskDetailTab): void {
+        this.activeTab.set(tab);
+    }
+
+    setDetailViewMode(viewMode: DiskDetailViewMode): void {
+        this.detailViewMode.set(viewMode);
+    }
+
     openTargetFolder(event: MouseEvent, target: DiskCleanupTarget): void {
         event.stopPropagation();
         revealItemInDir(target.path).catch(() => this.error.set("Folder could not be opened."));
+    }
+
+    openInsightFolder(insight: DiskUsageInsight): void {
+        revealItemInDir(insight.path).catch(() => this.error.set("Folder could not be opened."));
     }
 
     cleanSelected(): void {
@@ -104,11 +125,15 @@ export class DiskViewComponent implements OnInit {
     }
 
     private targetOnVolume(target: DiskCleanupTarget, volumeLabel: string | undefined): boolean {
+        return this.pathOnVolume(target.path, volumeLabel);
+    }
+
+    private pathOnVolume(path: string, volumeLabel: string | undefined): boolean {
         if (!volumeLabel) {
             return true;
         }
 
-        const normalizedPath = target.path.replaceAll("/", "\\").toLowerCase();
+        const normalizedPath = path.replaceAll("/", "\\").toLowerCase();
         return normalizedPath.startsWith(`${volumeLabel.toLowerCase()}\\`);
     }
 

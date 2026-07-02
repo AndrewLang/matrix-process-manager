@@ -180,9 +180,20 @@ export interface DiskCleanupTarget {
     exists: boolean;
 }
 
+export interface DiskUsageInsight {
+    id: string;
+    name: string;
+    path: string;
+    category: string;
+    description: string;
+    bytes: number;
+    exists: boolean;
+}
+
 export interface DiskCleanupScan {
     volumes: DiskVolumeUsage[];
     targets: DiskCleanupTarget[];
+    usageInsights: DiskUsageInsight[];
 }
 
 export interface DiskCleanupResult {
