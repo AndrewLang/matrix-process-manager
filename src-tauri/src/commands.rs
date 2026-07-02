@@ -34,13 +34,17 @@ pub fn update_startup_command(
 }
 
 #[tauri::command]
-pub fn get_disk_cleanup_scan() -> Result<DiskCleanupScan, CommandError> {
-    DiskCleanupManager::scan()
+pub async fn get_disk_cleanup_scan() -> Result<DiskCleanupScan, CommandError> {
+    tauri::async_runtime::spawn_blocking(DiskCleanupManager::scan)
+        .await
+        .map_err(|error| CommandError::disk_cleanup_failed(error.to_string()))?
 }
 
 #[tauri::command]
-pub fn clean_disk(request: DiskCleanupRequest) -> Result<DiskCleanupResult, CommandError> {
-    DiskCleanupManager::clean(request)
+pub async fn clean_disk(request: DiskCleanupRequest) -> Result<DiskCleanupResult, CommandError> {
+    tauri::async_runtime::spawn_blocking(move || DiskCleanupManager::clean(request))
+        .await
+        .map_err(|error| CommandError::disk_cleanup_failed(error.to_string()))?
 }
 
 #[tauri::command]
