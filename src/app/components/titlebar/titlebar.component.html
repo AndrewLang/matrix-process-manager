@@ -1,62 +1,34 @@
-<header
-  class="relative flex h-12 select-none items-center justify-center border-b border-(--border) bg-[rgba(6,14,22,0.82)] py-0 pr-0 pl-3.75"
-  data-tauri-drag-region
-  (mousedown)="dragStart.emit($event)"
-  (dblclick)="toggleMaximizeWindow.emit()">
+<header class="relative flex h-12 select-none items-center justify-center border-b border-(--border) bg-[rgba(6,14,22,0.82)] py-0 pr-0 pl-3.75"
+  data-tauri-drag-region (mousedown)="dragStart.emit($event)" (dblclick)="toggleMaximizeWindow.emit()">
   <div class="absolute left-2 flex items-center gap-1" data-tauri-drag-region>
-    <img
-      class="h-7 w-7 rounded-[5px] object-cover"
-      src="assets/app-icon.png"
-      alt=""
-      aria-hidden="true" />
+    <img class="h-7 w-7 rounded-[5px] object-cover" src="assets/app-icon.png" alt="" aria-hidden="true" />
     <strong class="text-[14px] tracking-normal">Process Manager</strong>
   </div>
 
-  <mtx-search-box
-    [hostClass]="searchClass"
-    [inputClass]="searchInputClass"
-    placeholder="Search processes, PID, publisher..."
-    shortcut="Ctrl K" />
+  <mtx-search-box [hostClass]="searchClass" [inputClass]="searchInputClass" placeholder="Search processes, PID, publisher..." shortcut="Ctrl K" />
 
-  <div
-    class="absolute right-0 flex h-full items-center gap-2.5"
-    (mousedown)="$event.stopPropagation()"
-    (dblclick)="$event.stopPropagation()">
+  <div class="absolute right-0 flex h-full items-center gap-2.5" (mousedown)="$event.stopPropagation()" (dblclick)="$event.stopPropagation()">
     <div class="flex items-center gap-1.5">
-      <button
-        class="h-6.75 w-6.75 rounded-full bg-transparent text-[#b8c4cf] hover:bg-white/6"
-        type="button"
-        aria-label="Refresh">
-        <i class="bi bi-arrow-clockwise"></i>
+      <button class="h-6.75 w-6.75 rounded-full bg-transparent text-[#b8c4cf] hover:bg-white/6" type="button" aria-label="Sponsor on GitHub"
+        (click)="openSponsorPage()">
+        <i class="bi bi-github"></i>
       </button>
-      <button
-        class="h-6.75 w-6.75 rounded-full bg-transparent text-[#b8c4cf] hover:bg-white/6"
-        type="button"
-        aria-label="Settings"
+      <button class="h-6.75 w-6.75 rounded-full bg-transparent text-[#b8c4cf] hover:bg-white/6" type="button" aria-label="Settings"
         (click)="settingsRequested.emit()">
         <i class="bi bi-gear"></i>
       </button>
     </div>
     <div class="flex h-full items-center">
-      <button
-        class="grid h-full w-11.5 place-items-center rounded-none bg-transparent text-[#c3ccd5] hover:bg-white/10"
-        type="button"
-        aria-label="Minimize"
+      <button class="grid h-full w-11.5 place-items-center rounded-none bg-transparent text-[#c3ccd5] hover:bg-white/10" type="button" aria-label="Minimize"
         (click)="minimizeWindow.emit()">
         <i class="bi bi-dash text-[13px]"></i>
       </button>
-      <button
-        class="grid h-full w-11.5 place-items-center rounded-none bg-transparent text-[#c3ccd5] hover:bg-white/10"
-        type="button"
-        aria-label="Maximize"
+      <button class="grid h-full w-11.5 place-items-center rounded-none bg-transparent text-[#c3ccd5] hover:bg-white/10" type="button" aria-label="Maximize"
         (click)="toggleMaximizeWindow.emit()">
         <i class="bi bi-square text-[13px]"></i>
       </button>
-      <button
-        class="grid h-full w-11.5 place-items-center rounded-none bg-transparent text-[#c3ccd5] hover:bg-[#c42b1c] hover:text-white"
-        type="button"
-        aria-label="Close"
-        (click)="closeWindow.emit()">
+      <button class="grid h-full w-11.5 place-items-center rounded-none bg-transparent text-[#c3ccd5] hover:bg-[#c42b1c] hover:text-white" type="button"
+        aria-label="Close" (click)="closeWindow.emit()">
         <i class="bi bi-x-lg text-[13px]"></i>
       </button>
     </div>
