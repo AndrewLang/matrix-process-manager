@@ -65,6 +65,7 @@ export class AppComponent implements OnDestroy, OnInit {
     { id: "dashboard", label: "Dashboard", icon: "bi-speedometer2" },
     { id: "processes", label: "Processes", icon: "bi-list-task" },
     { id: "performance", label: "Performance", icon: "bi-activity" },
+    { id: "disk", label: "Disk", icon: "bi-device-ssd" },
     { id: "startup", label: "Startup Apps", icon: "bi-rocket-takeoff" },
     { id: "system", label: "System Info", icon: "bi-info-circle" },
     { id: "command-center", label: "Command Center", icon: "bi-terminal-plus" },

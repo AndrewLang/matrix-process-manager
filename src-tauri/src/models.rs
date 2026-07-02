@@ -102,6 +102,47 @@ pub struct DiskDriveUsage {
 
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct DiskVolumeUsage {
+    pub label: String,
+    pub name: String,
+    pub total_bytes: u64,
+    pub free_bytes: u64,
+    pub system_drive: bool,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DiskCleanupTarget {
+    pub id: String,
+    pub name: String,
+    pub path: String,
+    pub description: String,
+    pub bytes: u64,
+    pub exists: bool,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DiskCleanupScan {
+    pub volumes: Vec<DiskVolumeUsage>,
+    pub targets: Vec<DiskCleanupTarget>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DiskCleanupRequest {
+    pub target_ids: Vec<String>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DiskCleanupResult {
+    pub released_bytes: u64,
+    pub cleaned_targets: Vec<DiskCleanupTarget>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct NetworkAdapterUsage {
     pub name: String,
     pub adapter_index: usize,
@@ -214,6 +255,13 @@ impl CommandError {
     pub fn terminal_failed(message: impl Into<String>) -> Self {
         Self {
             code: "terminalFailed".to_string(),
+            message: message.into(),
+        }
+    }
+
+    pub fn disk_cleanup_failed(message: impl Into<String>) -> Self {
+        Self {
+            code: "diskCleanupFailed".to_string(),
             message: message.into(),
         }
     }

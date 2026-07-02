@@ -1,5 +1,6 @@
 mod command_knowledge;
 mod commands;
+mod disk_cleanup;
 mod managers;
 mod models;
 mod providers;
@@ -60,7 +61,9 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             commands::autocomplete_commands,
+            commands::clean_disk,
             commands::finish_command_execution,
+            commands::get_disk_cleanup_scan,
             commands::get_process_snapshot,
             commands::get_active_terminal_session,
             commands::get_startup_apps,

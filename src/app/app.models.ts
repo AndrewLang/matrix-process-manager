@@ -163,6 +163,33 @@ export interface BackendDiskDriveUsage {
     diskType?: string;
 }
 
+export interface DiskVolumeUsage {
+    label: string;
+    name: string;
+    totalBytes: number;
+    freeBytes: number;
+    systemDrive: boolean;
+}
+
+export interface DiskCleanupTarget {
+    id: string;
+    name: string;
+    path: string;
+    description: string;
+    bytes: number;
+    exists: boolean;
+}
+
+export interface DiskCleanupScan {
+    volumes: DiskVolumeUsage[];
+    targets: DiskCleanupTarget[];
+}
+
+export interface DiskCleanupResult {
+    releasedBytes: number;
+    cleanedTargets: DiskCleanupTarget[];
+}
+
 export interface BackendMemoryInfo {
     installedBytes?: number;
     inUseBytes: number;

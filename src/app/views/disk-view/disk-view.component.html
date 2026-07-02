@@ -1,0 +1,149 @@
+<section class="grid h-full min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] gap-2.5 overflow-hidden px-2.5 py-3">
+    <section
+      class="grid gap-3 rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+        <div class="flex min-w-0 items-start gap-3">
+            <div class="min-w-0">
+                <h1>Disk</h1>
+                <p>System drive usage and cleanup targets</p>
+            </div>
+            <div class="ml-auto flex items-center gap-2 text-[12px]">
+                @if (lastReleasedBytes() !== undefined) {
+                <span class="rounded border border-[rgba(34,206,116,0.28)] bg-[rgba(34,206,116,0.12)] px-2.5 py-1 text-(--green)">{{
+                    formatBytes(lastReleasedBytes()) }} released</span>
+                }
+                @if (error()) {
+                <span class="max-w-70 truncate rounded border border-[rgba(255,75,67,0.28)] bg-[rgba(255,75,67,0.12)] px-2.5 py-1 text-(--red)">{{ error()
+                    }}</span>
+                }
+                <button type="button"
+                  class="inline-flex h-7.5 items-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(16,31,45,0.86)] px-3 hover:bg-white/6"
+                  [disabled]="loading() || cleaning()" (click)="refresh()">
+                    <i class="bi bi-arrow-clockwise"></i>Refresh
+                </button>
+                <button type="button"
+                  class="inline-flex h-7.5 items-center gap-2 rounded-[5px] border border-[#1596ff] bg-[#1596ff] px-3 font-medium text-white hover:bg-[#2aa4ff] disabled:opacity-55"
+                  [disabled]="!hasSelection() || cleaning()" (click)="cleanSelected()">
+                    <i class="bi bi-stars"></i>{{ cleaning() ? "Cleaning..." : "Clean" }}
+                </button>
+            </div>
+        </div>
+        <div class="grid gap-2.5 md:grid-cols-4">
+            <article class="rounded-md border border-(--border) bg-[rgba(16,31,45,0.62)] p-3">
+                <span class="text-[12px] text-(--muted)">System Drive</span>
+                <strong class="mt-1 block text-[24px] text-[#e6f0fa]">{{ systemVolume()?.label ?? "Unavailable" }}</strong>
+                <small class="text-(--muted)">{{ systemDriveName() }}</small>
+            </article>
+            <article class="rounded-md border border-(--border) bg-[rgba(16,31,45,0.62)] p-3">
+                <span class="text-[12px] text-(--muted)">Used</span>
+                <strong class="mt-1 block text-[24px] text-(--orange)">{{ usagePercent(systemVolume()).toFixed(0) }}%</strong>
+                <small class="text-(--muted)">{{ formatBytes((systemVolume()?.totalBytes ?? 0) - (systemVolume()?.freeBytes ?? 0)) }} of {{
+                    formatBytes(systemVolume()?.totalBytes) }}</small>
+            </article>
+            <article class="rounded-md border border-(--border) bg-[rgba(16,31,45,0.62)] p-3">
+                <span class="text-[12px] text-(--muted)">Free</span>
+                <strong class="mt-1 block text-[24px] text-(--green)">{{ formatBytes(systemVolume()?.freeBytes) }}</strong>
+                <small class="text-(--muted)">{{ freePercent(systemVolume()).toFixed(0) }}% available</small>
+            </article>
+            <article class="rounded-md border border-(--border) bg-[rgba(16,31,45,0.62)] p-3">
+                <span class="text-[12px] text-(--muted)">Cleanable</span>
+                <strong class="mt-1 block text-[24px] text-(--blue)">{{ formatBytes(cleanableBytes()) }}</strong>
+                <small class="text-(--muted)">{{ formatBytes(selectedBytes()) }} selected</small>
+            </article>
+        </div>
+        <div class="h-2 overflow-hidden rounded-full bg-[rgba(122,153,181,0.16)]">
+            <div class="h-full rounded-full bg-[linear-gradient(90deg,#22ce74,#ff9a2e)]" [style.width.%]="usagePercent(systemVolume())"></div>
+        </div>
+    </section>
+
+    <section class="grid min-h-0 min-w-0 grid-cols-[minmax(0,1fr)_330px] gap-2.5 overflow-hidden max-[1080px]:grid-cols-[minmax(0,1fr)]">
+        <section
+          class="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+            <div class="flex items-center justify-between gap-3 border-b border-(--border) p-3">
+                <div>
+                    <h2>Cleanup Candidates</h2>
+                    <p class="text-[12px] text-(--muted)">{{ visibleCleanupTargets().length }} folders found</p>
+                </div>
+                <span class="text-[12px] text-(--muted)">{{ loading() ? "Scanning..." : formatBytes(cleanableBytes()) }}</span>
+            </div>
+            <div class="min-h-0 overflow-auto p-2">
+                <div class="grid gap-2">
+                    @for (target of visibleCleanupTargets(); track target.id) {
+                    <button type="button"
+                      class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-md border border-white/6 bg-[rgba(16,31,45,0.42)] p-3 text-left hover:bg-white/6"
+                      (click)="toggleTarget(target)">
+                        <span class="grid size-5 place-items-center rounded border border-(--border)" [class.bg-[#1596ff]]="targetSelected(target)">
+                            @if (targetSelected(target)) {
+                            <i class="bi bi-check text-[12px] text-white"></i>
+                            }
+                        </span>
+                        <span class="min-w-0">
+                            <span class="flex min-w-0 items-center gap-2">
+                                <strong class="truncate text-[13px] text-[#e6f0fa]">{{ target.name }}</strong>
+                                <small class="rounded bg-white/6 px-1.5 py-0.5 text-[11px] text-(--muted)">{{ formatBytes(target.bytes) }}</small>
+                            </span>
+                            <span class="mt-1 block truncate text-[12px] text-(--muted)">{{ target.path }}</span>
+                            <span class="mt-1 block text-[11px] text-[#9aacba]">{{ target.description }}</span>
+                        </span>
+                        <i class="bi bi-folder2-open text-[18px] text-(--blue)"></i>
+                    </button>
+                    }
+                    @if (!loading() && visibleCleanupTargets().length === 0) {
+                    <div class="rounded-md border border-white/6 bg-[rgba(16,31,45,0.42)] p-5 text-center text-[12px] text-(--muted)">No cleanup folders found.
+                    </div>
+                    }
+                </div>
+            </div>
+        </section>
+
+        <aside
+          class="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] max-[1080px]:hidden">
+            <div class="border-b border-(--border) p-3">
+                <h2>Volumes</h2>
+                <p class="text-[12px] text-(--muted)">{{ scan()?.volumes?.length ?? 0 }} fixed drives</p>
+            </div>
+            <div class="min-h-0 overflow-auto p-2">
+                <div class="grid gap-2">
+                    @for (volume of scan()?.volumes ?? []; track volume.label) {
+                    <article class="rounded-md border border-white/6 bg-[rgba(16,31,45,0.42)] p-3">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="min-w-0">
+                                <strong class="text-[13px] text-[#e6f0fa]">{{ volume.label }}</strong>
+                                <p class="truncate text-[12px] text-(--muted)">{{ volume.name || "Local Disk" }}</p>
+                            </div>
+                            @if (volume.systemDrive) {
+                            <span class="rounded bg-[rgba(23,144,255,0.14)] px-1.5 py-0.5 text-[11px] text-(--blue)">System</span>
+                            }
+                        </div>
+                        <div class="mt-3 h-1.5 overflow-hidden rounded-full bg-[rgba(122,153,181,0.16)]">
+                            <div class="h-full rounded-full bg-[#22ce74]" [style.width.%]="freePercent(volume)"></div>
+                        </div>
+                        <dl class="mt-2 grid grid-cols-2 gap-1 text-[11px]">
+                            <dt class="text-(--muted)">Free</dt>
+                            <dd class="text-right text-[#e5eef7]">{{ formatBytes(volume.freeBytes) }}</dd>
+                            <dt class="text-(--muted)">Total</dt>
+                            <dd class="text-right text-[#e5eef7]">{{ formatBytes(volume.totalBytes) }}</dd>
+                        </dl>
+                    </article>
+                    }
+                    @for (drive of state.diskDrives(); track drive.diskIndex) {
+                    <article class="rounded-md border border-white/6 bg-[rgba(16,31,45,0.42)] p-3">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="min-w-0">
+                                <strong class="text-[13px] text-[#e6f0fa]">Disk {{ drive.diskIndex }}</strong>
+                                <p class="truncate text-[12px] text-(--muted)">{{ drive.name }}</p>
+                            </div>
+                            <span class="text-[12px] text-(--green)">{{ driveUsage(drive) }}</span>
+                        </div>
+                        <dl class="mt-2 grid grid-cols-2 gap-1 text-[11px]">
+                            <dt class="text-(--muted)">Read</dt>
+                            <dd class="text-right text-[#e5eef7]">{{ formatBytes(drive.readBytesPerSec) }}/s</dd>
+                            <dt class="text-(--muted)">Write</dt>
+                            <dd class="text-right text-[#e5eef7]">{{ formatBytes(drive.writeBytesPerSec) }}/s</dd>
+                        </dl>
+                    </article>
+                    }
+                </div>
+            </div>
+        </aside>
+    </section>
+</section>

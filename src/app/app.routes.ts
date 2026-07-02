@@ -1,6 +1,7 @@
 import { Routes } from "@angular/router";
 import { CommandCenterViewComponent } from "./views/command-center/command-center-view.component";
 import { DashboardViewComponent } from "./views/dashboard-view/dashboard-view.component";
+import { DiskViewComponent } from "./views/disk-view/disk-view.component";
 import { CpuMonitorComponent } from "./views/performance-view/components/cpu-monitor/cpu-monitor.component";
 import { DiskMonitorComponent } from "./views/performance-view/components/disk-monitor/disk-monitor.component";
 import { GpuMonitorComponent } from "./views/performance-view/components/gpu-monitor/gpu-monitor.component";
@@ -33,7 +34,7 @@ export const routes: Routes = [
     { path: "system", component: SystemInfoViewComponent },
     { path: "command-center", component: CommandCenterViewComponent },
     { path: "settings", component: SettingsViewComponent },
-    { path: "disk", component: PlaceholderViewComponent, data: { title: "Disk Manager" } },
+    { path: "disk", component: DiskViewComponent },
     { path: "terminal", component: PlaceholderViewComponent, data: { title: "Terminal" } },
     { path: "more", component: PlaceholderViewComponent, data: { title: "More Tools" } },
 ];

@@ -3,7 +3,11 @@ use crate::command_knowledge::models::{
     FinishCommandExecutionRequest, InstalledApplicationScanResult, StartCommandExecutionRequest,
     StartCommandExecutionResponse,
 };
-use crate::models::{CommandError, ProcessSnapshot, StartupApp, StartupCommandUpdateRequest};
+use crate::disk_cleanup::DiskCleanupManager;
+use crate::models::{
+    CommandError, DiskCleanupRequest, DiskCleanupResult, DiskCleanupScan, ProcessSnapshot,
+    StartupApp, StartupCommandUpdateRequest,
+};
 use crate::terminal::models::{
     TerminalResizeRequest, TerminalSessionInfo, TerminalSessionRequest, TerminalStartRequest,
     TerminalStartResponse, TerminalStopRequest, TerminalWriteRequest,
@@ -27,6 +31,16 @@ pub fn update_startup_command(
     request: StartupCommandUpdateRequest,
 ) -> Result<(), CommandError> {
     state.startup_manager.update_command(request)
+}
+
+#[tauri::command]
+pub fn get_disk_cleanup_scan() -> Result<DiskCleanupScan, CommandError> {
+    DiskCleanupManager::scan()
+}
+
+#[tauri::command]
+pub fn clean_disk(request: DiskCleanupRequest) -> Result<DiskCleanupResult, CommandError> {
+    DiskCleanupManager::clean(request)
 }
 
 #[tauri::command]
