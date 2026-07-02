@@ -1,6 +1,7 @@
 use crate::models::{
     CommandError, DiskCleanupRequest, DiskCleanupResult, DiskCleanupScan, DiskCleanupTarget,
-    DiskUsageInsight, DiskVolumeUsage,
+    DiskUsageInsight, DiskUsageInsightCleanupRequest, DiskUsageInsightCleanupResult,
+    DiskVolumeUsage,
 };
 use std::path::{Path, PathBuf};
 
@@ -59,6 +60,26 @@ impl DiskCleanupManager {
         Ok(DiskCleanupResult {
             released_bytes,
             cleaned_targets,
+        })
+    }
+
+    pub fn clean_usage_insight(
+        request: DiskUsageInsightCleanupRequest,
+    ) -> Result<DiskUsageInsightCleanupResult, CommandError> {
+        let Some(definition) = Self::usage_insights()
+            .into_iter()
+            .find(|insight| insight.id == request.insight_id)
+        else {
+            return Err(CommandError::disk_cleanup_failed("unknown usage insight"));
+        };
+
+        let before = Self::directory_size(&definition.path);
+        Self::remove_directory_contents(&definition.path);
+        let cleaned_insight = Self::usage_insight_from_definition(definition);
+
+        Ok(DiskUsageInsightCleanupResult {
+            released_bytes: before.saturating_sub(cleaned_insight.bytes),
+            cleaned_insight,
         })
     }
 

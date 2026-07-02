@@ -149,11 +149,24 @@ pub struct DiskCleanupRequest {
     pub target_ids: Vec<String>,
 }
 
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DiskUsageInsightCleanupRequest {
+    pub insight_id: String,
+}
+
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DiskCleanupResult {
     pub released_bytes: u64,
     pub cleaned_targets: Vec<DiskCleanupTarget>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DiskUsageInsightCleanupResult {
+    pub released_bytes: u64,
+    pub cleaned_insight: DiskUsageInsight,
 }
 
 #[derive(Clone, Debug, Serialize)]

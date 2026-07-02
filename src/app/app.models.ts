@@ -203,6 +203,15 @@ export interface DiskCleanupResult {
     cleanedTargets: DiskCleanupTarget[];
 }
 
+export interface DiskUsageInsightCleanupRequest {
+    insightId: string;
+}
+
+export interface DiskUsageInsightCleanupResult {
+    releasedBytes: number;
+    cleanedInsight: DiskUsageInsight;
+}
+
 export interface BackendMemoryInfo {
     installedBytes?: number;
     inUseBytes: number;

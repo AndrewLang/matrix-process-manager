@@ -129,7 +129,7 @@
                         <col class="w-28" />
                         <col />
                         <col class="w-28" />
-                        <col class="w-14" />
+                        <col class="w-24" />
                     </colgroup>
                     <thead class="sticky top-0 z-10 bg-[rgba(10,22,33,0.98)] text-left text-(--muted)">
                         <tr>
@@ -159,12 +159,19 @@
                             <td class="px-3 py-2 text-right text-[#e6f0fa]">{{ formatBytes(insight.bytes) }}</td>
                             <td class="truncate px-3 py-2 text-(--muted)">{{ insight.path }}</td>
                             <td class="truncate px-3 py-2 text-[#9aacba]">{{ insight.description }}</td>
-                            <td class="px-3 py-2 text-right">
-                                <button type="button"
-                                  class="grid size-7 place-items-center rounded border border-(--border) bg-[rgba(10,22,33,0.72)] text-(--blue) hover:bg-white/6"
-                                  aria-label="Open insight folder" (click)="openInsightFolder(insight)">
-                                    <i class="bi bi-box-arrow-up-right text-[14px]"></i>
-                                </button>
+                            <td class="px-3 py-2">
+                                <div class="flex justify-end gap-1.5">
+                                    <button type="button"
+                                      class="grid size-7 place-items-center rounded border border-(--border) bg-[rgba(10,22,33,0.72)] text-(--blue) hover:bg-white/6"
+                                      aria-label="Open insight folder" (click)="openInsightFolder(insight)">
+                                        <i class="bi bi-box-arrow-up-right text-[14px]"></i>
+                                    </button>
+                                    <button type="button"
+                                      class="grid size-7 place-items-center rounded border border-[rgba(255,154,46,0.42)] bg-[rgba(255,154,46,0.1)] text-(--orange) hover:bg-[rgba(255,154,46,0.16)]"
+                                      aria-label="Clean insight folder" [disabled]="cleaning()" (click)="requestCleanInsight($event, insight)">
+                                        <i class="bi bi-stars text-[14px]"></i>
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                         }
@@ -231,9 +238,8 @@
                 @if (activeTab() === "insights") {
                 <div class="grid gap-2 xl:grid-cols-2">
                     @for (insight of usageInsights(); track insight.id) {
-                    <button type="button"
-                      class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-md border border-white/6 bg-[rgba(16,31,45,0.42)] p-3 text-left hover:bg-white/6"
-                      (click)="openInsightFolder(insight)">
+                    <article
+                      class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-md border border-white/6 bg-[rgba(16,31,45,0.42)] p-3 text-left hover:bg-white/6">
                         <span class="min-w-0">
                             <span class="flex min-w-0 items-center gap-2">
                                 <strong class="truncate text-[13px] text-[#e6f0fa]">{{ insight.name }}</strong>
@@ -249,8 +255,19 @@
                             <span class="mt-1 block truncate text-[12px] text-(--muted)">{{ insight.path }}</span>
                             <span class="mt-1 block text-[11px] text-[#9aacba]">{{ insight.description }} {{ insight.safety }}</span>
                         </span>
-                        <i class="bi bi-box-arrow-up-right text-[16px] text-(--blue)"></i>
-                    </button>
+                        <span class="flex items-center gap-1.5">
+                            <button type="button"
+                              class="grid size-8 place-items-center rounded border border-(--border) bg-[rgba(10,22,33,0.72)] text-(--blue) hover:bg-white/6"
+                              aria-label="Open insight folder" (click)="openInsightFolder(insight)">
+                                <i class="bi bi-box-arrow-up-right text-[16px]"></i>
+                            </button>
+                            <button type="button"
+                              class="grid size-8 place-items-center rounded border border-[rgba(255,154,46,0.42)] bg-[rgba(255,154,46,0.1)] text-(--orange) hover:bg-[rgba(255,154,46,0.16)]"
+                              aria-label="Clean insight folder" [disabled]="cleaning()" (click)="requestCleanInsight($event, insight)">
+                                <i class="bi bi-stars text-[16px]"></i>
+                            </button>
+                        </span>
+                    </article>
                     }
                     @if (!loading() && usageInsights().length === 0) {
                     <div class="rounded-md border border-white/6 bg-[rgba(16,31,45,0.42)] p-5 text-center text-[12px] text-(--muted)">No app or cache usage
@@ -347,6 +364,46 @@
             </div>
         </aside>
     </section>
+
+    @if (pendingInsightClean(); as insight) {
+    <div class="fixed inset-0 z-50 grid place-items-center bg-black/45 px-4" (click)="cancelCleanInsight()">
+        <section
+          class="grid w-[min(460px,calc(100vw-32px))] gap-4 rounded-md border border-(--border) bg-[rgba(10,22,33,0.98)] p-5 text-[12px] text-[#cbd7e2] shadow-[0_18px_48px_rgba(0,0,0,0.42)]"
+          (click)="$event.stopPropagation()">
+            <div class="flex items-center justify-between gap-3 border-b border-(--border) pb-3">
+                <h2>Clean folder</h2>
+                <button type="button" class="grid size-7 place-items-center rounded border border-(--border) text-(--muted) hover:bg-white/6"
+                  aria-label="Cancel clean" (click)="cancelCleanInsight()">
+                    <i class="bi bi-x-lg text-[12px]"></i>
+                </button>
+            </div>
+            <div class="flex gap-3">
+                <span
+                  class="grid h-9 w-9 flex-none place-items-center rounded-md border border-[rgba(255,154,46,0.35)] bg-[rgba(255,154,46,0.12)] text-(--orange)">
+                    <i class="bi bi-stars"></i>
+                </span>
+                <div class="grid min-w-0 gap-1">
+                    <strong class="text-[13px] text-[#f1f6fb]">Clean {{ insight.name }}?</strong>
+                    <span class="text-[#9aacba]">This removes the contents of the folder and may release {{ formatBytes(insight.bytes) }}.</span>
+                    <span class="truncate rounded border border-white/8 bg-white/5 px-2 py-1 text-[11px] text-(--muted)">{{ insight.path }}</span>
+                    <span class="text-[11px]" [class.text-(--green)]="insight.safeToClean" [class.text-(--orange)]="!insight.safeToClean">{{ insight.safety
+                        }}</span>
+                </div>
+            </div>
+            <footer class="flex items-center justify-end gap-2 border-t border-(--border) pt-3">
+                <button type="button" class="h-8 rounded-md border border-(--border) bg-transparent px-4 text-[12px] text-[#cbd7e2] hover:bg-white/6"
+                  (click)="cancelCleanInsight()">
+                    Cancel
+                </button>
+                <button type="button"
+                  class="h-8 rounded-md border border-[rgba(255,154,46,0.65)] bg-[rgba(255,154,46,0.18)] px-4 text-[12px] font-medium text-(--orange) hover:bg-[rgba(255,154,46,0.26)]"
+                  [disabled]="cleaning()" (click)="confirmCleanInsight()">
+                    Clean
+                </button>
+            </footer>
+        </section>
+    </div>
+    }
 
     @if (cleaning()) {
     <div class="fixed inset-0 z-50 grid place-items-center bg-black/45 px-4">

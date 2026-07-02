@@ -1,7 +1,7 @@
 import { Component, OnInit, computed, inject, signal } from "@angular/core";
 import { invoke } from "@tauri-apps/api/core";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
-import { BackendDiskDriveUsage, DiskCleanupResult, DiskCleanupScan, DiskCleanupTarget, DiskUsageInsight, DiskVolumeUsage } from "../../app.models";
+import { BackendDiskDriveUsage, DiskCleanupResult, DiskCleanupScan, DiskCleanupTarget, DiskUsageInsight, DiskUsageInsightCleanupResult, DiskVolumeUsage } from "../../app.models";
 import { WorkareaStateService } from "../../services/workarea-state.service";
 
 type DiskDetailTab = "insights" | "candidates";
@@ -22,6 +22,7 @@ export class DiskViewComponent implements OnInit {
     activeTab = signal<DiskDetailTab>("candidates");
     detailViewMode = signal<DiskDetailViewMode>("cards");
     lastReleasedBytes = signal<number | undefined>(undefined);
+    pendingInsightClean = signal<DiskUsageInsight | undefined>(undefined);
 
     systemVolume = computed(() => this.scan()?.volumes.find((volume) => volume.systemDrive) ?? this.scan()?.volumes[0]);
     selectedVolume = computed(() => this.scan()?.volumes.find((volume) => volume.label === this.selectedVolumeLabel()) ?? this.systemVolume());
@@ -81,6 +82,33 @@ export class DiskViewComponent implements OnInit {
 
     openInsightFolder(insight: DiskUsageInsight): void {
         revealItemInDir(insight.path).catch(() => this.error.set("Folder could not be opened."));
+    }
+
+    requestCleanInsight(event: MouseEvent, insight: DiskUsageInsight): void {
+        event.stopPropagation();
+        this.pendingInsightClean.set(insight);
+    }
+
+    cancelCleanInsight(): void {
+        this.pendingInsightClean.set(undefined);
+    }
+
+    confirmCleanInsight(): void {
+        const insight = this.pendingInsightClean();
+        if (!insight || this.cleaning()) {
+            return;
+        }
+
+        this.pendingInsightClean.set(undefined);
+        this.cleaning.set(true);
+        this.error.set("");
+        invoke<DiskUsageInsightCleanupResult>("clean_disk_usage_insight", { request: { insightId: insight.id } })
+            .then((result) => {
+                this.lastReleasedBytes.set(result.releasedBytes);
+                this.refresh();
+            })
+            .catch((error: unknown) => this.error.set(error instanceof Error ? error.message : "Storage insight clean failed."))
+            .finally(() => this.cleaning.set(false));
     }
 
     cleanSelected(): void {

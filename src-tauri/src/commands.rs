@@ -6,7 +6,8 @@ use crate::command_knowledge::models::{
 use crate::disk_cleanup::DiskCleanupManager;
 use crate::models::{
     CommandError, DiskCleanupRequest, DiskCleanupResult, DiskCleanupScan, ProcessSnapshot,
-    StartupApp, StartupCommandUpdateRequest,
+    DiskUsageInsightCleanupRequest, DiskUsageInsightCleanupResult, StartupApp,
+    StartupCommandUpdateRequest,
 };
 use crate::terminal::models::{
     TerminalResizeRequest, TerminalSessionInfo, TerminalSessionRequest, TerminalStartRequest,
@@ -43,6 +44,15 @@ pub async fn get_disk_cleanup_scan() -> Result<DiskCleanupScan, CommandError> {
 #[tauri::command]
 pub async fn clean_disk(request: DiskCleanupRequest) -> Result<DiskCleanupResult, CommandError> {
     tauri::async_runtime::spawn_blocking(move || DiskCleanupManager::clean(request))
+        .await
+        .map_err(|error| CommandError::disk_cleanup_failed(error.to_string()))?
+}
+
+#[tauri::command]
+pub async fn clean_disk_usage_insight(
+    request: DiskUsageInsightCleanupRequest,
+) -> Result<DiskUsageInsightCleanupResult, CommandError> {
+    tauri::async_runtime::spawn_blocking(move || DiskCleanupManager::clean_usage_insight(request))
         .await
         .map_err(|error| CommandError::disk_cleanup_failed(error.to_string()))?
 }
