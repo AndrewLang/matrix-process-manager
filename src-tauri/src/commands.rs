@@ -226,12 +226,26 @@ fn terminate_process_impl(_: u32) -> Result<(), CommandError> {
 fn open_native_tool_impl(tool_id: &str) -> Result<(), CommandError> {
     use std::os::windows::process::CommandExt;
 
+    if tool_id == "envVariables" {
+        return std::process::Command::new("powershell.exe")
+            .args([
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-Command",
+                "Start-Process rundll32.exe -ArgumentList 'sysdm.cpl,EditEnvironmentVariables' -Verb RunAs",
+            ])
+            .creation_flags(0x08000000)
+            .spawn()
+            .map(|_| ())
+            .map_err(|error| CommandError::native_tool_failed(error.to_string()));
+    }
+
     let (program, args): (&str, &[&str]) = match tool_id {
         "taskManager" => ("taskmgr.exe", &[]),
         "systemSettings" => ("explorer.exe", &["ms-settings:about"]),
         "diskManager" => ("cmd.exe", &["/C", "start", "", "diskmgmt.msc"]),
         "terminal" => ("wt.exe", &[]),
-        "envVariables" => ("rundll32.exe", &["sysdm.cpl,EditEnvironmentVariables"]),
         _ => return Err(CommandError::native_tool_failed("unknown native tool")),
     };
 
