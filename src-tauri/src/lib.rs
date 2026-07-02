@@ -74,6 +74,7 @@ pub fn run() {
             commands::start_terminal_session,
             commands::stop_terminal_session,
             commands::terminate_process,
+            commands::update_startup_command,
             commands::resize_terminal_session,
             commands::write_terminal_input,
         ])

@@ -215,6 +215,17 @@ impl CommandRepository {
             .map_err(Self::error)
     }
 
+    pub fn has_indexed_subcommands(&self, application_name: &str) -> Result<bool, CommandError> {
+        let connection = self.lock()?;
+        connection
+            .query_row(
+                "select exists(select 1 from commands c join applications a on a.id = c.application_id where lower(a.name) = lower(?1) and lower(c.name) like lower(?2) and c.description is not null limit 1)",
+                params![application_name, format!("{application_name} %")],
+                |row| row.get(0),
+            )
+            .map_err(Self::error)
+    }
+
     pub fn autocomplete(
         &self,
         query: &str,
@@ -347,6 +358,7 @@ impl CommandRepository {
         let last_used_at = candidate.last_used_at();
         let frequently_used = candidate.usage_count >= 5;
         let recently_used = last_used_at.is_some();
+        let command_priority = Self::command_priority(&candidate.command_line, query);
 
         Some(CommandAutocompleteSuggestion {
             command_id: candidate.command_id,
@@ -358,7 +370,7 @@ impl CommandRepository {
             arguments: Vec::new(),
             options: Vec::new(),
             usage_count: candidate.usage_count,
-            score: prefix_score + usage_score + recent_score,
+            score: prefix_score + usage_score + recent_score + command_priority,
             last_used_at,
             frequently_used,
             recently_used,
@@ -447,10 +459,43 @@ impl CommandRepository {
     fn label_for_query(command_line: &str, query: &str) -> String {
         let query_parts = query.split_whitespace().collect::<Vec<_>>();
         let command_parts = command_line.split_whitespace().collect::<Vec<_>>();
+        if query_parts.len() == 1
+            && command_parts.len() > 1
+            && command_parts[0].eq_ignore_ascii_case(query_parts[0])
+        {
+            return command_parts[1..].join(" ");
+        }
+
         if query_parts.len() > 1 && command_parts.len() >= query_parts.len() {
             command_parts[query_parts.len() - 1].to_string()
         } else {
             command_line.to_string()
+        }
+    }
+
+    fn command_priority(command_line: &str, query: &str) -> i64 {
+        let query_parts = query.split_whitespace().collect::<Vec<_>>();
+        let command_parts = command_line.split_whitespace().collect::<Vec<_>>();
+        if query_parts.len() != 1
+            || command_parts.len() < 2
+            || !command_parts[0].eq_ignore_ascii_case(query_parts[0])
+        {
+            return 0;
+        }
+
+        match (
+            command_parts[0].to_ascii_lowercase().as_str(),
+            command_parts[1],
+        ) {
+            ("docker", "run") => 36,
+            ("docker", "exec") => 35,
+            ("docker", "ps") => 34,
+            ("docker", "build") => 24,
+            ("docker", "pull") => 23,
+            ("docker", "push") => 22,
+            ("docker", "images") => 21,
+            ("docker", "compose") => 20,
+            _ => 10,
         }
     }
 

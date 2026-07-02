@@ -1,10 +1,10 @@
 <section class="grid h-full min-h-0 min-w-0 gap-2.5 overflow-hidden px-2.5 py-3" [ngClass]="
-    detailsOpen()
+        detailsVisible()
       ? 'grid-cols-[minmax(0,1fr)_auto]'
       : 'grid-cols-[minmax(0,1fr)]'
   ">
     <section class="grid min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] gap-2.5" [ngClass]="
-      detailsOpen()
+            detailsVisible()
         ? 'grid-cols-[minmax(0,1fr)_286px] max-[1040px]:grid-cols-[minmax(0,1fr)_250px]'
         : 'grid-cols-[minmax(0,1fr)]'
     ">
@@ -87,7 +87,7 @@
             </div>
             <mtx-process-grid #processesProcessGrid [rows]="filteredRows()" [selectedProcess]="state.selectedRow()" (processSelected)="selectProcess($event)" />
         </section>
-        @if (detailsOpen()) {
+        @if (detailsVisible()) {
         <mtx-details-pane [process]="state.selectedRow()" [bars]="state.bars()" (closeDetails)="closeDetails()" (endProcess)="endProcess($event)" />
         }
     </section>

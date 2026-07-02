@@ -27,6 +27,9 @@ export class StartupViewComponent implements OnInit {
     impactFilter = signal("All Impact");
     showDisabled = signal(true);
     loading = signal(false);
+    commandDraft = signal("");
+    commandSaving = signal(false);
+    commandSaveError = signal("");
     columns = signal<StartupColumn[]>([
         { key: "name", label: "Name", width: 260, minWidth: 160, resizable: true },
         { key: "publisher", label: "Publisher", width: 160, minWidth: 112, resizable: true },
@@ -43,6 +46,8 @@ export class StartupViewComponent implements OnInit {
     highImpactCount = computed(() => this.apps().filter((app) => app.impact === "High").length);
     filteredApps = computed(() => this.filterApps());
     tableWidth = computed(() => this.columns().reduce((total, column) => total + column.width, 0));
+    commandEditable = computed(() => Boolean(this.selectedApp()?.valueName && this.selectedApp()?.startupType === "Registry"));
+    commandDirty = computed(() => this.commandDraft() !== (this.selectedApp()?.command ?? ""));
 
     wideFilterSearchClass = "flex h-7.5 min-w-0 flex-1 items-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(15,28,40,0.84)] px-2.5 py-0 text-[12px] text-(--muted)";
 
@@ -57,8 +62,13 @@ export class StartupViewComponent implements OnInit {
         invoke<StartupApp[]>("get_startup_apps")
             .then((apps) => {
                 this.apps.set(apps);
-                if (!this.selectedName() && apps.length > 0) {
-                    this.selectedName.set(apps[0].name);
+                const selected = apps.find((app) => app.name === this.selectedName()) ?? apps[0];
+                if (selected) {
+                    this.selectedName.set(selected.name);
+                    this.commandDraft.set(selected.command);
+                } else {
+                    this.selectedName.set(undefined);
+                    this.commandDraft.set("");
                 }
             })
             .catch(() => this.apps.set([]))
@@ -67,6 +77,40 @@ export class StartupViewComponent implements OnInit {
 
     selectApp(app: StartupApp): void {
         this.selectedName.set(app.name);
+        this.commandDraft.set(app.command);
+        this.commandSaveError.set("");
+    }
+
+    setCommandDraft(command: string): void {
+        this.commandDraft.set(command);
+        this.commandSaveError.set("");
+    }
+
+    resetCommandDraft(): void {
+        this.commandDraft.set(this.selectedApp()?.command ?? "");
+        this.commandSaveError.set("");
+    }
+
+    saveCommand(): void {
+        const app = this.selectedApp();
+        if (!app?.valueName || this.commandSaving()) {
+            return;
+        }
+
+        const command = this.commandDraft();
+        if (!command.trim()) {
+            this.commandSaveError.set("Command cannot be empty.");
+            return;
+        }
+
+        this.commandSaving.set(true);
+        invoke<void>("update_startup_command", { request: { source: app.source, valueName: app.valueName, command } })
+            .then(() => {
+                this.commandSaveError.set("");
+                this.refresh();
+            })
+            .catch((error: unknown) => this.commandSaveError.set(error instanceof Error ? error.message : "Command could not be saved."))
+            .finally(() => this.commandSaving.set(false));
     }
 
     openLocation(app: StartupApp | undefined): void {

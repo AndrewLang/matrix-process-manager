@@ -1,4 +1,4 @@
-use crate::models::{CommandError, StartupApp};
+use crate::models::{CommandError, StartupApp, StartupCommandUpdateRequest};
 use crate::providers::file_icon_data_url;
 
 pub struct StartupManager;
@@ -10,6 +10,10 @@ impl StartupManager {
 
     pub fn apps(&self) -> Result<Vec<StartupApp>, CommandError> {
         Self::platform_apps()
+    }
+
+    pub fn update_command(&self, request: StartupCommandUpdateRequest) -> Result<(), CommandError> {
+        Self::platform_update_command(request)
     }
 
     #[cfg(windows)]
@@ -40,8 +44,14 @@ impl StartupManager {
                 for value in key.enum_values().flatten() {
                     if let Ok(command) = key.get_value::<String, _>(&value.0) {
                         let status = Self::startup_status(&root, approved_path, &value.0);
+                        let value_name = value.0.clone();
                         apps.push(Self::app_from_command(
-                            value.0, command, "Registry", source, status,
+                            value.0,
+                            command,
+                            "Registry",
+                            source,
+                            status,
+                            Some(value_name),
                         ));
                     }
                 }
@@ -89,6 +99,7 @@ impl StartupManager {
                         "Startup Folder",
                         folder.1,
                         status,
+                        None,
                     ));
                 }
             }
@@ -105,12 +116,54 @@ impl StartupManager {
         Ok(Vec::new())
     }
 
+    #[cfg(windows)]
+    fn platform_update_command(request: StartupCommandUpdateRequest) -> Result<(), CommandError> {
+        use winreg::enums::{HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE, KEY_SET_VALUE};
+        use winreg::RegKey;
+
+        let command = request.command.trim();
+        if command.is_empty() {
+            return Err(CommandError::settings_failed(
+                "startup command cannot be empty",
+            ));
+        }
+
+        let (hive, path) = match request.source.as_str() {
+            "HKCU Run" => (
+                HKEY_CURRENT_USER,
+                "Software\\Microsoft\\Windows\\CurrentVersion\\Run",
+            ),
+            "HKLM Run" => (
+                HKEY_LOCAL_MACHINE,
+                "Software\\Microsoft\\Windows\\CurrentVersion\\Run",
+            ),
+            _ => {
+                return Err(CommandError::settings_failed(
+                    "only registry startup entries can be edited",
+                ))
+            }
+        };
+
+        RegKey::predef(hive)
+            .open_subkey_with_flags(path, KEY_SET_VALUE)
+            .and_then(|key| key.set_value(&request.value_name, &command))
+            .map_err(|error| CommandError::settings_failed(error.to_string()))
+    }
+
+    #[cfg(not(windows))]
+    fn platform_update_command(_: StartupCommandUpdateRequest) -> Result<(), CommandError> {
+        Err(CommandError::settings_failed(
+            "startup command editing is only available on Windows",
+        ))
+    }
+
     fn app_from_command(
         name: String,
         command: String,
         startup_type: &str,
         source: &str,
         status: String,
+        value_name: Option<String>,
     ) -> StartupApp {
         let path = Self::expand_environment_variables(&Self::executable_path(&command));
         let name = Self::display_name(&path, &name);
@@ -123,6 +176,7 @@ impl StartupManager {
             source: source.to_string(),
             command,
             path,
+            value_name,
             delay_seconds: None,
             name,
         }
@@ -273,6 +327,7 @@ impl StartupManager {
                     source: "Packaged app".to_string(),
                     command: format!("{package}!{task}"),
                     path: String::new(),
+                    value_name: None,
                     delay_seconds: None,
                     name,
                 });

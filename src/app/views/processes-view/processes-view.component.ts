@@ -22,6 +22,7 @@ export class ProcessesViewComponent {
 
     summaryMetrics = computed(() => this.metricOrder().map((label) => this.metric(label)).filter((metric): metric is MetricCard => Boolean(metric)));
     filteredRows = computed(() => this.filterRows(this.state.rows(), this.processFilter()));
+    detailsVisible = computed(() => this.detailsOpen() && Boolean(this.state.selectedRow()));
 
     wideFilterSearchClass = "flex h-7.5 basis-[238px] items-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(15,28,40,0.84)] px-2.5 py-0 text-[12px] text-(--muted)";
 

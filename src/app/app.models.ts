@@ -99,6 +99,7 @@ export interface StartupApp {
     source: string;
     command: string;
     path: string;
+    valueName?: string;
     delaySeconds?: number;
 }
 

@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -163,7 +163,16 @@ pub struct StartupApp {
     pub source: String,
     pub command: String,
     pub path: String,
+    pub value_name: Option<String>,
     pub delay_seconds: Option<f32>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StartupCommandUpdateRequest {
+    pub source: String,
+    pub value_name: String,
+    pub command: String,
 }
 
 #[derive(Clone, Debug, Serialize)]

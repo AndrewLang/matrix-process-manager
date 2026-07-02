@@ -3,7 +3,7 @@ use crate::command_knowledge::models::{
     FinishCommandExecutionRequest, InstalledApplicationScanResult, StartCommandExecutionRequest,
     StartCommandExecutionResponse,
 };
-use crate::models::{CommandError, ProcessSnapshot, StartupApp};
+use crate::models::{CommandError, ProcessSnapshot, StartupApp, StartupCommandUpdateRequest};
 use crate::terminal::models::{
     TerminalResizeRequest, TerminalSessionInfo, TerminalSessionRequest, TerminalStartRequest,
     TerminalStartResponse, TerminalStopRequest, TerminalWriteRequest,
@@ -19,6 +19,14 @@ pub fn get_process_snapshot(state: State<'_, AppState>) -> Result<ProcessSnapsho
 #[tauri::command]
 pub fn get_startup_apps(state: State<'_, AppState>) -> Result<Vec<StartupApp>, CommandError> {
     state.startup_manager.apps()
+}
+
+#[tauri::command]
+pub fn update_startup_command(
+    state: State<'_, AppState>,
+    request: StartupCommandUpdateRequest,
+) -> Result<(), CommandError> {
+    state.startup_manager.update_command(request)
 }
 
 #[tauri::command]

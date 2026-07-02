@@ -142,7 +142,27 @@
             </div>
         </div>
         <div class="grid gap-2 border-t border-(--border) pt-3 text-[12px]">
-            <span class="text-(--muted)">Command</span><span class="break-all">{{ selectedApp()?.command ?? "-" }}</span>
+            <div class="flex items-center justify-between gap-2">
+                <span class="text-(--muted)">Command</span>
+                @if (commandSaveError()) {
+                <span class="text-right text-(--red)">{{ commandSaveError() }}</span>
+                }
+            </div>
+            <textarea
+              class="min-h-26 resize-y rounded-md border border-(--border) bg-[rgba(10,22,33,0.86)] px-2.5 py-2 text-[12px] text-[#dfe8f1] outline-none focus:border-[rgba(23,144,255,0.55)] disabled:opacity-65"
+              [value]="commandDraft()" [readOnly]="!commandEditable()" [disabled]="!selectedApp()"
+              (input)="setCommandDraft($any($event.target).value)"></textarea>
+            <div class="flex items-center gap-2">
+                <button type="button" class="h-7 rounded-md border border-(--border) bg-[rgba(16,31,45,0.86)] px-3 text-(--muted) hover:bg-white/6"
+                  [disabled]="!commandDirty() || commandSaving()" (click)="resetCommandDraft()">
+                    Revert
+                </button>
+                <button type="button"
+                  class="ml-auto h-7 rounded-md border border-[#1596ff] bg-[#1596ff] px-3 font-medium text-white hover:bg-[#2aa4ff] disabled:opacity-55"
+                  [disabled]="!commandEditable() || !commandDirty() || commandSaving()" (click)="saveCommand()">
+                    {{ commandSaving() ? "Saving..." : "Save" }}
+                </button>
+            </div>
         </div>
         <div class="grid content-start gap-2 border-t border-(--border) pt-3">
             <button type="button" class="h-8 rounded-md border border-(--border) bg-[rgba(16,31,45,0.86)] text-(--blue)" (click)="openLocation(selectedApp())">

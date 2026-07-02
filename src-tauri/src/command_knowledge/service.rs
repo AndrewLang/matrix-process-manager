@@ -90,7 +90,7 @@ impl CommandKnowledgeService {
     ) -> Result<Vec<CommandAutocompleteSuggestion>, CommandError> {
         let limit = request.limit.unwrap_or(8);
         let suggestions = self.commands.autocomplete(&request.query, limit)?;
-        if !self.should_index_for_autocomplete(&request.query, &suggestions)? {
+        if !self.should_index_for_autocomplete(&request.query)? {
             return Ok(suggestions);
         }
 
@@ -172,11 +172,7 @@ impl CommandKnowledgeService {
         Ok(())
     }
 
-    fn should_index_for_autocomplete(
-        &self,
-        query: &str,
-        suggestions: &[CommandAutocompleteSuggestion],
-    ) -> Result<bool, CommandError> {
+    fn should_index_for_autocomplete(&self, query: &str) -> Result<bool, CommandError> {
         let application_name = CommandLineParser::new(query)
             .application_name()
             .to_ascii_lowercase();
@@ -184,12 +180,7 @@ impl CommandKnowledgeService {
             return Ok(false);
         }
 
-        if suggestions.iter().any(|suggestion| {
-            suggestion
-                .command_line
-                .to_ascii_lowercase()
-                .starts_with(&format!("{application_name} "))
-        }) {
+        if self.commands.has_indexed_subcommands(&application_name)? {
             return Ok(false);
         }
 
