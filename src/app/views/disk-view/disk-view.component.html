@@ -23,26 +23,26 @@
                 <button type="button"
                   class="inline-flex h-7.5 items-center gap-2 rounded-[5px] border border-[#1596ff] bg-[#1596ff] px-3 font-medium text-white hover:bg-[#2aa4ff] disabled:opacity-55"
                   [disabled]="!hasSelection() || cleaning()" (click)="cleanSelected()">
-                    <i class="bi bi-stars"></i>{{ cleaning() ? "Cleaning..." : "Clean" }}
+                    <i class="bi bi-stars"></i>Clean
                 </button>
             </div>
         </div>
         <div class="grid gap-2.5 md:grid-cols-4">
             <article class="rounded-md border border-(--border) bg-[rgba(16,31,45,0.62)] p-3">
-                <span class="text-[12px] text-(--muted)">System Drive</span>
-                <strong class="mt-1 block text-[24px] text-[#e6f0fa]">{{ systemVolume()?.label ?? "Unavailable" }}</strong>
-                <small class="text-(--muted)">{{ systemDriveName() }}</small>
+                <span class="text-[12px] text-(--muted)">Selected Volume</span>
+                <strong class="mt-1 block text-[24px] text-[#e6f0fa]">{{ selectedVolume()?.label ?? "Unavailable" }}</strong>
+                <small class="text-(--muted)">{{ selectedVolumeName() }}</small>
             </article>
             <article class="rounded-md border border-(--border) bg-[rgba(16,31,45,0.62)] p-3">
                 <span class="text-[12px] text-(--muted)">Used</span>
-                <strong class="mt-1 block text-[24px] text-(--orange)">{{ usagePercent(systemVolume()).toFixed(0) }}%</strong>
-                <small class="text-(--muted)">{{ formatBytes((systemVolume()?.totalBytes ?? 0) - (systemVolume()?.freeBytes ?? 0)) }} of {{
-                    formatBytes(systemVolume()?.totalBytes) }}</small>
+                <strong class="mt-1 block text-[24px] text-(--orange)">{{ usagePercent(selectedVolume()).toFixed(0) }}%</strong>
+                <small class="text-(--muted)">{{ formatBytes((selectedVolume()?.totalBytes ?? 0) - (selectedVolume()?.freeBytes ?? 0)) }} of {{
+                    formatBytes(selectedVolume()?.totalBytes) }}</small>
             </article>
             <article class="rounded-md border border-(--border) bg-[rgba(16,31,45,0.62)] p-3">
                 <span class="text-[12px] text-(--muted)">Free</span>
-                <strong class="mt-1 block text-[24px] text-(--green)">{{ formatBytes(systemVolume()?.freeBytes) }}</strong>
-                <small class="text-(--muted)">{{ freePercent(systemVolume()).toFixed(0) }}% available</small>
+                <strong class="mt-1 block text-[24px] text-(--green)">{{ formatBytes(selectedVolume()?.freeBytes) }}</strong>
+                <small class="text-(--muted)">{{ freePercent(selectedVolume()).toFixed(0) }}% available</small>
             </article>
             <article class="rounded-md border border-(--border) bg-[rgba(16,31,45,0.62)] p-3">
                 <span class="text-[12px] text-(--muted)">Cleanable</span>
@@ -51,7 +51,7 @@
             </article>
         </div>
         <div class="h-2 overflow-hidden rounded-full bg-[rgba(122,153,181,0.16)]">
-            <div class="h-full rounded-full bg-[linear-gradient(90deg,#22ce74,#ff9a2e)]" [style.width.%]="usagePercent(systemVolume())"></div>
+            <div class="h-full rounded-full bg-[linear-gradient(90deg,#22ce74,#ff9a2e)]" [style.width.%]="usagePercent(selectedVolume())"></div>
         </div>
     </section>
 
@@ -68,8 +68,8 @@
             <div class="min-h-0 overflow-auto p-2">
                 <div class="grid gap-2">
                     @for (target of visibleCleanupTargets(); track target.id) {
-                    <button type="button"
-                      class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-md border border-white/6 bg-[rgba(16,31,45,0.42)] p-3 text-left hover:bg-white/6"
+                    <div role="button" tabindex="0"
+                      class="grid cursor-pointer grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-md border border-white/6 bg-[rgba(16,31,45,0.42)] p-3 text-left hover:bg-white/6"
                       (click)="toggleTarget(target)">
                         <span class="grid size-5 place-items-center rounded border border-(--border)" [class.bg-[#1596ff]]="targetSelected(target)">
                             @if (targetSelected(target)) {
@@ -84,8 +84,12 @@
                             <span class="mt-1 block truncate text-[12px] text-(--muted)">{{ target.path }}</span>
                             <span class="mt-1 block text-[11px] text-[#9aacba]">{{ target.description }}</span>
                         </span>
-                        <i class="bi bi-folder2-open text-[18px] text-(--blue)"></i>
-                    </button>
+                        <button type="button"
+                          class="grid size-8 place-items-center rounded border border-(--border) bg-[rgba(10,22,33,0.72)] text-(--blue) hover:bg-white/6"
+                          aria-label="Open folder" (click)="openTargetFolder($event, target)">
+                            <i class="bi bi-folder2-open text-[18px]"></i>
+                        </button>
+                    </div>
                     }
                     @if (!loading() && visibleCleanupTargets().length === 0) {
                     <div class="rounded-md border border-white/6 bg-[rgba(16,31,45,0.42)] p-5 text-center text-[12px] text-(--muted)">No cleanup folders found.
@@ -104,7 +108,9 @@
             <div class="min-h-0 overflow-auto p-2">
                 <div class="grid gap-2">
                     @for (volume of scan()?.volumes ?? []; track volume.label) {
-                    <article class="rounded-md border border-white/6 bg-[rgba(16,31,45,0.42)] p-3">
+                    <button type="button" class="rounded-md border p-3 text-left hover:bg-white/6" [class.border-[#1596ff]]="volumeSelected(volume)"
+                      [class.border-white/6]="!volumeSelected(volume)" [class.bg-[rgba(23,144,255,0.12)]]="volumeSelected(volume)"
+                      [class.bg-[rgba(16,31,45,0.42)]]="!volumeSelected(volume)" (click)="selectVolume(volume)">
                         <div class="flex items-start justify-between gap-2">
                             <div class="min-w-0">
                                 <strong class="text-[13px] text-[#e6f0fa]">{{ volume.label }}</strong>
@@ -123,7 +129,7 @@
                             <dt class="text-(--muted)">Total</dt>
                             <dd class="text-right text-[#e5eef7]">{{ formatBytes(volume.totalBytes) }}</dd>
                         </dl>
-                    </article>
+                    </button>
                     }
                     @for (drive of state.diskDrives(); track drive.diskIndex) {
                     <article class="rounded-md border border-white/6 bg-[rgba(16,31,45,0.42)] p-3">
@@ -146,4 +152,22 @@
             </div>
         </aside>
     </section>
+
+    @if (cleaning()) {
+    <div class="fixed inset-0 z-50 grid place-items-center bg-black/45 px-4">
+        <section
+          class="grid w-[min(360px,calc(100vw-32px))] gap-3 rounded-md border border-(--border) bg-[rgba(10,22,33,0.98)] p-5 text-center shadow-[0_18px_48px_rgba(0,0,0,0.42)]">
+            <span class="mx-auto grid size-11 place-items-center rounded-full border border-[rgba(23,144,255,0.28)] bg-[rgba(23,144,255,0.1)] text-(--blue)">
+                <i class="bi bi-arrow-repeat animate-spin text-[22px]"></i>
+            </span>
+            <div>
+                <h2>Cleaning Disk</h2>
+                <p class="mt-1 text-[12px] text-(--muted)">Removing selected cleanup candidates from {{ selectedVolume()?.label ?? "the selected volume" }}.</p>
+            </div>
+            <div class="h-1 overflow-hidden rounded-full bg-[rgba(122,153,181,0.16)]">
+                <div class="h-full w-1/2 animate-pulse rounded-full bg-[#1596ff]"></div>
+            </div>
+        </section>
+    </div>
+    }
 </section>

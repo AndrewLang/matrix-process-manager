@@ -1,5 +1,6 @@
 import { Component, OnInit, computed, inject, signal } from "@angular/core";
 import { invoke } from "@tauri-apps/api/core";
+import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { BackendDiskDriveUsage, DiskCleanupResult, DiskCleanupScan, DiskCleanupTarget, DiskVolumeUsage } from "../../app.models";
 import { WorkareaStateService } from "../../services/workarea-state.service";
 
@@ -10,6 +11,7 @@ import { WorkareaStateService } from "../../services/workarea-state.service";
 export class DiskViewComponent implements OnInit {
     state = inject(WorkareaStateService);
     scan = signal<DiskCleanupScan | undefined>(undefined);
+    selectedVolumeLabel = signal("");
     selectedTargetIds = signal<string[]>([]);
     loading = signal(false);
     cleaning = signal(false);
@@ -17,9 +19,11 @@ export class DiskViewComponent implements OnInit {
     lastReleasedBytes = signal<number | undefined>(undefined);
 
     systemVolume = computed(() => this.scan()?.volumes.find((volume) => volume.systemDrive) ?? this.scan()?.volumes[0]);
+    selectedVolume = computed(() => this.scan()?.volumes.find((volume) => volume.label === this.selectedVolumeLabel()) ?? this.systemVolume());
     systemDrive = computed(() => this.state.diskDrives().find((drive) => drive.systemDisk) ?? this.state.diskDrives()[0]);
-    systemDriveName = computed(() => this.systemDrive()?.name || this.systemVolume()?.name || "No system drive detected");
-    cleanupTargets = computed(() => [...(this.scan()?.targets ?? [])].sort((left, right) => right.bytes - left.bytes));
+    selectedVolumeName = computed(() => this.systemDrive()?.name && this.selectedVolume()?.systemDrive ? this.systemDrive()?.name : this.selectedVolume()?.name || "No volume selected");
+    allCleanupTargets = computed(() => [...(this.scan()?.targets ?? [])].sort((left, right) => right.bytes - left.bytes));
+    cleanupTargets = computed(() => this.allCleanupTargets().filter((target) => this.targetOnVolume(target, this.selectedVolume()?.label)));
     visibleCleanupTargets = computed(() => this.cleanupTargets().filter((target) => target.exists || target.bytes > 0));
     selectedTargets = computed(() => this.cleanupTargets().filter((target) => this.selectedTargetIds().includes(target.id)));
     selectedBytes = computed(() => this.selectedTargets().reduce((total, target) => total + target.bytes, 0));
@@ -36,7 +40,9 @@ export class DiskViewComponent implements OnInit {
         invoke<DiskCleanupScan>("get_disk_cleanup_scan")
             .then((scan) => {
                 this.scan.set(scan);
-                this.selectedTargetIds.set(scan.targets.filter((target) => target.exists && target.bytes > 0).map((target) => target.id));
+                const selectedVolume = scan.volumes.find((volume) => volume.label === this.selectedVolumeLabel()) ?? scan.volumes.find((volume) => volume.systemDrive) ?? scan.volumes[0];
+                this.selectedVolumeLabel.set(selectedVolume?.label ?? "");
+                this.selectedTargetIds.set(scan.targets.filter((target) => this.targetOnVolume(target, selectedVolume?.label) && target.exists && target.bytes > 0).map((target) => target.id));
             })
             .catch((error: unknown) => this.error.set(error instanceof Error ? error.message : "Disk scan failed."))
             .finally(() => this.loading.set(false));
@@ -44,6 +50,16 @@ export class DiskViewComponent implements OnInit {
 
     toggleTarget(target: DiskCleanupTarget): void {
         this.selectedTargetIds.update((targetIds) => targetIds.includes(target.id) ? targetIds.filter((targetId) => targetId !== target.id) : [...targetIds, target.id]);
+    }
+
+    selectVolume(volume: DiskVolumeUsage): void {
+        this.selectedVolumeLabel.set(volume.label);
+        this.selectedTargetIds.set(this.allCleanupTargets().filter((target) => this.targetOnVolume(target, volume.label) && target.exists && target.bytes > 0).map((target) => target.id));
+    }
+
+    openTargetFolder(event: MouseEvent, target: DiskCleanupTarget): void {
+        event.stopPropagation();
+        revealItemInDir(target.path).catch(() => this.error.set("Folder could not be opened."));
     }
 
     cleanSelected(): void {
@@ -81,6 +97,19 @@ export class DiskViewComponent implements OnInit {
 
     targetSelected(target: DiskCleanupTarget): boolean {
         return this.selectedTargetIds().includes(target.id);
+    }
+
+    volumeSelected(volume: DiskVolumeUsage): boolean {
+        return volume.label === this.selectedVolume()?.label;
+    }
+
+    private targetOnVolume(target: DiskCleanupTarget, volumeLabel: string | undefined): boolean {
+        if (!volumeLabel) {
+            return true;
+        }
+
+        const normalizedPath = target.path.replaceAll("/", "\\").toLowerCase();
+        return normalizedPath.startsWith(`${volumeLabel.toLowerCase()}\\`);
     }
 
     formatBytes(bytes?: number): string {

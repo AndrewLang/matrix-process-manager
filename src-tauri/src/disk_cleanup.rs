@@ -7,25 +7,27 @@ use std::path::{Path, PathBuf};
 pub struct DiskCleanupManager;
 
 struct CleanupTargetDefinition {
-    id: &'static str,
-    name: &'static str,
+    id: String,
+    name: String,
     path: PathBuf,
-    description: &'static str,
+    description: String,
 }
 
 impl DiskCleanupManager {
     pub fn scan() -> Result<DiskCleanupScan, CommandError> {
+        let volumes = Self::volumes();
         Ok(DiskCleanupScan {
-            volumes: Self::volumes(),
-            targets: Self::targets()
+            targets: Self::targets(&volumes)
                 .into_iter()
                 .map(Self::target_from_definition)
                 .collect::<Vec<_>>(),
+            volumes,
         })
     }
 
     pub fn clean(request: DiskCleanupRequest) -> Result<DiskCleanupResult, CommandError> {
-        let definitions = Self::targets();
+        let volumes = Self::volumes();
+        let definitions = Self::targets(&volumes);
         let mut released_bytes = 0;
         let mut cleaned_targets = Vec::new();
 
@@ -62,67 +64,91 @@ impl DiskCleanupManager {
         }
     }
 
-    fn targets() -> Vec<CleanupTargetDefinition> {
+    fn targets(volumes: &[DiskVolumeUsage]) -> Vec<CleanupTargetDefinition> {
         let mut targets = Vec::new();
 
+        for volume in volumes {
+            let volume_id = volume
+                .label
+                .trim_end_matches(':')
+                .chars()
+                .filter(|character| character.is_ascii_alphanumeric())
+                .collect::<String>()
+                .to_ascii_lowercase();
+            let root = PathBuf::from(format!("{}\\", volume.label));
+            targets.push(CleanupTargetDefinition {
+                id: format!("recycle_bin_{volume_id}"),
+                name: "Recycle Bin".to_string(),
+                path: root.join("$Recycle.Bin"),
+                description: "Deleted files waiting in this volume's Recycle Bin.".to_string(),
+            });
+
+            targets.push(CleanupTargetDefinition {
+                id: format!("windows_old_{volume_id}"),
+                name: "Previous Windows installation".to_string(),
+                path: root.join("Windows.old"),
+                description: "Files kept after a Windows upgrade on this volume.".to_string(),
+            });
+        }
+
         targets.push(CleanupTargetDefinition {
-            id: "user_temp",
-            name: "User temporary files",
+            id: "user_temp".to_string(),
+            name: "User temporary files".to_string(),
             path: std::env::temp_dir(),
-            description: "Temporary files created by apps for the current user.",
+            description: "Temporary files created by apps for the current user.".to_string(),
         });
 
         if let Some(system_root) = std::env::var_os("SystemRoot") {
             let system_root = PathBuf::from(system_root);
             targets.push(CleanupTargetDefinition {
-                id: "windows_temp",
-                name: "Windows temporary files",
+                id: "windows_temp".to_string(),
+                name: "Windows temporary files".to_string(),
                 path: system_root.join("Temp"),
-                description: "Temporary files under the Windows folder.",
+                description: "Temporary files under the Windows folder.".to_string(),
             });
             targets.push(CleanupTargetDefinition {
-                id: "windows_update_cache",
-                name: "Windows Update downloads",
+                id: "windows_update_cache".to_string(),
+                name: "Windows Update downloads".to_string(),
                 path: system_root.join("SoftwareDistribution").join("Download"),
-                description: "Downloaded update packages that Windows can fetch again.",
+                description: "Downloaded update packages that Windows can fetch again.".to_string(),
             });
         }
 
         if let Some(program_data) = std::env::var_os("ProgramData") {
             let program_data = PathBuf::from(program_data);
             targets.push(CleanupTargetDefinition {
-                id: "delivery_optimization",
-                name: "Delivery Optimization cache",
+                id: "delivery_optimization".to_string(),
+                name: "Delivery Optimization cache".to_string(),
                 path: program_data
                     .join("Microsoft")
                     .join("Windows")
                     .join("DeliveryOptimization")
                     .join("Cache"),
-                description: "Windows delivery cache for updates and Store downloads.",
+                description: "Windows delivery cache for updates and Store downloads.".to_string(),
             });
             targets.push(CleanupTargetDefinition {
-                id: "wer_reports",
-                name: "Windows error reports",
+                id: "wer_reports".to_string(),
+                name: "Windows error reports".to_string(),
                 path: program_data
                     .join("Microsoft")
                     .join("Windows")
                     .join("WER")
                     .join("ReportArchive"),
-                description: "Archived Windows Error Reporting data.",
+                description: "Archived Windows Error Reporting data.".to_string(),
             });
         }
 
         if let Some(local_app_data) = std::env::var_os("LOCALAPPDATA") {
             let local_app_data = PathBuf::from(local_app_data);
             targets.push(CleanupTargetDefinition {
-                id: "crash_dumps",
-                name: "Crash dumps",
+                id: "crash_dumps".to_string(),
+                name: "Crash dumps".to_string(),
                 path: local_app_data.join("CrashDumps"),
-                description: "Application crash dumps saved for diagnostics.",
+                description: "Application crash dumps saved for diagnostics.".to_string(),
             });
             targets.push(CleanupTargetDefinition {
-                id: "chrome_cache",
-                name: "Chrome cache",
+                id: "chrome_cache".to_string(),
+                name: "Chrome cache".to_string(),
                 path: local_app_data
                     .join("Google")
                     .join("Chrome")
@@ -130,11 +156,11 @@ impl DiskCleanupManager {
                     .join("Default")
                     .join("Cache")
                     .join("Cache_Data"),
-                description: "Cached web content from the default Chrome profile.",
+                description: "Cached web content from the default Chrome profile.".to_string(),
             });
             targets.push(CleanupTargetDefinition {
-                id: "edge_cache",
-                name: "Edge cache",
+                id: "edge_cache".to_string(),
+                name: "Edge cache".to_string(),
                 path: local_app_data
                     .join("Microsoft")
                     .join("Edge")
@@ -142,7 +168,7 @@ impl DiskCleanupManager {
                     .join("Default")
                     .join("Cache")
                     .join("Cache_Data"),
-                description: "Cached web content from the default Edge profile.",
+                description: "Cached web content from the default Edge profile.".to_string(),
             });
         }
 
