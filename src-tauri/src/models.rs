@@ -129,6 +129,8 @@ pub struct DiskUsageInsight {
     pub path: String,
     pub category: String,
     pub description: String,
+    pub safe_to_clean: bool,
+    pub safety: String,
     pub bytes: u64,
     pub exists: bool,
 }

@@ -78,7 +78,10 @@ impl DiskCleanupManager {
     }
 
     fn usage_insight_from_definition(definition: UsageInsightDefinition) -> DiskUsageInsight {
+        let safe_to_clean = Self::safe_to_clean(&definition.id);
         DiskUsageInsight {
+            safety: Self::safety_label(safe_to_clean).to_string(),
+            safe_to_clean,
             id: definition.id,
             name: definition.name,
             path: definition.path.to_string_lossy().into_owned(),
@@ -86,6 +89,45 @@ impl DiskCleanupManager {
             description: definition.description,
             bytes: Self::directory_size(&definition.path),
             exists: definition.path.exists(),
+        }
+    }
+
+    fn safe_to_clean(id: &str) -> bool {
+        matches!(
+            id,
+            "nuget_packages"
+                | "cargo_registry"
+                | "cargo_git"
+                | "maven_repository"
+                | "gradle_cache"
+                | "go_module_cache"
+                | "conda_packages"
+                | "poetry_cache"
+                | "huggingface_cache"
+                | "torch_cache"
+                | "android_gradle_cache"
+                | "npm_cache"
+                | "pnpm_store_roaming"
+                | "composer_cache"
+                | "pnpm_store_local"
+                | "pnpm_store_local_alt"
+                | "yarn_cache"
+                | "pip_cache"
+                | "electron_cache"
+                | "electron_builder_cache"
+                | "unity_cache"
+                | "unreal_derived_data_cache"
+                | "package_cache"
+                | "chocolatey_cache"
+                | "winget_cache"
+        )
+    }
+
+    fn safety_label(safe_to_clean: bool) -> &'static str {
+        if safe_to_clean {
+            "Safe to clean; data can be redownloaded or rebuilt."
+        } else {
+            "Inspect first; deleting this can remove app data, tools, or installations."
         }
     }
 
@@ -260,6 +302,70 @@ impl DiskCleanupManager {
                 "App data",
                 "Docker CLI configuration and related user data.",
             );
+            Self::push_usage_insight(
+                insights,
+                "maven_repository",
+                "Maven repository",
+                user_profile.join(".m2").join("repository"),
+                "Developer cache",
+                "Maven and Gradle dependency artifacts shared by Java projects.",
+            );
+            Self::push_usage_insight(
+                insights,
+                "gradle_cache",
+                "Gradle cache",
+                user_profile.join(".gradle").join("caches"),
+                "Developer cache",
+                "Gradle dependency and build caches.",
+            );
+            Self::push_usage_insight(
+                insights,
+                "go_module_cache",
+                "Go module cache",
+                user_profile.join("go").join("pkg").join("mod"),
+                "Developer cache",
+                "Downloaded Go modules used by Go projects.",
+            );
+            Self::push_usage_insight(
+                insights,
+                "conda_packages",
+                "Conda packages",
+                user_profile.join(".conda").join("pkgs"),
+                "Developer cache",
+                "Conda package cache used by Python environments.",
+            );
+            Self::push_usage_insight(
+                insights,
+                "poetry_cache",
+                "Poetry cache",
+                user_profile.join(".cache").join("pypoetry"),
+                "Developer cache",
+                "Poetry package and virtual environment cache.",
+            );
+            Self::push_usage_insight(
+                insights,
+                "huggingface_cache",
+                "Hugging Face cache",
+                user_profile.join(".cache").join("huggingface"),
+                "AI model cache",
+                "Downloaded datasets, tokenizers, and model files.",
+            );
+            Self::push_usage_insight(
+                insights,
+                "torch_cache",
+                "PyTorch cache",
+                user_profile.join(".cache").join("torch"),
+                "AI model cache",
+                "Downloaded PyTorch model and extension cache.",
+            );
+            Self::push_usage_insight(
+                insights,
+                "android_gradle_cache",
+                "Android Gradle cache",
+                user_profile.join(".android").join("build-cache"),
+                "Developer cache",
+                "Android build cache used by older Gradle Android builds.",
+            );
         }
 
         if let Some(app_data) = std::env::var_os("APPDATA") {
@@ -287,6 +393,14 @@ impl DiskCleanupManager {
                 app_data.join("Docker"),
                 "App data",
                 "Docker Desktop roaming application data.",
+            );
+            Self::push_usage_insight(
+                insights,
+                "composer_cache",
+                "Composer cache",
+                app_data.join("Composer").join("cache"),
+                "Developer cache",
+                "PHP Composer package cache.",
             );
         }
 
@@ -370,6 +484,76 @@ impl DiskCleanupManager {
                 "App data",
                 "Teams local application data and cache.",
             );
+            Self::push_usage_insight(
+                insights,
+                "electron_cache",
+                "Electron cache",
+                local_app_data.join("electron").join("Cache"),
+                "Developer cache",
+                "Electron download and runtime cache.",
+            );
+            Self::push_usage_insight(
+                insights,
+                "electron_builder_cache",
+                "Electron Builder cache",
+                local_app_data.join("electron-builder").join("Cache"),
+                "Developer cache",
+                "Electron Builder downloaded tooling and target caches.",
+            );
+            Self::push_usage_insight(
+                insights,
+                "android_sdk",
+                "Android SDK",
+                local_app_data.join("Android").join("Sdk"),
+                "Developer tools",
+                "Installed Android SDK platforms, build tools, emulators, and system images.",
+            );
+            Self::push_usage_insight(
+                insights,
+                "jetbrains_caches",
+                "JetBrains caches",
+                local_app_data.join("JetBrains"),
+                "Developer cache",
+                "JetBrains IDE indexes, caches, plugins, and local metadata.",
+            );
+            Self::push_usage_insight(
+                insights,
+                "visual_studio_component_cache",
+                "Visual Studio component cache",
+                local_app_data
+                    .join("Microsoft")
+                    .join("VisualStudio")
+                    .join("Packages"),
+                "Installer cache",
+                "Visual Studio component package cache.",
+            );
+            Self::push_usage_insight(
+                insights,
+                "wsl_packages",
+                "WSL package data",
+                local_app_data.join("Packages"),
+                "App data",
+                "Microsoft Store app package data, including WSL distributions and app containers.",
+            );
+            Self::push_usage_insight(
+                insights,
+                "unity_cache",
+                "Unity cache",
+                local_app_data.join("Unity").join("cache"),
+                "Developer cache",
+                "Unity asset, package, and editor cache.",
+            );
+            Self::push_usage_insight(
+                insights,
+                "unreal_derived_data_cache",
+                "Unreal Derived Data Cache",
+                local_app_data
+                    .join("UnrealEngine")
+                    .join("Common")
+                    .join("DerivedDataCache"),
+                "Developer cache",
+                "Unreal Engine shader, asset, and derived data cache.",
+            );
         }
 
         if let Some(program_data) = std::env::var_os("ProgramData") {
@@ -397,6 +581,25 @@ impl DiskCleanupManager {
                 program_data.join("Package Cache"),
                 "Installer cache",
                 "Installer package cache used by Visual Studio and other setup tools.",
+            );
+            Self::push_usage_insight(
+                insights,
+                "chocolatey_cache",
+                "Chocolatey cache",
+                program_data.join("chocolatey").join("cache"),
+                "Package manager cache",
+                "Chocolatey downloaded package cache.",
+            );
+            Self::push_usage_insight(
+                insights,
+                "winget_cache",
+                "WinGet package cache",
+                program_data
+                    .join("Microsoft")
+                    .join("WinGet")
+                    .join("Packages"),
+                "Package manager cache",
+                "WinGet package download and installer cache.",
             );
         }
     }

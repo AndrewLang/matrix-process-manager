@@ -34,7 +34,8 @@ export const routes: Routes = [
     { path: "system", component: SystemInfoViewComponent },
     { path: "command-center", component: CommandCenterViewComponent },
     { path: "settings", component: SettingsViewComponent },
-    { path: "disk", component: DiskViewComponent },
+    { path: "storage", component: DiskViewComponent },
+    { path: "disk", pathMatch: "full", redirectTo: "storage" },
     { path: "terminal", component: PlaceholderViewComponent, data: { title: "Terminal" } },
     { path: "more", component: PlaceholderViewComponent, data: { title: "More Tools" } },
 ];

@@ -29,10 +29,11 @@ interface ProcessSection {
     templateUrl: "./process-grid.component.html",
 })
 export class ProcessGridComponent {
+    private readonly collapsedGroupsKey = "matrix-process-manager.process-grid.collapsed-groups";
     rows = input.required<ProcessRow[]>();
     selectedProcess = input<ProcessRow | undefined>();
     processSelected = output<ProcessRow>();
-    collapsedGroups = signal<ReadonlySet<string>>(new Set());
+    collapsedGroups = signal<ReadonlySet<string>>(this.loadCollapsedGroups());
 
     columns = signal<ProcessColumn[]>([
         { key: "select", label: "", width: 32, minWidth: 32, resizable: false },
@@ -147,16 +148,21 @@ export class ProcessGridComponent {
                 nextGroups.add(key);
             }
 
+            this.saveCollapsedGroups(nextGroups);
             return nextGroups;
         });
     }
 
     expandAllGroups(): void {
-        this.collapsedGroups.set(new Set());
+        const groups = new Set<string>();
+        this.collapsedGroups.set(groups);
+        this.saveCollapsedGroups(groups);
     }
 
     collapseAllGroups(): void {
-        this.collapsedGroups.set(new Set(this.sections().flatMap((section) => section.groups.map((group) => this.groupKey(section, group)))));
+        const groups = new Set(this.sections().flatMap((section) => section.groups.map((group) => this.groupKey(section, group))));
+        this.collapsedGroups.set(groups);
+        this.saveCollapsedGroups(groups);
     }
 
     @HostListener("document:mousemove", ["$event"])
@@ -198,6 +204,23 @@ export class ProcessGridComponent {
 
     private groupKey(section: ProcessSection, group: ProcessNameGroup): string {
         return `${section.key}:${group.name}`;
+    }
+
+    private loadCollapsedGroups(): ReadonlySet<string> {
+        try {
+            const value = JSON.parse(localStorage.getItem(this.collapsedGroupsKey) ?? "[]");
+            return Array.isArray(value) ? new Set(value.filter((item): item is string => typeof item === "string")) : new Set();
+        } catch {
+            return new Set();
+        }
+    }
+
+    private saveCollapsedGroups(groups: ReadonlySet<string>): void {
+        try {
+            localStorage.setItem(this.collapsedGroupsKey, JSON.stringify([...groups]));
+        } catch {
+            return;
+        }
     }
 
     private processTypeLabel(group: ProcessGroup): string {

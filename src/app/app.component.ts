@@ -65,7 +65,7 @@ export class AppComponent implements OnDestroy, OnInit {
     { id: "dashboard", label: "Dashboard", icon: "bi-speedometer2" },
     { id: "processes", label: "Processes", icon: "bi-list-task" },
     { id: "performance", label: "Performance", icon: "bi-activity" },
-    { id: "disk", label: "Disk", icon: "bi-device-ssd" },
+    { id: "storage", label: "Storage", icon: "bi-device-ssd" },
     { id: "startup", label: "Startup Apps", icon: "bi-rocket-takeoff" },
     { id: "system", label: "System Info", icon: "bi-info-circle" },
     { id: "command-center", label: "Command Center", icon: "bi-terminal-plus" },
@@ -74,7 +74,7 @@ export class AppComponent implements OnDestroy, OnInit {
   toolItems: NavItem[] = [
     { id: "processes", label: "Task Manager", icon: "bi-window-stack", nativeTool: "taskManager" },
     { id: "settings", label: "System Setting", icon: "bi-sliders", nativeTool: "systemSettings" },
-    { id: "disk", label: "Disk Manager", icon: "bi-device-hdd", nativeTool: "diskManager" },
+    { id: "storage", label: "Disk Manager", icon: "bi-device-hdd", nativeTool: "diskManager" },
     { id: "terminal", label: "Terminal", icon: "bi-terminal", nativeTool: "terminal" },
     { id: "settings", label: "Env Variables", icon: "bi-braces", nativeTool: "envVariables" },
   ];
@@ -416,9 +416,11 @@ export class AppComponent implements OnDestroy, OnInit {
       return undefined;
     }
 
+    const activeView = state.activeView === "disk" ? "storage" : state.activeView;
+
     return {
-      activeView: state.activeView,
-      route: this.normalizeRoute(state.route, state.activeView),
+      activeView,
+      route: this.normalizeRoute(state.route, activeView),
       sidebarWidth: this.clampSidebarWidth(state.sidebarWidth),
       updateFrequency: state.updateFrequency,
     };
@@ -451,6 +453,10 @@ export class AppComponent implements OnDestroy, OnInit {
 
     const path = route.startsWith("/") ? route : `/${route}`;
     const firstSegment = path.replace(/^\//, "").split("/")[0];
+    if (firstSegment === "disk") {
+      return "/storage";
+    }
+
     return this.isPersistedViewId(firstSegment) ? path : `/${fallbackView}`;
   }
 
@@ -476,7 +482,7 @@ export class AppComponent implements OnDestroy, OnInit {
   }
 
   private isPersistedViewId(value: unknown): value is ViewId {
-    return value === "dashboard" || value === "processes" || value === "performance" || value === "startup" || value === "system" || value === "command-center" || value === "settings" || value === "disk" || value === "terminal" || value === "more";
+    return value === "dashboard" || value === "processes" || value === "performance" || value === "startup" || value === "system" || value === "command-center" || value === "settings" || value === "storage" || value === "disk" || value === "terminal" || value === "more";
   }
 
   private isUpdateFrequency(value: unknown): value is UpdateFrequency {

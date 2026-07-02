@@ -1,4 +1,4 @@
-export type ViewId = "dashboard" | "processes" | "performance" | "startup" | "system" | "command-center" | "settings" | "disk" | "terminal" | "more";
+export type ViewId = "dashboard" | "processes" | "performance" | "startup" | "system" | "command-center" | "settings" | "storage" | "disk" | "terminal" | "more";
 export type NativeToolId = "taskManager" | "systemSettings" | "diskManager" | "terminal" | "envVariables";
 export type ProcessGroup = "apps" | "background" | "windows";
 export type UpdateFrequency = "high" | "normal" | "low" | "paused";
@@ -186,6 +186,8 @@ export interface DiskUsageInsight {
     path: string;
     category: string;
     description: string;
+    safeToClean: boolean;
+    safety: string;
     bytes: number;
     exists: boolean;
 }
