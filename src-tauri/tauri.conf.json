@@ -1,18 +1,18 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Matrix Process Manager",
+  "productName": "Workstation Console",
   "version": "0.1.0",
-  "identifier": "com.matrix.processmanager",
+  "identifier": "com.andrewlang.workstationconsole",
   "build": {
     "beforeDevCommand": "pnpm start",
     "devUrl": "http://localhost:1420",
     "beforeBuildCommand": "pnpm build",
-    "frontendDist": "../dist/matrix-process-manager/browser"
+    "frontendDist": "../dist/workstation-console/browser"
   },
   "app": {
     "windows": [
       {
-        "title": "Matrix Process Manager",
+        "title": "Workstation Console",
         "width": 1152,
         "height": 768,
         "minWidth": 980,

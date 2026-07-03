@@ -1,6 +1,6 @@
-# Tauri + Angular
+# Workstation Console
 
-This template should help get you started developing with Tauri and Angular.
+Workstation Console is a Tauri and Angular desktop utility for monitoring and managing local workstation resources, processes, startup apps, storage, terminal sessions, and system tools.
 
 ## Recommended IDE Setup
 

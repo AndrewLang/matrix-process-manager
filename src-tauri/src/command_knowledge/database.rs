@@ -34,7 +34,7 @@ impl CommandKnowledgeDatabase {
         };
 
         base.map(|path| {
-            path.join("Matrix Process Manager")
+            path.join("Workstation Console")
                 .join("command-knowledge.sqlite")
         })
         .ok_or_else(|| CommandError::terminal_failed("application data directory is unavailable"))

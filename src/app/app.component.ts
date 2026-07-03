@@ -36,8 +36,10 @@ interface PersistedWindowState {
   styleUrl: "./app.component.css",
 })
 export class AppComponent implements OnDestroy, OnInit {
-  private readonly uiStateKey = "matrix-process-manager.ui-state";
-  private readonly windowStateKey = "matrix-process-manager.window-state";
+  private readonly uiStateKey = "workstation-console.ui-state";
+  private readonly legacyUiStateKey = "matrix-process-manager.ui-state";
+  private readonly windowStateKey = "workstation-console.window-state";
+  private readonly legacyWindowStateKey = "matrix-process-manager.window-state";
   private readonly persistedUiState = this.loadUiState();
   activeView = signal<ViewId>(this.persistedUiState?.activeView ?? "dashboard");
   selectedProcess = signal("Google Chrome");
@@ -411,7 +413,7 @@ export class AppComponent implements OnDestroy, OnInit {
   }
 
   private loadUiState(): PersistedUiState | undefined {
-    const state = this.readJson<Partial<PersistedUiState>>(this.uiStateKey);
+    const state = this.readJson<Partial<PersistedUiState>>(this.uiStateKey) ?? this.readJson<Partial<PersistedUiState>>(this.legacyUiStateKey);
     if (!state || !this.isPersistedViewId(state.activeView) || !this.isUpdateFrequency(state.updateFrequency)) {
       return undefined;
     }
@@ -427,7 +429,7 @@ export class AppComponent implements OnDestroy, OnInit {
   }
 
   private loadWindowState(): PersistedWindowState | undefined {
-    const state = this.readJson<Partial<PersistedWindowState>>(this.windowStateKey);
+    const state = this.readJson<Partial<PersistedWindowState>>(this.windowStateKey) ?? this.readJson<Partial<PersistedWindowState>>(this.legacyWindowStateKey);
     if (!state || !Number.isFinite(state.x) || !Number.isFinite(state.y) || !Number.isFinite(state.width) || !Number.isFinite(state.height)) {
       return undefined;
     }

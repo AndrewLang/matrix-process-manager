@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    matrix_process_manager_lib::run()
+    workstation_console_lib::run()
 }

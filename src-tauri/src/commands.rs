@@ -188,10 +188,11 @@ fn set_start_with_windows_impl(enabled: bool) -> Result<(), CommandError> {
         let path = std::env::current_exe()
             .map_err(|error| CommandError::settings_failed(error.to_string()))?;
         run_key
-            .set_value("Matrix Process Manager", &format!("\"{}\"", path.display()))
+            .set_value("Workstation Console", &format!("\"{}\"", path.display()))
             .map_err(|error| CommandError::settings_failed(error.to_string()))
     } else {
-        match run_key.delete_value("Matrix Process Manager") {
+        let _ = run_key.delete_value("Matrix Process Manager");
+        match run_key.delete_value("Workstation Console") {
             Ok(()) => Ok(()),
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
             Err(error) => Err(CommandError::settings_failed(error.to_string())),

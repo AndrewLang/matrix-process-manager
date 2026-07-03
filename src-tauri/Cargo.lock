@@ -2039,24 +2039,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "matrix-process-manager"
-version = "0.1.0"
-dependencies = [
- "base64 0.22.1",
- "image",
- "portable-pty",
- "rusqlite",
- "serde",
- "serde_json",
- "sysinfo",
- "tauri",
- "tauri-build",
- "tauri-plugin-opener",
- "windows-sys 0.61.2",
- "winreg 0.55.0",
-]
-
-[[package]]
 name = "memchr"
 version = "2.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5004,6 +4986,24 @@ name = "wit-bindgen"
 version = "0.57.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1ebf944e87a7c253233ad6766e082e3cd714b5d03812acc24c318f549614536e"
+
+[[package]]
+name = "workstation-console"
+version = "0.1.0"
+dependencies = [
+ "base64 0.22.1",
+ "image",
+ "portable-pty",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "sysinfo",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-opener",
+ "windows-sys 0.61.2",
+ "winreg 0.55.0",
+]
 
 [[package]]
 name = "writeable"

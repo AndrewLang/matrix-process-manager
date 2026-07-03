@@ -6,7 +6,7 @@
     "analytics": false
   },
   "projects": {
-    "matrix-process-manager": {
+    "workstation-console": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -69,10 +69,10 @@
           },
           "configurations": {
             "production": {
-              "buildTarget": "matrix-process-manager:build:production"
+              "buildTarget": "workstation-console:build:production"
             },
             "development": {
-              "buildTarget": "matrix-process-manager:build:development"
+              "buildTarget": "workstation-console:build:development"
             }
           },
           "defaultConfiguration": "development"

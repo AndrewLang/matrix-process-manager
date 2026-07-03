@@ -29,7 +29,8 @@ interface ProcessSection {
     templateUrl: "./process-grid.component.html",
 })
 export class ProcessGridComponent {
-    private readonly collapsedGroupsKey = "matrix-process-manager.process-grid.collapsed-groups";
+    private readonly collapsedGroupsKey = "workstation-console.process-grid.collapsed-groups";
+    private readonly legacyCollapsedGroupsKey = "matrix-process-manager.process-grid.collapsed-groups";
     rows = input.required<ProcessRow[]>();
     selectedProcess = input<ProcessRow | undefined>();
     processSelected = output<ProcessRow>();
@@ -208,7 +209,7 @@ export class ProcessGridComponent {
 
     private loadCollapsedGroups(): ReadonlySet<string> {
         try {
-            const value = JSON.parse(localStorage.getItem(this.collapsedGroupsKey) ?? "[]");
+            const value = JSON.parse(localStorage.getItem(this.collapsedGroupsKey) ?? localStorage.getItem(this.legacyCollapsedGroupsKey) ?? "[]");
             return Array.isArray(value) ? new Set(value.filter((item): item is string => typeof item === "string")) : new Set();
         } catch {
             return new Set();

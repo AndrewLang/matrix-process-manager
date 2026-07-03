@@ -3,7 +3,8 @@ import { AppSettings, BackendDiskDriveUsage, BackendGpuAdapterUsage, BackendMemo
 
 @Injectable({ providedIn: "root" })
 export class WorkareaStateService {
-    private readonly appSettingsKey = "matrix-process-manager.app-settings";
+    private readonly appSettingsKey = "workstation-console.app-settings";
+    private readonly legacyAppSettingsKey = "matrix-process-manager.app-settings";
     private readonly defaultAppSettings: AppSettings = {
         startWithWindows: false,
         minimizeToTray: false,
@@ -181,7 +182,7 @@ export class WorkareaStateService {
 
     private loadAppSettings(): AppSettings {
         try {
-            const saved = JSON.parse(localStorage.getItem(this.appSettingsKey) ?? "{}");
+            const saved = JSON.parse(localStorage.getItem(this.appSettingsKey) ?? localStorage.getItem(this.legacyAppSettingsKey) ?? "{}");
             return {
                 ...this.defaultAppSettings,
                 ...saved,
