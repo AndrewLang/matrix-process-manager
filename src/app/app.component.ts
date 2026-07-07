@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, computed, effect, signal } from "@angular/core";
+import { Component, HostListener, OnDestroy, OnInit, computed, effect, signal } from "@angular/core";
 import { NavigationEnd, Router } from "@angular/router";
 import { invoke } from "@tauri-apps/api/core";
 import { PhysicalPosition, PhysicalSize } from "@tauri-apps/api/dpi";
@@ -138,7 +138,7 @@ export class AppComponent implements OnDestroy, OnInit {
   }
 
   ngOnInit(): void {
-    getCurrentWindow().setIcon("/assets/app-icon.png").catch(() => undefined);
+    this.refreshWindowIcon();
     this.restoreWindowState().then(() => this.trackWindowState());
     this.restoreRoute();
     this.startProcessWorker();
@@ -175,6 +175,18 @@ export class AppComponent implements OnDestroy, OnInit {
   setUpdateFrequency(frequency: UpdateFrequency): void {
     this.workareaState.setUpdateFrequency(frequency);
     this.scheduleUiStateSave(this.router.url);
+  }
+
+  @HostListener("window:focus")
+  refreshWindowIconFromWindowFocus(): void {
+    this.refreshWindowIcon();
+  }
+
+  @HostListener("document:visibilitychange")
+  refreshWindowIconFromVisibilityChange(): void {
+    if (document.visibilityState === "visible") {
+      this.refreshWindowIcon();
+    }
   }
 
   resetSettings(): void {
@@ -326,6 +338,10 @@ export class AppComponent implements OnDestroy, OnInit {
     appWindow.onMoved(() => this.scheduleWindowStateSave()).then((unlisten) => this.windowUnlisteners.push(unlisten)).catch(() => undefined);
     appWindow.onResized(() => this.scheduleWindowStateSave()).then((unlisten) => this.windowUnlisteners.push(unlisten)).catch(() => undefined);
     appWindow.onFocusChanged(({ payload: focused }) => {
+      if (focused) {
+        this.refreshWindowIcon();
+      }
+
       if (focused && this.workareaState.appSettings().minimizeToTray) {
         setTimeout(() => this.restoreNormalWindowBounds(), 0);
       }
@@ -339,6 +355,10 @@ export class AppComponent implements OnDestroy, OnInit {
     }
 
     this.uiSaveTimer = setTimeout(() => this.saveUiState(route), 120);
+  }
+
+  private refreshWindowIcon(): void {
+    invoke<void>("refresh_window_icon").catch(() => undefined);
   }
 
   private saveUiState(route: string): void {

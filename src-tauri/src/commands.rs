@@ -14,7 +14,7 @@ use crate::terminal::models::{
     TerminalStartResponse, TerminalStopRequest, TerminalWriteRequest,
 };
 use crate::AppState;
-use tauri::{AppHandle, State};
+use tauri::{AppHandle, Manager, State};
 
 #[tauri::command]
 pub fn get_process_snapshot(state: State<'_, AppState>) -> Result<ProcessSnapshot, CommandError> {
@@ -32,6 +32,21 @@ pub fn update_startup_command(
     request: StartupCommandUpdateRequest,
 ) -> Result<(), CommandError> {
     state.startup_manager.update_command(request)
+}
+
+#[tauri::command]
+pub fn refresh_window_icon(app_handle: AppHandle) -> Result<(), CommandError> {
+    let Some(window) = app_handle.get_webview_window("main") else {
+        return Err(CommandError::settings_failed("main window is unavailable"));
+    };
+
+    let Some(icon) = app_handle.default_window_icon().cloned() else {
+        return Err(CommandError::settings_failed("default window icon is unavailable"));
+    };
+
+    window
+        .set_icon(icon)
+        .map_err(|error| CommandError::settings_failed(error.to_string()))
 }
 
 #[tauri::command]

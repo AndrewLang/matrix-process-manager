@@ -42,7 +42,7 @@ pub fn run() {
         .setup(|app| {
             let icon = app.default_window_icon().cloned();
             let mut builder = TrayIconBuilder::with_id("main").tooltip("Workstation Console");
-            if let Some(icon) = icon {
+            if let Some(icon) = icon.clone() {
                 builder = builder.icon(icon);
             }
 
@@ -56,6 +56,10 @@ pub fn run() {
                     }
                 })
                 .build(app)?;
+
+            if let (Some(window), Some(icon)) = (app.get_webview_window("main"), icon) {
+                let _ = window.set_icon(icon);
+            }
 
             Ok(())
         })
@@ -71,6 +75,7 @@ pub fn run() {
             commands::get_terminal_session,
             commands::index_commands,
             commands::open_native_tool,
+            commands::refresh_window_icon,
             commands::scan_installed_applications,
             commands::set_start_with_windows,
             commands::set_active_terminal_session,
