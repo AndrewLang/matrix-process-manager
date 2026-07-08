@@ -1,0 +1,177 @@
+<section class="grid h-full min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] gap-2.5 overflow-hidden px-2.5 py-3">
+    <section class="grid gap-3 rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-3">
+        <div class="flex min-w-0 items-start gap-3">
+            <div class="min-w-0">
+                <h1>Ports</h1>
+                <p>Used local ports and the apps that own them</p>
+            </div>
+            <div class="ml-auto flex items-center gap-2 text-[12px]">
+                @if (actionMessage()) {
+                <span class="rounded border border-[rgba(34,206,116,0.28)] bg-[rgba(34,206,116,0.12)] px-2.5 py-1 text-(--green)">{{ actionMessage() }}</span>
+                }
+                @if (error()) {
+                <span class="max-w-80 truncate rounded border border-[rgba(255,75,67,0.28)] bg-[rgba(255,75,67,0.12)] px-2.5 py-1 text-(--red)">{{ error() }}</span>
+                }
+                <button type="button" class="inline-flex h-7.5 items-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(16,31,45,0.86)] px-3 hover:bg-white/6 disabled:opacity-55"
+                  [disabled]="loading()" (click)="refresh()">
+                    <i class="bi bi-arrow-clockwise"></i>{{ loading() ? "Scanning" : "Refresh" }}
+                </button>
+            </div>
+        </div>
+
+        <div class="grid gap-2.5 md:grid-cols-4">
+            <article class="rounded-md border border-(--border) bg-[rgba(16,31,45,0.62)] p-3">
+                <span class="text-[12px] text-(--muted)">Used Ports</span>
+                <strong class="mt-1 block text-[24px] text-[#e6f0fa]">{{ ports().length }}</strong>
+                <small class="text-(--muted)">Last scan {{ scannedAtText() }}</small>
+            </article>
+            <article class="rounded-md border border-(--border) bg-[rgba(16,31,45,0.62)] p-3">
+                <span class="text-[12px] text-(--muted)">Listening/Open</span>
+                <strong class="mt-1 block text-[24px] text-(--green)">{{ listeningCount() }}</strong>
+                <small class="text-(--muted)">Local services and UDP endpoints</small>
+            </article>
+            <article class="rounded-md border border-(--border) bg-[rgba(16,31,45,0.62)] p-3">
+                <span class="text-[12px] text-(--muted)">Established</span>
+                <strong class="mt-1 block text-[24px] text-(--blue)">{{ establishedCount() }}</strong>
+                <small class="text-(--muted)">Active TCP connections</small>
+            </article>
+            <article class="rounded-md border border-(--border) bg-[rgba(16,31,45,0.62)] p-3">
+                <span class="text-[12px] text-(--muted)">Public Bindings</span>
+                <strong class="mt-1 block text-[24px] text-(--orange)">{{ publicCount() }}</strong>
+                <small class="text-(--muted)">{{ appCount() }} owning apps</small>
+            </article>
+        </div>
+    </section>
+
+    <section class="grid min-h-0 min-w-0 grid-cols-[minmax(0,1fr)_330px] gap-2.5 overflow-hidden max-[1080px]:grid-cols-[minmax(0,1fr)]">
+        <section class="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))]">
+            <div class="grid gap-2 border-b border-(--border) p-3">
+                <div class="flex min-w-0 items-center gap-2">
+                    <div class="flex h-8 min-w-0 flex-1 items-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(15,28,40,0.84)] px-2.5 text-[12px] text-(--muted)">
+                        <i class="bi bi-search"></i>
+                        <input class="h-full min-w-0 flex-1 bg-transparent text-[#dfe8f1] outline-none placeholder:text-(--muted)" type="text" placeholder="Search port, process, PID, address..."
+                          [value]="query()" (input)="setQuery($any($event.target).value)" />
+                    </div>
+                    <select class="h-8 rounded-md border border-(--border) bg-[rgba(10,22,33,0.86)] px-2 text-[12px] text-[#dfe8f1] outline-none"
+                      [value]="protocolFilter()" (change)="setProtocolFilter($any($event.target).value)">
+                        <option value="all">All protocols</option>
+                        <option value="tcp">TCP</option>
+                        <option value="udp">UDP</option>
+                    </select>
+                    <select class="h-8 rounded-md border border-(--border) bg-[rgba(10,22,33,0.86)] px-2 text-[12px] text-[#dfe8f1] outline-none"
+                      [value]="stateFilter()" (change)="setStateFilter($any($event.target).value)">
+                        <option value="all">All states</option>
+                        <option value="listening">Listening/Open</option>
+                        <option value="established">Established</option>
+                    </select>
+                </div>
+                <div class="text-[12px] text-(--muted)">{{ filteredPorts().length }} matching ports</div>
+            </div>
+
+            <div class="min-h-0 overflow-auto">
+                <table class="min-w-full border-collapse text-[12px]" [style.width.px]="tableWidth()">
+                    <colgroup>
+                        @for (column of columns(); track column.key) {
+                        <col [style.width.px]="column.width" />
+                        }
+                    </colgroup>
+                    <thead class="sticky top-0 z-10 bg-[rgba(10,22,33,0.98)] text-(--muted)">
+                        <tr>
+                            @for (column of columns(); track column.key; let columnIndex = $index) {
+                            <th class="relative select-none bg-[rgba(10,22,33,0.98)] px-3 py-2 font-medium"
+                              [class.text-right]="column.align === 'right'" [class.text-left]="column.align !== 'right'">
+                                <button type="button" class="flex w-full items-center gap-1.5 bg-transparent text-inherit"
+                                  [class.justify-end]="column.align === 'right'" [class.justify-start]="column.align !== 'right'" (click)="sortBy(column)">
+                                    <span>{{ column.label }}</span>
+                                    <i class="bi text-[10px]" [class]="sortIcon(column)"></i>
+                                </button>
+                                <span class="absolute top-0 right-0 h-full w-1 cursor-col-resize hover:bg-(--blue)" (mousedown)="startResize($event, columnIndex)"></span>
+                            </th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (port of filteredPorts(); track portKey(port)) {
+                        <tr class="cursor-pointer border-t border-white/6 hover:bg-white/5" [class.bg-[rgba(23,144,255,0.08)]]="isSelected(port)" (click)="selectPort(port)">
+                            @for (column of columns(); track column.key) {
+                            <td class="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2" [class.text-right]="column.align === 'right'">
+                                @switch (column.key) {
+                                @case ("localPort") {
+                                <span class="font-mono text-[#e6f0fa]">{{ port.localPort }}</span>
+                                }
+                                @case ("protocol") {
+                                <span class="rounded bg-white/6 px-2 py-0.5">{{ port.protocol }}</span>
+                                }
+                                @case ("localAddress") {
+                                <span class="font-mono">{{ port.localAddress }}</span>
+                                }
+                                @case ("remote") {
+                                <span class="font-mono text-(--muted)">{{ remoteEndpoint(port) }}</span>
+                                }
+                                @case ("state") {
+                                <span>{{ port.state }}</span>
+                                }
+                                @case ("processName") {
+                                <span>{{ port.processName }}</span>
+                                }
+                                @case ("pid") {
+                                <span class="font-mono text-(--muted)">{{ port.pid ?? "-" }}</span>
+                                }
+                                }
+                            </td>
+                            }
+                        </tr>
+                        } @empty {
+                        <tr>
+                            <td class="px-3 py-10 text-center text-(--muted)" [attr.colspan]="columns().length">{{ loading() ? "Scanning ports..." : "No ports matched." }}</td>
+                        </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <aside class="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))]">
+            <div class="border-b border-(--border) p-3">
+                <h2>Port Actions</h2>
+                <p class="text-[12px] text-(--muted)">Inspect and act on the selected endpoint.</p>
+            </div>
+            <div class="min-h-0 overflow-auto p-3">
+                @if (selectedPort(); as port) {
+                <div class="grid gap-3">
+                    <div class="rounded-md border border-(--border) bg-[rgba(16,31,45,0.48)] p-3">
+                        <div class="text-[12px] text-(--muted)">Endpoint</div>
+                        <div class="mt-1 font-mono text-[18px] text-[#e6f0fa]">{{ endpoint(port) }}</div>
+                        <div class="mt-1 text-[12px] text-(--muted)">{{ port.protocol }} / {{ port.state }}</div>
+                    </div>
+                    <dl class="grid grid-cols-[86px_minmax(0,1fr)] gap-x-3 gap-y-2 text-[12px]">
+                        <dt class="text-(--muted)">App</dt><dd class="truncate">{{ port.processName }}</dd>
+                        <dt class="text-(--muted)">PID</dt><dd>{{ port.pid ?? "-" }}</dd>
+                        <dt class="text-(--muted)">Remote</dt><dd class="truncate font-mono">{{ remoteEndpoint(port) }}</dd>
+                        <dt class="text-(--muted)">Path</dt><dd class="truncate">{{ port.processPath ?? "Unavailable" }}</dd>
+                    </dl>
+                    <div class="grid gap-2">
+                        <button type="button" class="h-8 rounded-md border border-(--border) bg-white/5 text-left px-3 text-[12px] hover:bg-white/8" (click)="copyEndpoint(port)">
+                            <i class="bi bi-copy mr-2"></i>Copy endpoint
+                        </button>
+                        <button type="button" class="h-8 rounded-md border border-(--border) bg-white/5 text-left px-3 text-[12px] hover:bg-white/8 disabled:opacity-45"
+                          [disabled]="port.protocol !== 'TCP'" (click)="openLocalhost(port)">
+                            <i class="bi bi-box-arrow-up-right mr-2"></i>Open localhost URL
+                        </button>
+                        <button type="button" class="h-8 rounded-md border border-(--border) bg-white/5 text-left px-3 text-[12px] hover:bg-white/8 disabled:opacity-45"
+                          [disabled]="!port.processPath" (click)="openProcessLocation(port)">
+                            <i class="bi bi-folder2-open mr-2"></i>Open app location
+                        </button>
+                        <button type="button" class="h-8 rounded-md border border-[rgba(255,75,67,0.38)] bg-[rgba(255,75,67,0.08)] text-left px-3 text-[12px] text-(--red) hover:bg-[rgba(255,75,67,0.14)] disabled:opacity-45"
+                          [disabled]="!port.pid || loading()" (click)="endProcess(port)">
+                            <i class="bi bi-x-octagon mr-2"></i>End process
+                        </button>
+                    </div>
+                </div>
+                } @else {
+                <div class="grid h-full place-items-center text-[12px] text-(--muted)">Select a port.</div>
+                }
+            </div>
+        </aside>
+    </section>
+</section>

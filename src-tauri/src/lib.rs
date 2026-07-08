@@ -69,6 +69,7 @@ pub fn run() {
             commands::clean_disk_usage_insight,
             commands::finish_command_execution,
             commands::get_disk_cleanup_scan,
+            commands::get_port_scan,
             commands::get_process_snapshot,
             commands::get_active_terminal_session,
             commands::get_startup_apps,

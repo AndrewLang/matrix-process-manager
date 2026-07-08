@@ -9,6 +9,7 @@ import { MemoryMonitorComponent } from "./views/performance-view/components/memo
 import { NetworkMonitorComponent } from "./views/performance-view/components/network-monitor/network-monitor.component";
 import { PerformanceViewComponent } from "./views/performance-view/performance-view.component";
 import { PlaceholderViewComponent } from "./views/placeholder-view/placeholder-view.component";
+import { PortsViewComponent } from "./views/ports-view/ports-view.component";
 import { ProcessesViewComponent } from "./views/processes-view/processes-view.component";
 import { SettingsViewComponent } from "./views/settings-view/settings-view.component";
 import { StartupViewComponent } from "./views/startup-view/startup-view.component";
@@ -35,6 +36,7 @@ export const routes: Routes = [
     { path: "command-center", component: CommandCenterViewComponent },
     { path: "settings", component: SettingsViewComponent },
     { path: "storage", component: DiskViewComponent },
+    { path: "ports", component: PortsViewComponent },
     { path: "disk", pathMatch: "full", redirectTo: "storage" },
     { path: "terminal", component: PlaceholderViewComponent, data: { title: "Terminal" } },
     { path: "more", component: PlaceholderViewComponent, data: { title: "More Tools" } },

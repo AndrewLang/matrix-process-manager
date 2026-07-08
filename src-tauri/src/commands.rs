@@ -5,8 +5,9 @@ use crate::command_knowledge::models::{
 };
 use crate::disk_cleanup::DiskCleanupManager;
 use crate::models::{
-    CommandError, DiskCleanupRequest, DiskCleanupResult, DiskCleanupScan, ProcessSnapshot,
-    DiskUsageInsightCleanupRequest, DiskUsageInsightCleanupResult, StartupApp,
+    CommandError, DiskCleanupRequest, DiskCleanupResult, DiskCleanupScan,
+    DiskUsageInsightCleanupRequest, DiskUsageInsightCleanupResult, PortScan, PortUsage,
+    ProcessSnapshot, StartupApp,
     StartupCommandUpdateRequest,
 };
 use crate::terminal::models::{
@@ -70,6 +71,13 @@ pub async fn clean_disk_usage_insight(
     tauri::async_runtime::spawn_blocking(move || DiskCleanupManager::clean_usage_insight(request))
         .await
         .map_err(|error| CommandError::disk_cleanup_failed(error.to_string()))?
+}
+
+#[tauri::command]
+pub async fn get_port_scan() -> Result<PortScan, CommandError> {
+    tauri::async_runtime::spawn_blocking(scan_ports_impl)
+        .await
+        .map_err(|error| CommandError::port_scan_failed(error.to_string()))?
 }
 
 #[tauri::command]
@@ -246,6 +254,172 @@ fn terminate_process_impl(_: u32) -> Result<(), CommandError> {
     Err(CommandError::process_action_failed(
         "process termination is only available on Windows",
     ))
+}
+
+#[cfg(windows)]
+fn scan_ports_impl() -> Result<PortScan, CommandError> {
+    use serde::Deserialize;
+    use std::os::windows::process::CommandExt;
+
+    #[derive(Deserialize)]
+    #[serde(rename_all = "PascalCase")]
+    struct WindowsPortRow {
+        protocol: String,
+        local_address: String,
+        local_port: u16,
+        remote_address: Option<String>,
+        remote_port: Option<u16>,
+        state: String,
+        pid: Option<u32>,
+        process_name: Option<String>,
+        process_path: Option<String>,
+    }
+
+    let script = r#"
+$tcp = Get-NetTCPConnection | ForEach-Object {
+  $proc = if ($_.OwningProcess) { Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue } else { $null }
+  [pscustomobject]@{
+    Protocol = 'TCP'
+    LocalAddress = $_.LocalAddress
+    LocalPort = [int]$_.LocalPort
+    RemoteAddress = $_.RemoteAddress
+    RemotePort = if ($_.RemotePort -ne $null) { [int]$_.RemotePort } else { $null }
+    State = $_.State.ToString()
+    Pid = $_.OwningProcess
+    ProcessName = if ($proc) { $proc.ProcessName } else { 'System' }
+    ProcessPath = if ($proc) { $proc.Path } else { $null }
+  }
+}
+$udp = Get-NetUDPEndpoint | ForEach-Object {
+  $proc = if ($_.OwningProcess) { Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue } else { $null }
+  [pscustomobject]@{
+    Protocol = 'UDP'
+    LocalAddress = $_.LocalAddress
+    LocalPort = [int]$_.LocalPort
+    RemoteAddress = $null
+    RemotePort = $null
+    State = 'Open'
+    Pid = $_.OwningProcess
+    ProcessName = if ($proc) { $proc.ProcessName } else { 'System' }
+    ProcessPath = if ($proc) { $proc.Path } else { $null }
+  }
+}
+@($tcp + $udp) | Sort-Object LocalPort, Protocol | ConvertTo-Json -Compress -Depth 3
+"#;
+
+    let output = std::process::Command::new("powershell.exe")
+        .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script])
+        .creation_flags(0x08000000)
+        .output()
+        .map_err(|error| CommandError::port_scan_failed(error.to_string()))?;
+
+    if !output.status.success() {
+        return Err(CommandError::port_scan_failed(
+            String::from_utf8_lossy(&output.stderr).trim().to_string(),
+        ));
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let rows: Vec<WindowsPortRow> = match serde_json::from_str(stdout.trim()) {
+        Ok(rows) => rows,
+        Err(_) => {
+            let row: WindowsPortRow = serde_json::from_str(stdout.trim())
+                .map_err(|error| CommandError::port_scan_failed(error.to_string()))?;
+            vec![row]
+        }
+    };
+
+    Ok(PortScan {
+        scanned_at: unix_timestamp_string(),
+        ports: rows
+            .into_iter()
+            .map(|row| PortUsage {
+                protocol: row.protocol,
+                local_address: normalize_address(row.local_address),
+                local_port: row.local_port,
+                remote_address: row.remote_address.map(normalize_address),
+                remote_port: row.remote_port,
+                state: row.state,
+                pid: row.pid,
+                process_name: row.process_name.unwrap_or_else(|| "Unknown".to_string()),
+                process_path: row.process_path,
+            })
+            .collect(),
+    })
+}
+
+#[cfg(not(windows))]
+fn scan_ports_impl() -> Result<PortScan, CommandError> {
+    let output = std::process::Command::new("lsof")
+        .args(["-nP", "-iTCP", "-iUDP"])
+        .output()
+        .map_err(|error| CommandError::port_scan_failed(error.to_string()))?;
+
+    if !output.status.success() {
+        return Err(CommandError::port_scan_failed(
+            String::from_utf8_lossy(&output.stderr).trim().to_string(),
+        ));
+    }
+
+    Ok(PortScan {
+        scanned_at: unix_timestamp_string(),
+        ports: String::from_utf8_lossy(&output.stdout)
+            .lines()
+            .skip(1)
+            .filter_map(parse_lsof_port_line)
+            .collect(),
+    })
+}
+
+#[cfg(not(windows))]
+fn parse_lsof_port_line(line: &str) -> Option<PortUsage> {
+    let columns: Vec<&str> = line.split_whitespace().collect();
+    if columns.len() < 9 {
+        return None;
+    }
+
+    let protocol = columns[7].to_string();
+    let endpoint = columns[8].split("->").next().unwrap_or(columns[8]);
+    let (local_address, local_port) = split_endpoint(endpoint)?;
+    let state = line
+        .split('(')
+        .nth(1)
+        .and_then(|value| value.split(')').next())
+        .unwrap_or(if protocol.contains("UDP") { "Open" } else { "Unknown" })
+        .to_string();
+
+    Some(PortUsage {
+        protocol: if protocol.contains("UDP") { "UDP" } else { "TCP" }.to_string(),
+        local_address,
+        local_port,
+        remote_address: None,
+        remote_port: None,
+        state,
+        pid: columns[1].parse::<u32>().ok(),
+        process_name: columns[0].to_string(),
+        process_path: None,
+    })
+}
+
+#[cfg(not(windows))]
+fn split_endpoint(endpoint: &str) -> Option<(String, u16)> {
+    let (address, port) = endpoint.rsplit_once(':')?;
+    Some((normalize_address(address.to_string()), port.parse().ok()?))
+}
+
+fn normalize_address(address: String) -> String {
+    match address.as_str() {
+        "0.0.0.0" | "::" | "*" => "All interfaces".to_string(),
+        "127.0.0.1" | "::1" => "localhost".to_string(),
+        _ => address,
+    }
+}
+
+fn unix_timestamp_string() -> String {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|duration| duration.as_secs().to_string())
+        .unwrap_or_else(|_| "0".to_string())
 }
 
 #[cfg(windows)]

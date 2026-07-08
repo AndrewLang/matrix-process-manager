@@ -171,6 +171,27 @@ pub struct DiskUsageInsightCleanupResult {
 
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct PortUsage {
+    pub protocol: String,
+    pub local_address: String,
+    pub local_port: u16,
+    pub remote_address: Option<String>,
+    pub remote_port: Option<u16>,
+    pub state: String,
+    pub pid: Option<u32>,
+    pub process_name: String,
+    pub process_path: Option<String>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PortScan {
+    pub scanned_at: String,
+    pub ports: Vec<PortUsage>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct NetworkAdapterUsage {
     pub name: String,
     pub adapter_index: usize,
@@ -290,6 +311,13 @@ impl CommandError {
     pub fn disk_cleanup_failed(message: impl Into<String>) -> Self {
         Self {
             code: "diskCleanupFailed".to_string(),
+            message: message.into(),
+        }
+    }
+
+    pub fn port_scan_failed(message: impl Into<String>) -> Self {
+        Self {
+            code: "portScanFailed".to_string(),
             message: message.into(),
         }
     }

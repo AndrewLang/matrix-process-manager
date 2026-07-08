@@ -1,4 +1,4 @@
-export type ViewId = "dashboard" | "processes" | "performance" | "startup" | "system" | "command-center" | "settings" | "storage" | "disk" | "terminal" | "more";
+export type ViewId = "dashboard" | "processes" | "performance" | "startup" | "system" | "command-center" | "settings" | "storage" | "ports" | "disk" | "terminal" | "more";
 export type NativeToolId = "taskManager" | "systemSettings" | "diskManager" | "terminal" | "envVariables" | "snippingTool";
 export type ProcessGroup = "apps" | "background" | "windows";
 export type UpdateFrequency = "high" | "normal" | "low" | "paused";
@@ -202,6 +202,23 @@ export interface DiskCleanupScan {
 export interface DiskCleanupResult {
     releasedBytes: number;
     cleanedTargets: DiskCleanupTarget[];
+}
+
+export interface PortUsage {
+    protocol: string;
+    localAddress: string;
+    localPort: number;
+    remoteAddress?: string;
+    remotePort?: number;
+    state: string;
+    pid?: number;
+    processName: string;
+    processPath?: string;
+}
+
+export interface PortScan {
+    scannedAt: string;
+    ports: PortUsage[];
 }
 
 export interface DiskUsageInsightCleanupRequest {
