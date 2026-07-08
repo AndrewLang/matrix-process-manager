@@ -272,6 +272,10 @@ fn open_native_tool_impl(tool_id: &str) -> Result<(), CommandError> {
         "systemSettings" => ("explorer.exe", &["ms-settings:about"]),
         "diskManager" => ("cmd.exe", &["/C", "start", "", "diskmgmt.msc"]),
         "terminal" => ("wt.exe", &[]),
+        "snippingTool" => (
+            "explorer.exe",
+            &["shell:AppsFolder\\Microsoft.ScreenSketch_8wekyb3d8bbwe!App"],
+        ),
         _ => return Err(CommandError::native_tool_failed("unknown native tool")),
     };
 

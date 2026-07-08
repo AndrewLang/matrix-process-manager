@@ -65,6 +65,7 @@ export class SettingsViewComponent {
         { key: "diskManager", label: "Disk Manager", detail: "Open Windows Disk Management from the Tools menu." },
         { key: "terminal", label: "Terminal", detail: "Open Windows Terminal from the Tools menu." },
         { key: "envVariables", label: "Env Variables", detail: "Open Windows Environment Variables from the Tools menu." },
+        { key: "snippingTool", label: "Snipping Tool", detail: "Open Windows Snipping Tool from the Tools menu." },
     ];
     aboutItems = [
         { label: "Product", value: "Workstation Console" },

@@ -32,6 +32,7 @@ export class WorkareaStateService {
             diskManager: true,
             terminal: true,
             envVariables: true,
+            snippingTool: true,
         },
     };
 

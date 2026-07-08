@@ -1,5 +1,5 @@
 export type ViewId = "dashboard" | "processes" | "performance" | "startup" | "system" | "command-center" | "settings" | "storage" | "disk" | "terminal" | "more";
-export type NativeToolId = "taskManager" | "systemSettings" | "diskManager" | "terminal" | "envVariables";
+export type NativeToolId = "taskManager" | "systemSettings" | "diskManager" | "terminal" | "envVariables" | "snippingTool";
 export type ProcessGroup = "apps" | "background" | "windows";
 export type UpdateFrequency = "high" | "normal" | "low" | "paused";
 export type TerminalDefaultShell = "system" | "powerShell" | "cmd" | "zsh" | "bash";

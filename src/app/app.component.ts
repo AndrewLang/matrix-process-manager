@@ -79,6 +79,7 @@ export class AppComponent implements OnDestroy, OnInit {
     { id: "storage", label: "Disk Manager", icon: "bi-device-hdd", nativeTool: "diskManager" },
     { id: "terminal", label: "Terminal", icon: "bi-terminal", nativeTool: "terminal" },
     { id: "settings", label: "Env Variables", icon: "bi-braces", nativeTool: "envVariables" },
+    { id: "settings", label: "Snipping Tool", icon: "bi-scissors", nativeTool: "snippingTool" },
   ];
 
   enabledToolItems = computed(() => this.toolItems.filter((item) => !item.nativeTool || this.workareaState.appSettings().toolSettings[item.nativeTool]));
