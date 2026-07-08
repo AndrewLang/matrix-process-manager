@@ -1,4 +1,4 @@
-export type ViewId = "dashboard" | "processes" | "performance" | "startup" | "system" | "command-center" | "settings" | "storage" | "ports" | "disk" | "terminal" | "more";
+export type ViewId = "dashboard" | "processes" | "performance" | "startup" | "system" | "command-center" | "settings" | "storage" | "ports" | "ssh-keys" | "disk" | "terminal" | "more";
 export type NativeToolId = "taskManager" | "systemSettings" | "diskManager" | "terminal" | "envVariables" | "snippingTool";
 export type ProcessGroup = "apps" | "background" | "windows";
 export type UpdateFrequency = "high" | "normal" | "low" | "paused";
@@ -219,6 +219,24 @@ export interface PortUsage {
 export interface PortScan {
     scannedAt: string;
     ports: PortUsage[];
+}
+
+export interface SshKeyInfo {
+    name: string;
+    keyType: string;
+    publicKeyPath: string;
+    privateKeyPath?: string;
+    publicKey: string;
+    fingerprint?: string;
+    comment?: string;
+    modifiedAt?: string;
+    hasPrivateKey: boolean;
+}
+
+export interface SshKeyGenerationRequest {
+    fileName: string;
+    keyType: string;
+    comment: string;
 }
 
 export interface DiskUsageInsightCleanupRequest {

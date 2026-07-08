@@ -1,0 +1,109 @@
+<section class="grid h-full min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] gap-2.5 overflow-hidden px-2.5 py-3">
+    <section class="grid gap-3 rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-3">
+        <div class="flex min-w-0 items-start gap-3">
+            <div class="min-w-0">
+                <h1>SSH Keys</h1>
+                <p>List keys, generate new keys, and copy public keys</p>
+            </div>
+            <div class="ml-auto flex items-center gap-2 text-[12px]">
+                @if (actionMessage()) {
+                <span class="rounded border border-[rgba(34,206,116,0.28)] bg-[rgba(34,206,116,0.12)] px-2.5 py-1 text-(--green)">{{ actionMessage() }}</span>
+                }
+                @if (error()) {
+                <span class="max-w-96 truncate rounded border border-[rgba(255,75,67,0.28)] bg-[rgba(255,75,67,0.12)] px-2.5 py-1 text-(--red)">{{ error() }}</span>
+                }
+                <button type="button" class="inline-flex h-7.5 items-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(16,31,45,0.86)] px-3 hover:bg-white/6 disabled:opacity-55"
+                  [disabled]="loading()" (click)="refresh()">
+                    <i class="bi bi-arrow-clockwise"></i>{{ loading() ? "Loading" : "Refresh" }}
+                </button>
+            </div>
+        </div>
+
+        <div class="grid gap-2.5 md:grid-cols-3">
+            <article class="rounded-md border border-(--border) bg-[rgba(16,31,45,0.62)] p-3">
+                <span class="text-[12px] text-(--muted)">Public Keys</span>
+                <strong class="mt-1 block text-[24px] text-[#e6f0fa]">{{ keys().length }}</strong>
+                <small class="text-(--muted)">From your .ssh folder</small>
+            </article>
+            <article class="rounded-md border border-(--border) bg-[rgba(16,31,45,0.62)] p-3">
+                <span class="text-[12px] text-(--muted)">Private Pairs</span>
+                <strong class="mt-1 block text-[24px] text-(--green)">{{ privateKeyCount() }}</strong>
+                <small class="text-(--muted)">Public and private key present</small>
+            </article>
+            <article class="rounded-md border border-(--border) bg-[rgba(16,31,45,0.62)] p-3">
+                <span class="text-[12px] text-(--muted)">Public Only</span>
+                <strong class="mt-1 block text-[24px] text-(--orange)">{{ publicOnlyCount() }}</strong>
+                <small class="text-(--muted)">Missing private key beside .pub</small>
+            </article>
+        </div>
+    </section>
+
+    <section class="grid min-h-0 min-w-0 grid-cols-[minmax(0,1fr)_360px] gap-2.5 overflow-hidden max-[1080px]:grid-cols-[minmax(0,1fr)]">
+        <section class="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))]">
+            <div class="border-b border-(--border) p-3">
+                <h2>Key List</h2>
+                <p class="text-[12px] text-(--muted)">Public keys found in your SSH directory.</p>
+            </div>
+            <mtx-data-grid [columns]="columns" [rows]="keys()" [rowKey]="rowKey" [selectedKey]="selectedName()" [loading]="loading()"
+              loadingText="Loading SSH keys..." emptyText="No public SSH keys found." (rowSelected)="selectKey($event)" />
+        </section>
+
+        <aside class="grid min-h-0 grid-rows-[auto_auto_minmax(0,1fr)] overflow-hidden rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))]">
+            <div class="border-b border-(--border) p-3">
+                <h2>Generate Key</h2>
+                <p class="text-[12px] text-(--muted)">Creates a key pair in your .ssh folder.</p>
+            </div>
+            <div class="grid gap-3 border-b border-(--border) p-3">
+                <label class="grid gap-1.5 text-[12px]">
+                    <span class="text-(--muted)">File name</span>
+                    <input class="h-8 rounded-md border border-(--border) bg-[rgba(10,22,33,0.86)] px-3 text-[#dfe8f1] outline-none" [value]="newFileName()"
+                      (input)="setNewFileName($any($event.target).value)" />
+                </label>
+                <label class="grid gap-1.5 text-[12px]">
+                    <span class="text-(--muted)">Key type</span>
+                    <select class="h-8 rounded-md border border-(--border) bg-[rgba(10,22,33,0.86)] px-3 text-[#dfe8f1] outline-none" [value]="newKeyType()"
+                      (change)="setNewKeyType($any($event.target).value)">
+                        <option value="ed25519">ed25519</option>
+                        <option value="rsa">rsa 4096</option>
+                    </select>
+                </label>
+                <label class="grid gap-1.5 text-[12px]">
+                    <span class="text-(--muted)">Comment</span>
+                    <input class="h-8 rounded-md border border-(--border) bg-[rgba(10,22,33,0.86)] px-3 text-[#dfe8f1] outline-none" [value]="newComment()"
+                      (input)="setNewComment($any($event.target).value)" />
+                </label>
+                <button type="button" class="h-8 rounded-md border border-[#1596ff] bg-[#1596ff] px-3 text-[12px] font-medium text-white hover:bg-[#2aa4ff] disabled:opacity-55"
+                  [disabled]="generating()" (click)="generateKey()">
+                    <i class="bi bi-plus-lg mr-2"></i>{{ generating() ? "Generating" : "Generate key" }}
+                </button>
+            </div>
+            <div class="min-h-0 overflow-auto p-3">
+                @if (selectedKey(); as key) {
+                <div class="grid gap-3">
+                    <div class="rounded-md border border-(--border) bg-[rgba(16,31,45,0.48)] p-3">
+                        <div class="text-[12px] text-(--muted)">Selected Key</div>
+                        <div class="mt-1 truncate font-mono text-[18px] text-[#e6f0fa]">{{ key.name }}</div>
+                        <div class="mt-1 text-[12px] text-(--muted)">Modified {{ modifiedText(key) }}</div>
+                    </div>
+                    <dl class="grid grid-cols-[82px_minmax(0,1fr)] gap-x-3 gap-y-2 text-[12px]">
+                        <dt class="text-(--muted)">Type</dt><dd>{{ key.keyType }}</dd>
+                        <dt class="text-(--muted)">Comment</dt><dd class="truncate">{{ key.comment ?? "-" }}</dd>
+                        <dt class="text-(--muted)">Public</dt><dd class="truncate">{{ key.publicKeyPath }}</dd>
+                        <dt class="text-(--muted)">Private</dt><dd class="truncate">{{ key.privateKeyPath ?? "Unavailable" }}</dd>
+                    </dl>
+                    <div class="grid gap-2">
+                        <button type="button" class="h-8 rounded-md border border-(--border) bg-white/5 px-3 text-left text-[12px] hover:bg-white/8" (click)="copyPublicKey(key)">
+                            <i class="bi bi-copy mr-2"></i>Copy public key
+                        </button>
+                        <button type="button" class="h-8 rounded-md border border-(--border) bg-white/5 px-3 text-left text-[12px] hover:bg-white/8" (click)="openKeyLocation(key)">
+                            <i class="bi bi-folder2-open mr-2"></i>Open key location
+                        </button>
+                    </div>
+                </div>
+                } @else {
+                <div class="grid h-full place-items-center text-[12px] text-(--muted)">Select or generate a key.</div>
+                }
+            </div>
+        </aside>
+    </section>
+</section>

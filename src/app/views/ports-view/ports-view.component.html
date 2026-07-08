@@ -68,67 +68,8 @@
                 <div class="text-[12px] text-(--muted)">{{ filteredPorts().length }} matching ports</div>
             </div>
 
-            <div class="min-h-0 overflow-auto">
-                <table class="min-w-full border-collapse text-[12px]" [style.width.px]="tableWidth()">
-                    <colgroup>
-                        @for (column of columns(); track column.key) {
-                        <col [style.width.px]="column.width" />
-                        }
-                    </colgroup>
-                    <thead class="sticky top-0 z-10 bg-[rgba(10,22,33,0.98)] text-(--muted)">
-                        <tr>
-                            @for (column of columns(); track column.key; let columnIndex = $index) {
-                            <th class="relative select-none bg-[rgba(10,22,33,0.98)] px-3 py-2 font-medium"
-                              [class.text-right]="column.align === 'right'" [class.text-left]="column.align !== 'right'">
-                                <button type="button" class="flex w-full items-center gap-1.5 bg-transparent text-inherit"
-                                  [class.justify-end]="column.align === 'right'" [class.justify-start]="column.align !== 'right'" (click)="sortBy(column)">
-                                    <span>{{ column.label }}</span>
-                                    <i class="bi text-[10px]" [class]="sortIcon(column)"></i>
-                                </button>
-                                <span class="absolute top-0 right-0 h-full w-1 cursor-col-resize hover:bg-(--blue)" (mousedown)="startResize($event, columnIndex)"></span>
-                            </th>
-                            }
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @for (port of filteredPorts(); track portKey(port)) {
-                        <tr class="cursor-pointer border-t border-white/6 hover:bg-white/5" [class.bg-[rgba(23,144,255,0.08)]]="isSelected(port)" (click)="selectPort(port)">
-                            @for (column of columns(); track column.key) {
-                            <td class="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2" [class.text-right]="column.align === 'right'">
-                                @switch (column.key) {
-                                @case ("localPort") {
-                                <span class="font-mono text-[#e6f0fa]">{{ port.localPort }}</span>
-                                }
-                                @case ("protocol") {
-                                <span class="rounded bg-white/6 px-2 py-0.5">{{ port.protocol }}</span>
-                                }
-                                @case ("localAddress") {
-                                <span class="font-mono">{{ port.localAddress }}</span>
-                                }
-                                @case ("remote") {
-                                <span class="font-mono text-(--muted)">{{ remoteEndpoint(port) }}</span>
-                                }
-                                @case ("state") {
-                                <span>{{ port.state }}</span>
-                                }
-                                @case ("processName") {
-                                <span>{{ port.processName }}</span>
-                                }
-                                @case ("pid") {
-                                <span class="font-mono text-(--muted)">{{ port.pid ?? "-" }}</span>
-                                }
-                                }
-                            </td>
-                            }
-                        </tr>
-                        } @empty {
-                        <tr>
-                            <td class="px-3 py-10 text-center text-(--muted)" [attr.colspan]="columns().length">{{ loading() ? "Scanning ports..." : "No ports matched." }}</td>
-                        </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
+            <mtx-data-grid [columns]="columns" [rows]="filteredPorts()" [rowKey]="rowKey" [selectedKey]="selectedKey()" [loading]="loading()"
+              loadingText="Scanning ports..." emptyText="No ports matched." (rowSelected)="selectPort($event)" />
         </section>
 
         <aside class="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))]">

@@ -1,23 +1,15 @@
-import { Component, HostListener, OnInit, computed, signal } from "@angular/core";
+import { Component, OnInit, computed, signal } from "@angular/core";
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl, revealItemInDir } from "@tauri-apps/plugin-opener";
 import { PortScan, PortUsage } from "../../app.models";
+import { DataGridColumn, DataGridComponent } from "../../components/data-grid/data-grid.component";
 
 type ProtocolFilter = "all" | "tcp" | "udp";
 type StateFilter = "all" | "listening" | "established";
-type PortSortDirection = "asc" | "desc";
-type PortColumnKey = "localPort" | "protocol" | "localAddress" | "remote" | "state" | "processName" | "pid";
-
-interface PortColumn {
-    key: PortColumnKey;
-    label: string;
-    width: number;
-    minWidth: number;
-    align?: "left" | "right";
-}
 
 @Component({
     selector: "mtx-ports-view",
+    imports: [DataGridComponent],
     templateUrl: "./ports-view.component.html",
 })
 export class PortsViewComponent implements OnInit {
@@ -29,28 +21,24 @@ export class PortsViewComponent implements OnInit {
     loading = signal(false);
     error = signal("");
     actionMessage = signal("");
-    sortKey = signal<PortColumnKey>("localPort");
-    sortDirection = signal<PortSortDirection>("asc");
-    columns = signal<PortColumn[]>([
-        { key: "localPort", label: "Port", width: 92, minWidth: 80 },
-        { key: "protocol", label: "Protocol", width: 96, minWidth: 82 },
-        { key: "localAddress", label: "Local Address", width: 170, minWidth: 128 },
-        { key: "remote", label: "Remote", width: 190, minWidth: 132 },
-        { key: "state", label: "State", width: 122, minWidth: 92 },
-        { key: "processName", label: "App", width: 190, minWidth: 130 },
-        { key: "pid", label: "PID", width: 88, minWidth: 72, align: "right" },
-    ]);
+    columns: DataGridColumn<PortUsage>[] = [
+        { key: "localPort", label: "Port", width: 92, minWidth: 80, value: (port) => port.localPort, cellClass: () => "font-mono text-[#e6f0fa]" },
+        { key: "protocol", label: "Protocol", width: 96, minWidth: 82, value: (port) => port.protocol },
+        { key: "localAddress", label: "Local Address", width: 170, minWidth: 128, value: (port) => port.localAddress, cellClass: () => "font-mono" },
+        { key: "remote", label: "Remote", width: 190, minWidth: 132, value: (port) => this.remoteEndpoint(port), cellClass: () => "font-mono text-(--muted)" },
+        { key: "state", label: "State", width: 122, minWidth: 92, value: (port) => port.state },
+        { key: "processName", label: "App", width: 190, minWidth: 130, value: (port) => port.processName },
+        { key: "pid", label: "PID", width: 88, minWidth: 72, align: "right", value: (port) => port.pid, cellClass: () => "font-mono text-(--muted)" },
+    ];
+    rowKey = (port: PortUsage) => this.portKey(port);
 
     ports = computed(() => this.scan()?.ports ?? []);
     filteredPorts = computed(() => this.filterPorts());
-    tableWidth = computed(() => this.columns().reduce((total, column) => total + column.width, 0));
     selectedPort = computed(() => this.filteredPorts().find((port) => this.portKey(port) === this.selectedKey()) ?? this.filteredPorts()[0]);
     listeningCount = computed(() => this.ports().filter((port) => this.isListening(port)).length);
     establishedCount = computed(() => this.ports().filter((port) => port.state.toLowerCase() === "established").length);
     appCount = computed(() => new Set(this.ports().map((port) => `${port.pid ?? "none"}:${port.processName}`)).size);
     publicCount = computed(() => this.ports().filter((port) => port.localAddress === "All interfaces").length);
-
-    private resizing?: { index: number; startX: number; startWidth: number };
 
     ngOnInit(): void {
         this.refresh();
@@ -85,35 +73,6 @@ export class PortsViewComponent implements OnInit {
 
     setStateFilter(filter: StateFilter): void {
         this.stateFilter.set(filter);
-    }
-
-    sortBy(column: PortColumn): void {
-        if (this.resizing) {
-            return;
-        }
-
-        if (this.sortKey() === column.key) {
-            this.sortDirection.update((direction) => direction === "asc" ? "desc" : "asc");
-            return;
-        }
-
-        this.sortKey.set(column.key);
-        this.sortDirection.set("asc");
-    }
-
-    sortIcon(column: PortColumn): string {
-        if (this.sortKey() !== column.key) {
-            return "bi-chevron-expand";
-        }
-
-        return this.sortDirection() === "asc" ? "bi-chevron-up" : "bi-chevron-down";
-    }
-
-    startResize(event: MouseEvent, index: number): void {
-        event.preventDefault();
-        event.stopPropagation();
-        const column = this.columns()[index];
-        this.resizing = { index, startX: event.clientX, startWidth: column.width };
     }
 
     copyEndpoint(port: PortUsage | undefined): void {
@@ -208,64 +167,11 @@ export class PortsViewComponent implements OnInit {
                     port.processName,
                     port.processPath ?? "",
                 ].some((value) => value.toLowerCase().includes(query));
-            })
-            .sort((left, right) => this.comparePorts(left, right));
-    }
-
-    private comparePorts(left: PortUsage, right: PortUsage): number {
-        const direction = this.sortDirection() === "asc" ? 1 : -1;
-        let result = 0;
-
-        switch (this.sortKey()) {
-            case "localPort":
-                result = left.localPort - right.localPort;
-                break;
-            case "pid":
-                result = (left.pid ?? -1) - (right.pid ?? -1);
-                break;
-            case "remote":
-                result = this.remoteEndpoint(left).localeCompare(this.remoteEndpoint(right));
-                break;
-            case "protocol":
-                result = left.protocol.localeCompare(right.protocol);
-                break;
-            case "localAddress":
-                result = left.localAddress.localeCompare(right.localAddress);
-                break;
-            case "state":
-                result = left.state.localeCompare(right.state);
-                break;
-            case "processName":
-                result = left.processName.localeCompare(right.processName);
-                break;
-        }
-
-        return (result || left.localPort - right.localPort || left.protocol.localeCompare(right.protocol)) * direction;
+            });
     }
 
     private isListening(port: PortUsage): boolean {
         const state = port.state.toLowerCase();
         return state === "listen" || state === "listening" || state === "open";
-    }
-
-    @HostListener("document:mousemove", ["$event"])
-    resizeColumn(event: MouseEvent): void {
-        if (!this.resizing) {
-            return;
-        }
-
-        const { index, startX, startWidth } = this.resizing;
-        this.columns.update((columns) =>
-            columns.map((column, columnIndex) =>
-                columnIndex === index
-                    ? { ...column, width: Math.max(column.minWidth, startWidth + event.clientX - startX) }
-                    : column,
-            ),
-        );
-    }
-
-    @HostListener("document:mouseup")
-    stopResize(): void {
-        this.resizing = undefined;
     }
 }

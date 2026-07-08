@@ -192,6 +192,28 @@ pub struct PortScan {
 
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct SshKeyInfo {
+    pub name: String,
+    pub key_type: String,
+    pub public_key_path: String,
+    pub private_key_path: Option<String>,
+    pub public_key: String,
+    pub fingerprint: Option<String>,
+    pub comment: Option<String>,
+    pub modified_at: Option<String>,
+    pub has_private_key: bool,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SshKeyGenerationRequest {
+    pub file_name: String,
+    pub key_type: String,
+    pub comment: String,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct NetworkAdapterUsage {
     pub name: String,
     pub adapter_index: usize,
@@ -318,6 +340,13 @@ impl CommandError {
     pub fn port_scan_failed(message: impl Into<String>) -> Self {
         Self {
             code: "portScanFailed".to_string(),
+            message: message.into(),
+        }
+    }
+
+    pub fn ssh_key_failed(message: impl Into<String>) -> Self {
+        Self {
+            code: "sshKeyFailed".to_string(),
             message: message.into(),
         }
     }

@@ -7,7 +7,7 @@ use crate::disk_cleanup::DiskCleanupManager;
 use crate::models::{
     CommandError, DiskCleanupRequest, DiskCleanupResult, DiskCleanupScan,
     DiskUsageInsightCleanupRequest, DiskUsageInsightCleanupResult, PortScan, PortUsage,
-    ProcessSnapshot, StartupApp,
+    ProcessSnapshot, SshKeyGenerationRequest, SshKeyInfo, StartupApp,
     StartupCommandUpdateRequest,
 };
 use crate::terminal::models::{
@@ -78,6 +78,22 @@ pub async fn get_port_scan() -> Result<PortScan, CommandError> {
     tauri::async_runtime::spawn_blocking(scan_ports_impl)
         .await
         .map_err(|error| CommandError::port_scan_failed(error.to_string()))?
+}
+
+#[tauri::command]
+pub async fn list_ssh_keys() -> Result<Vec<SshKeyInfo>, CommandError> {
+    tauri::async_runtime::spawn_blocking(list_ssh_keys_impl)
+        .await
+        .map_err(|error| CommandError::ssh_key_failed(error.to_string()))?
+}
+
+#[tauri::command]
+pub async fn generate_ssh_key(
+    request: SshKeyGenerationRequest,
+) -> Result<SshKeyInfo, CommandError> {
+    tauri::async_runtime::spawn_blocking(move || generate_ssh_key_impl(request))
+        .await
+        .map_err(|error| CommandError::ssh_key_failed(error.to_string()))?
 }
 
 #[tauri::command]
@@ -420,6 +436,143 @@ fn unix_timestamp_string() -> String {
         .duration_since(std::time::UNIX_EPOCH)
         .map(|duration| duration.as_secs().to_string())
         .unwrap_or_else(|_| "0".to_string())
+}
+
+fn list_ssh_keys_impl() -> Result<Vec<SshKeyInfo>, CommandError> {
+    let ssh_dir = ssh_directory()?;
+    if !ssh_dir.exists() {
+        return Ok(Vec::new());
+    }
+
+    let mut keys = Vec::new();
+    for entry in std::fs::read_dir(&ssh_dir)
+        .map_err(|error| CommandError::ssh_key_failed(error.to_string()))?
+    {
+        let entry = entry.map_err(|error| CommandError::ssh_key_failed(error.to_string()))?;
+        let path = entry.path();
+        if path.extension().and_then(|extension| extension.to_str()) != Some("pub") {
+            continue;
+        }
+
+        if let Ok(key) = ssh_key_info_from_public_path(path) {
+            keys.push(key);
+        }
+    }
+
+    keys.sort_by(|left, right| left.name.to_lowercase().cmp(&right.name.to_lowercase()));
+    Ok(keys)
+}
+
+fn generate_ssh_key_impl(request: SshKeyGenerationRequest) -> Result<SshKeyInfo, CommandError> {
+    let ssh_dir = ssh_directory()?;
+    std::fs::create_dir_all(&ssh_dir)
+        .map_err(|error| CommandError::ssh_key_failed(error.to_string()))?;
+
+    let file_name = sanitize_ssh_key_file_name(&request.file_name)?;
+    let key_type = match request.key_type.as_str() {
+        "ed25519" => "ed25519",
+        "rsa" => "rsa",
+        _ => return Err(CommandError::ssh_key_failed("unsupported SSH key type")),
+    };
+    let private_path = ssh_dir.join(file_name);
+    let public_path = private_path.with_extension("pub");
+    if private_path.exists() || public_path.exists() {
+        return Err(CommandError::ssh_key_failed("SSH key already exists"));
+    }
+
+    let mut command = std::process::Command::new("ssh-keygen");
+    command
+        .args(["-t", key_type, "-f"])
+        .arg(&private_path)
+        .args(["-C", request.comment.trim(), "-N", ""]);
+
+    if key_type == "rsa" {
+        command.args(["-b", "4096"]);
+    }
+
+    let output = command
+        .output()
+        .map_err(|error| CommandError::ssh_key_failed(error.to_string()))?;
+
+    if !output.status.success() {
+        return Err(CommandError::ssh_key_failed(
+            String::from_utf8_lossy(&output.stderr).trim().to_string(),
+        ));
+    }
+
+    ssh_key_info_from_public_path(public_path)
+}
+
+fn ssh_directory() -> Result<std::path::PathBuf, CommandError> {
+    let home = std::env::var_os("HOME")
+        .or_else(|| std::env::var_os("USERPROFILE"))
+        .ok_or_else(|| CommandError::ssh_key_failed("home directory is unavailable"))?;
+    Ok(std::path::PathBuf::from(home).join(".ssh"))
+}
+
+fn sanitize_ssh_key_file_name(file_name: &str) -> Result<String, CommandError> {
+    let trimmed = file_name.trim();
+    if trimmed.is_empty()
+        || trimmed.contains('/')
+        || trimmed.contains('\\')
+        || trimmed == "."
+        || trimmed == ".."
+        || !trimmed
+            .chars()
+            .all(|character| character.is_ascii_alphanumeric() || matches!(character, '_' | '-' | '.'))
+    {
+        return Err(CommandError::ssh_key_failed("invalid SSH key file name"));
+    }
+
+    Ok(trimmed.to_string())
+}
+
+fn ssh_key_info_from_public_path(public_path: std::path::PathBuf) -> Result<SshKeyInfo, CommandError> {
+    let public_key = std::fs::read_to_string(&public_path)
+        .map_err(|error| CommandError::ssh_key_failed(error.to_string()))?
+        .trim()
+        .to_string();
+    let private_path = public_path.with_extension("");
+    let name = private_path
+        .file_name()
+        .and_then(|value| value.to_str())
+        .unwrap_or("unknown")
+        .to_string();
+    let mut parts = public_key.split_whitespace();
+    let key_type = parts.next().unwrap_or("unknown").to_string();
+    let _body = parts.next();
+    let comment = parts.collect::<Vec<_>>().join(" ");
+    let modified_at = std::fs::metadata(&public_path)
+        .ok()
+        .and_then(|metadata| metadata.modified().ok())
+        .and_then(|modified| modified.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|duration| duration.as_secs().to_string());
+
+    Ok(SshKeyInfo {
+        name,
+        key_type,
+        public_key_path: public_path.display().to_string(),
+        private_key_path: private_path.exists().then(|| private_path.display().to_string()),
+        public_key,
+        fingerprint: ssh_key_fingerprint(&public_path),
+        comment: (!comment.is_empty()).then_some(comment),
+        modified_at,
+        has_private_key: private_path.exists(),
+    })
+}
+
+fn ssh_key_fingerprint(public_path: &std::path::Path) -> Option<String> {
+    let output = std::process::Command::new("ssh-keygen")
+        .arg("-lf")
+        .arg(public_path)
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+
+    let text = String::from_utf8_lossy(&output.stdout);
+    Some(text.trim().to_string()).filter(|value| !value.is_empty())
 }
 
 #[cfg(windows)]
