@@ -15,6 +15,7 @@ export interface TerminalSettings {
     opacity: number;
     theme: TerminalTheme;
     historySize: number;
+    commandIntelligenceEnabled: boolean;
     autocompleteDelayMs: number;
 }
 

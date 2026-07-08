@@ -68,6 +68,20 @@
                           (change)="setTerminalNumber('autocompleteDelayMs', $any($event.target).value)" />
                     </label>
                 </div>
+                <div class="flex min-h-16 items-center gap-4 border-b border-(--border) px-3 py-3">
+                    <span class="grid gap-0.5">
+                        <strong class="text-[13px] text-[#e2eaf2]">Command intelligence</strong>
+                        <small class="text-[12px] text-(--muted)">Show indexed command suggestions and track command completion.</small>
+                    </span>
+                    <button type="button" class="ml-auto grid h-5 w-9 flex-none items-center rounded-full p-0.5 transition"
+                      [class.justify-end]="state.appSettings().terminalSettings.commandIntelligenceEnabled"
+                      [class.justify-start]="!state.appSettings().terminalSettings.commandIntelligenceEnabled"
+                      [class.bg-[#1596ff]]="state.appSettings().terminalSettings.commandIntelligenceEnabled"
+                      [class.bg-[#26394a]]="!state.appSettings().terminalSettings.commandIntelligenceEnabled"
+                      [attr.aria-pressed]="state.appSettings().terminalSettings.commandIntelligenceEnabled" (click)="toggleCommandIntelligence()">
+                        <span class="h-4 w-4 rounded-full bg-white shadow"></span>
+                    </button>
+                </div>
                 <div class="grid gap-3 px-3 py-3 md:grid-cols-2">
                     <label class="grid gap-1.5">
                         <span class="text-[13px] text-[#e2eaf2]">Cursor style</span>

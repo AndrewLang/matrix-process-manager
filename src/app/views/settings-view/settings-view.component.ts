@@ -125,6 +125,11 @@ export class SettingsViewComponent {
         this.state.setTerminalSetting(key, Number(value));
     }
 
+    toggleCommandIntelligence(): void {
+        const enabled = this.state.appSettings().terminalSettings.commandIntelligenceEnabled;
+        this.state.setTerminalSetting("commandIntelligenceEnabled", !enabled);
+    }
+
     setCursorStyle(value: string): void {
         this.state.setTerminalSetting("cursorStyle", value as TerminalCursorStyle);
     }

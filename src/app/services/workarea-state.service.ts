@@ -17,6 +17,7 @@ export class WorkareaStateService {
             opacity: 96,
             theme: "matrix",
             historySize: 600,
+            commandIntelligenceEnabled: false,
             autocompleteDelayMs: 120,
         },
         indexingSettings: {

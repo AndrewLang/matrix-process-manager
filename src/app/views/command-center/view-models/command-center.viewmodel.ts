@@ -18,7 +18,7 @@ export class CommandCenterViewModel {
     splitEnabled = signal(false);
     lines = signal<TerminalLine[]>([]);
     running = signal(false);
-    status = computed(() => this.running() ? `Connected · ${this.shellLabel(this.shell())}` : "Disconnected");
+    status = computed(() => this.running() ? `Connected - ${this.shellLabel(this.shell())}` : "Disconnected");
     shellOptions = this.platformShells();
 
     private nextLineId = 1;
@@ -32,6 +32,7 @@ export class CommandCenterViewModel {
     private autocompleteCache = new Map<string, CommandAutocompleteSuggestion[]>();
     private suppressNextEcho = false;
     private echoBuffer = "";
+    private pendingOscSequence = false;
 
     constructor(private terminal: TerminalService, private state: WorkareaStateService) { }
 
@@ -72,6 +73,12 @@ export class CommandCenterViewModel {
         this.input.set("");
         this.suggestions.set([]);
         this.autocompleteOpen.set(false);
+
+        if (!this.commandIntelligenceEnabled()) {
+            await this.terminal.write(sessionId, `${input}\r`);
+            return;
+        }
+
         const execution = await this.terminal.startExecution({ commandLine: input, workingDirectory: this.workingDirectory(), shell: this.shell() });
         const token = this.nextExecutionToken();
         this.pendingExecutions.set(token, { historyId: execution.historyId, startedAt: Date.now() });
@@ -186,6 +193,13 @@ export class CommandCenterViewModel {
 
     setInput(input: string): void {
         this.input.set(input);
+        if (!this.commandIntelligenceEnabled()) {
+            this.suggestions.set([]);
+            this.autocompleteOpen.set(false);
+            this.autocompleteLoading.set(false);
+            return;
+        }
+
         this.queueAutocomplete(input);
     }
 
@@ -214,6 +228,10 @@ export class CommandCenterViewModel {
         this.autocompleteTimer = setTimeout(() => {
             this.searchAutocomplete(query).catch(() => undefined);
         }, delay);
+    }
+
+    private commandIntelligenceEnabled(): boolean {
+        return this.state.appSettings().terminalSettings.commandIntelligenceEnabled;
     }
 
     private async searchAutocomplete(input: string): Promise<void> {
@@ -326,6 +344,11 @@ export class CommandCenterViewModel {
     }
 
     private appendAnsi(data: string, fallbackColor: string): void {
+        data = this.consumeOscSequences(data);
+        if (!data) {
+            return;
+        }
+
         let color = fallbackColor;
         let bold = false;
         const chunks = data.split(/(\u001b\[[?0-9;]*[ -/]*[@-~]|\r?\n)/g).filter((chunk) => chunk.length > 0 && chunk !== "\r");
@@ -362,7 +385,50 @@ export class CommandCenterViewModel {
     }
 
     private stripAnsi(data: string): string {
-        return data.replace(/\u001b\[[?0-9;]*[ -/]*[@-~]/g, "");
+        return data
+            .replace(/\u001b\][^\u0007\u001b]*(?:\u0007|\u001b\\)/g, "")
+            .replace(/\u001b\[[?0-9;]*[ -/]*[@-~]/g, "");
+    }
+
+    private consumeOscSequences(data: string): string {
+        let text = data;
+        if (this.pendingOscSequence) {
+            const pendingEnd = this.oscEndIndex(text, 0);
+            if (pendingEnd < 0) {
+                return "";
+            }
+
+            text = text.slice(pendingEnd);
+            this.pendingOscSequence = false;
+        }
+
+        let start = text.indexOf("\u001b]");
+        while (start >= 0) {
+            const end = this.oscEndIndex(text, start + 2);
+            if (end < 0) {
+                this.pendingOscSequence = true;
+                return text.slice(0, start);
+            }
+
+            text = text.slice(0, start) + text.slice(end);
+            start = text.indexOf("\u001b]", start);
+        }
+
+        return text;
+    }
+
+    private oscEndIndex(text: string, startIndex: number): number {
+        const bellIndex = text.indexOf("\u0007", startIndex);
+        const stringTerminatorIndex = text.indexOf("\u001b\\", startIndex);
+        if (bellIndex < 0) {
+            return stringTerminatorIndex < 0 ? -1 : stringTerminatorIndex + 2;
+        }
+
+        if (stringTerminatorIndex < 0) {
+            return bellIndex + 1;
+        }
+
+        return Math.min(bellIndex + 1, stringTerminatorIndex + 2);
     }
 
     private commitLine(): void {
