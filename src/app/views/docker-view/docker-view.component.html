@@ -45,7 +45,7 @@
     </section>
 
     <section class="grid min-h-0 min-w-0 grid-cols-[minmax(0,1fr)_330px] gap-2.5 overflow-hidden max-[1080px]:grid-cols-[minmax(0,1fr)]">
-        <section class="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))]">
+        <section class="grid min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))]">
             <div class="grid gap-2 border-b border-(--border) p-3">
                 <div class="flex items-center justify-between gap-3">
                 <div>
@@ -197,6 +197,19 @@
                     </tbody>
                 </table>
             </div>
+            @if (logsContainerId()) {
+            <section class="grid max-h-[320px] min-h-0 grid-rows-[auto_minmax(0,1fr)] border-t border-(--border) bg-[rgba(8,18,29,0.72)]">
+                <div class="flex min-w-0 items-center gap-2 border-b border-white/8 px-3 py-2">
+                    <h3 class="text-[13px] font-semibold text-[#e6f0fa]">Recent Logs</h3>
+                    <span class="min-w-0 truncate text-[11px] text-(--muted)">{{ logsContainerName() }}</span>
+                    <button type="button" class="ml-auto grid size-7 place-items-center rounded bg-transparent text-(--muted) hover:bg-white/8 hover:text-[#e6f0fa]"
+                      (click)="closeContainerLogs()" title="Close logs">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+                <pre class="min-h-32 overflow-auto whitespace-pre-wrap bg-[#050b12] p-3 font-mono text-[11px] leading-5 text-[#dce7f0]">{{ logsLoading() ? "Loading logs..." : containerLogs() }}</pre>
+            </section>
+            }
             } @else {
             <mtx-data-grid [columns]="imageColumns" [rows]="filteredImages()" [rowKey]="imageKey" [selectedKey]="selectedImageId()" [loading]="loading()"
               loadingText="Loading images..." emptyText="No Docker images found." (rowSelected)="selectImage($event)" />
@@ -238,19 +251,6 @@
                         </dd>
                         <dt class="text-(--muted)">ID</dt><dd class="truncate font-mono">{{ container.id }}</dd>
                     </dl>
-                    @if (logsContainerId() === container.id) {
-                    <section class="grid min-h-0 gap-2 rounded-md border border-(--border) bg-[rgba(8,18,29,0.72)] p-3">
-                        <div class="flex items-center gap-2">
-                            <h3 class="text-[13px] font-semibold text-[#e6f0fa]">Recent Logs</h3>
-                            <span class="min-w-0 truncate text-[11px] text-(--muted)">{{ logsContainerName() }}</span>
-                            <button type="button" class="ml-auto grid size-7 place-items-center rounded bg-transparent text-(--muted) hover:bg-white/8 hover:text-[#e6f0fa]"
-                              (click)="closeContainerLogs()" title="Close logs">
-                                <i class="bi bi-x-lg"></i>
-                            </button>
-                        </div>
-                        <pre class="max-h-[360px] min-h-32 overflow-auto whitespace-pre-wrap rounded border border-white/8 bg-[#050b12] p-2 font-mono text-[11px] leading-5 text-[#dce7f0]">{{ logsLoading() ? "Loading logs..." : containerLogs() }}</pre>
-                    </section>
-                    }
                     <div class="grid gap-2">
                         <button type="button" class="h-8 rounded-md border border-(--border) bg-white/5 px-3 text-left text-[12px] hover:bg-white/8 disabled:opacity-45"
                           [disabled]="container.running || actionRunning()" (click)="runContainerAction('start', container)">
