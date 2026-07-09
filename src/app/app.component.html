@@ -1,51 +1,52 @@
 <main class="grid h-screen w-screen grid-rows-[48px_minmax(0,1fr)_28px] overflow-hidden bg-[rgba(6,14,22,0.96)]">
-    <mtx-titlebar (dragStart)="pauseRefreshForDrag($event)" (minimizeWindow)="minimize()" (toggleMaximizeWindow)="toggleMaximize()" (closeWindow)="close()"
-      (settingsRequested)="openSettingsDialog()" />
+  <mtx-titlebar (dragStart)="pauseRefreshForDrag($event)" (minimizeWindow)="minimize()" (toggleMaximizeWindow)="toggleMaximize()" (closeWindow)="close()"
+    (settingsRequested)="openSettingsDialog()" />
 
-    <div class="grid h-full min-h-0 overflow-hidden" [style.gridTemplateColumns]="sidebarWidth() + 'px 4px minmax(0, 1fr)'">
-        <mtx-sidebar [overviewItems]="overviewItems()" [toolItems]="enabledToolItems()" [activeView]="activeView()" [workstationName]="workstationName()"
-          (viewChange)="setView($event)" (toolSelected)="openTool($event)" />
+  <div class="grid h-full min-h-0 overflow-hidden" [style.gridTemplateColumns]="sidebarWidth() + 'px 4px minmax(0, 1fr)'">
+    <mtx-sidebar [overviewItems]="overviewItems()" [toolItems]="enabledToolItems()" [activeView]="activeView()" [workstationName]="workstationName()"
+      (viewChange)="setView($event)" (toolSelected)="openTool($event)" />
 
-        <div appSplitter [min]="120" [max]="280" (widthChange)="setSidebarWidth($event)"
-          class="relative z-10 h-full cursor-col-resize bg-transparent hover:bg-[rgba(23,144,255,0.35)]">
-            <span class="absolute top-0 left-1/2 h-full w-px -translate-x-1/2 bg-[rgba(122,153,181,0.15)]"></span>
-        </div>
-
-        <mtx-workarea [activeView]="activeView()" [totalProcesses]="totalProcesses()" [metrics]="metrics()" [rows]="rows()"
-          [selectedProcess]="selectedProcess()" [bars]="bars()" [activeTitle]="activeTitle()" />
+    <div appSplitter [min]="120" [max]="280" (widthChange)="setSidebarWidth($event)"
+      class="relative z-10 h-full cursor-col-resize bg-transparent hover:bg-[rgba(23,144,255,0.35)]">
+      <span class="absolute top-0 left-1/2 h-full w-px -translate-x-1/2 bg-[rgba(122,153,181,0.15)]"></span>
     </div>
 
-    <footer class="flex items-center justify-end gap-5.5 border-t border-(--border) bg-[rgba(7,17,27,0.92)] px-3.5 py-0 text-[#a8b5c2]">
-        <span class="mr-auto flex items-center gap-1.75"><i class="bi bi-check-circle-fill text-(--green)"></i> All systems
-            operational</span>
-        <span>Processes: {{ totalProcesses() }}</span>
-        <span>CPU: {{ metrics()[0].value }}</span>
-        <span>Memory: {{ metrics()[2].value }}</span>
-        <span>Disk: {{ metrics()[3].detail }}</span>
-        <span>Network: {{ metrics()[4].detail }}</span>
-    </footer>
+    <mtx-workarea [activeView]="activeView()" [totalProcesses]="totalProcesses()" [metrics]="metrics()" [rows]="rows()" [selectedProcess]="selectedProcess()"
+      [bars]="bars()" [activeTitle]="activeTitle()" />
+  </div>
 
-    @if (settingsDialogOpen()) {
-    <mtx-common-dialog title="Settings" panelClass="w-[min(980px,calc(100vw-32px))]" contentClass="p-0" (closeDialog)="closeSettingsDialog()">
-        <div class="grid h-[min(720px,calc(100vh-96px))] min-h-0 grid-rows-[minmax(0,1fr)_auto]">
-            <mtx-settings-view />
-            <footer class="flex items-center gap-2 border-t border-(--border) bg-[rgba(10,22,33,0.98)] px-4 py-3">
-                <button type="button"
-                  class="flex h-8 items-center gap-2 rounded-md border border-[rgba(23,144,255,0.4)] bg-[rgba(23,144,255,0.08)] px-3 text-[12px] text-[#1d9bff] hover:bg-[rgba(23,144,255,0.14)]"
-                  (click)="resetSettings()">
-                    <i class="bi bi-arrow-clockwise"></i>
-                    Reset to Defaults
-                </button>
-                <button type="button" class="ml-auto h-8 rounded-md border border-(--border) bg-transparent px-4 text-[12px] text-[#cbd7e2] hover:bg-white/6"
-                  (click)="closeSettingsDialog()">
-                    Cancel
-                </button>
-                <button type="button" class="h-8 rounded-md border border-[#1596ff] bg-[#1596ff] px-4 text-[12px] font-medium text-white hover:bg-[#2aa4ff]"
-                  (click)="closeSettingsDialog()">
-                    Save
-                </button>
-            </footer>
-        </div>
-    </mtx-common-dialog>
-    }
+  <footer class="flex items-center justify-end gap-5.5 border-t border-(--border) bg-[rgba(7,17,27,0.92)] px-3.5 py-0 text-[#a8b5c2]">
+    <span class="mr-auto flex items-center gap-1.75"><i class="bi bi-check-circle-fill text-(--green)"></i> All systems
+      operational</span>
+    <span>Processes: {{ totalProcesses() }}</span>
+    <span>CPU: {{ metrics()[0].value }}</span>
+    <span>Memory: {{ metrics()[2].value }}</span>
+    <span>Disk: {{ metrics()[3].detail }}</span>
+    <span>Network: {{ metrics()[4].detail }}</span>
+    <span>Local IP: {{ localIpAddress() }}</span>
+  </footer>
+
+  @if (settingsDialogOpen()) {
+  <mtx-common-dialog title="Settings" panelClass="w-[min(980px,calc(100vw-32px))]" contentClass="p-0" (closeDialog)="closeSettingsDialog()">
+    <div class="grid h-[min(720px,calc(100vh-96px))] min-h-0 grid-rows-[minmax(0,1fr)_auto]">
+      <mtx-settings-view />
+      <footer class="flex items-center gap-2 border-t border-(--border) bg-[rgba(10,22,33,0.98)] px-4 py-3">
+        <button type="button"
+          class="flex h-8 items-center gap-2 rounded-md border border-[rgba(23,144,255,0.4)] bg-[rgba(23,144,255,0.08)] px-3 text-[12px] text-[#1d9bff] hover:bg-[rgba(23,144,255,0.14)]"
+          (click)="resetSettings()">
+          <i class="bi bi-arrow-clockwise"></i>
+          Reset to Defaults
+        </button>
+        <button type="button" class="ml-auto h-8 rounded-md border border-(--border) bg-transparent px-4 text-[12px] text-[#cbd7e2] hover:bg-white/6"
+          (click)="closeSettingsDialog()">
+          Cancel
+        </button>
+        <button type="button" class="h-8 rounded-md border border-[#1596ff] bg-[#1596ff] px-4 text-[12px] font-medium text-white hover:bg-[#2aa4ff]"
+          (click)="closeSettingsDialog()">
+          Save
+        </button>
+      </footer>
+    </div>
+  </mtx-common-dialog>
+  }
 </main>

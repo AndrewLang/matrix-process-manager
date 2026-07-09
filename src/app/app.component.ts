@@ -90,6 +90,7 @@ export class AppComponent implements OnDestroy, OnInit {
     : this.baseOverviewItems);
 
   enabledToolItems = computed(() => this.toolItems.filter((item) => !item.nativeTool || this.workareaState.appSettings().toolSettings[item.nativeTool]));
+  localIpAddress = computed(() => this.findLocalIpAddress());
 
   metrics = signal<MetricCard[]>([
     { label: "CPU", value: "18%", detail: "2.42 GHz", accent: "blue", path: "55,72 75,36 92,70 112,26 126,64 148,54 164,12 180,58 203,46 224,70" },
@@ -629,6 +630,19 @@ export class AppComponent implements OnDestroy, OnInit {
     }
 
     return `${bytes} B`;
+  }
+
+  private findLocalIpAddress(): string {
+    return this.workareaState.networkAdapters()
+      .flatMap((adapter) => adapter.ipv4Addresses)
+      .find((address) => this.isUsableLocalIpAddress(address)) ?? "Unavailable";
+  }
+
+  private isUsableLocalIpAddress(address: string): boolean {
+    return Boolean(address)
+      && address !== "127.0.0.1"
+      && !address.startsWith("169.254.")
+      && !address.startsWith("0.");
   }
 
   private classifyProcess(row: BackendProcessRow): ProcessGroup {
