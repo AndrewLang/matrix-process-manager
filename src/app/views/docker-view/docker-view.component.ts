@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, signal } from "@angular/core";
+import { Component, HostListener, OnInit, computed, signal } from "@angular/core";
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { DockerContainer, DockerDashboard, DockerImage, DockerRegistryImage } from "../../app.models";
@@ -10,6 +10,7 @@ type DockerPortLink = { key: string; label: string; url?: string };
 type DockerContainerRow =
     | { kind: "group"; key: string; name: string; containers: DockerContainer[]; running: boolean }
     | { kind: "container"; key: string; container: DockerContainer; child: boolean };
+type DockerContainerColumn = { key: string; label: string; width: number; minWidth: number; resizable?: boolean; align?: "left" | "center" };
 type DockerRegistryProfile = { registry: string; username: string; password: string };
 
 @Component({
@@ -38,6 +39,16 @@ export class DockerViewComponent implements OnInit {
     containerFilter = signal("");
     imageFilter = signal("");
     onlyRunningContainers = signal(false);
+    containerColumns = signal<DockerContainerColumn[]>([
+        { key: "select", label: "", width: 44, minWidth: 44, resizable: false, align: "center" },
+        { key: "expand", label: "", width: 36, minWidth: 36, resizable: false, align: "center" },
+        { key: "state", label: "", width: 40, minWidth: 40, resizable: false, align: "center" },
+        { key: "name", label: "Name", width: 280, minWidth: 150 },
+        { key: "id", label: "Container ID", width: 190, minWidth: 120 },
+        { key: "ports", label: "Port(s)", width: 210, minWidth: 130 },
+        { key: "image", label: "Image", width: 280, minWidth: 150 },
+        { key: "actions", label: "Actions", width: 140, minWidth: 110 },
+    ]);
     expandedParents = signal<ReadonlySet<string>>(new Set());
     openContainerMenuId = signal("");
     logsContainerId = signal("");
@@ -80,6 +91,9 @@ export class DockerViewComponent implements OnInit {
     selectedContainer = computed(() => this.filteredContainers().find((container) => container.id === this.selectedContainerId()) ?? this.filteredContainers()[0]);
     selectedImage = computed(() => this.filteredImages().find((image) => image.id === this.selectedImageId()) ?? this.filteredImages()[0]);
     selectedRegistryImage = computed(() => this.filteredRegistryImages().find((image) => image.repository === this.selectedRegistryRepository()) ?? this.filteredRegistryImages()[0]);
+    containerTableWidth = computed(() => this.containerColumns().reduce((total, column) => total + column.width, 0));
+
+    private resizingContainerColumn?: { index: number; startX: number; startWidth: number };
 
     ngOnInit(): void {
         this.loadSavedDockerHosts();
@@ -176,6 +190,34 @@ export class DockerViewComponent implements OnInit {
         const enabled = !this.onlyRunningContainers();
         this.onlyRunningContainers.set(enabled);
         localStorage.setItem(this.onlyRunningContainersKey, String(enabled));
+    }
+
+    startContainerColumnResize(event: MouseEvent, index: number): void {
+        event.preventDefault();
+        event.stopPropagation();
+        const column = this.containerColumns()[index];
+        if (column.resizable === false) {
+            return;
+        }
+
+        this.resizingContainerColumn = { index, startX: event.clientX, startWidth: column.width };
+    }
+
+    @HostListener("document:mousemove", ["$event"])
+    resizeContainerColumn(event: MouseEvent): void {
+        if (!this.resizingContainerColumn) {
+            return;
+        }
+
+        const { index, startX, startWidth } = this.resizingContainerColumn;
+        this.containerColumns.update((columns) => columns.map((column, columnIndex) => columnIndex === index
+            ? { ...column, width: Math.max(column.minWidth, startWidth + event.clientX - startX) }
+            : column));
+    }
+
+    @HostListener("document:mouseup")
+    stopContainerColumnResize(): void {
+        this.resizingContainerColumn = undefined;
     }
 
     toggleParent(parentKey: string): void {

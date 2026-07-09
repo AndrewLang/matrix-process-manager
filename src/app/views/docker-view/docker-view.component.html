@@ -191,27 +191,28 @@
 
             @if (activeTab() === "containers" || activeTab() === "remote" && dockerHost().trim()) {
             <div class="min-h-0 overflow-auto">
-                <table class="min-w-full table-fixed border-collapse text-[12px]">
+              <table class="min-w-full table-fixed border-collapse text-[12px]" [style.width.px]="containerTableWidth()">
                     <colgroup>
-                        <col class="w-11" />
-                        <col class="w-9" />
-                        <col class="w-10" />
-                        <col class="w-[280px]" />
-                        <col class="w-[190px]" />
-                        <col class="w-[210px]" />
-                        <col class="w-[280px]" />
-                        <col class="w-[140px]" />
+                  @for (column of containerColumns(); track column.key) {
+                  <col [style.width.px]="column.width" />
+                  }
                     </colgroup>
                     <thead class="sticky top-0 z-10 bg-[rgba(10,22,33,0.98)] text-(--muted)">
                         <tr>
-                            <th class="px-3 py-2 text-center"><span class="mx-auto block h-4 w-4 rounded border border-[#7ea1bb]"></span></th>
-                            <th class="px-1 py-2"></th>
-                            <th class="px-1 py-2"></th>
-                            <th class="px-3 py-2 text-left">Name</th>
-                            <th class="px-3 py-2 text-left">Container ID</th>
-                            <th class="px-3 py-2 text-left">Port(s)</th>
-                            <th class="px-3 py-2 text-left">Image</th>
-                            <th class="px-3 py-2 text-left">Actions</th>
+                    @for (column of containerColumns(); track column.key; let columnIndex = $index) {
+                    <th class="relative select-none bg-[rgba(10,22,33,0.98)] px-3 py-2 font-medium" [class.text-center]="column.align === 'center'"
+                      [class.text-left]="column.align !== 'center'">
+                      @if (column.key === "select") {
+                      <span class="mx-auto block h-4 w-4 rounded border border-[#7ea1bb]"></span>
+                      } @else {
+                      <span class="block truncate">{{ column.label }}</span>
+                      }
+                      @if (column.resizable !== false) {
+                      <span class="absolute top-0 right-0 h-full w-1 cursor-col-resize hover:bg-(--blue)"
+                        (mousedown)="startContainerColumnResize($event, columnIndex)"></span>
+                      }
+                    </th>
+                    }
                         </tr>
                     </thead>
                     <tbody>
