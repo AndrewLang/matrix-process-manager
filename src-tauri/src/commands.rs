@@ -8,8 +8,8 @@ use crate::models::{
     CommandError, DiskCleanupRequest, DiskCleanupResult, DiskCleanupScan,
     DiskUsageInsightCleanupRequest, DiskUsageInsightCleanupResult, DockerAvailability,
     DockerContainer, DockerDashboard, DockerImage, DockerRegistryImage,
-    DockerRegistryRequest, PortScan, PortUsage, ProcessSnapshot, SshKeyGenerationRequest,
-    SshKeyInfo, StartupApp,
+    DockerRegistryRequest, NetworkDevice, NetworkDeviceScan, PortScan, PortUsage,
+    ProcessSnapshot, SshKeyGenerationRequest, SshKeyInfo, StartupApp,
     StartupCommandUpdateRequest,
 };
 use reqwest::header::LINK;
@@ -84,6 +84,13 @@ pub async fn get_port_scan() -> Result<PortScan, CommandError> {
     tauri::async_runtime::spawn_blocking(scan_ports_impl)
         .await
         .map_err(|error| CommandError::port_scan_failed(error.to_string()))?
+}
+
+#[tauri::command]
+pub async fn get_network_device_scan() -> Result<NetworkDeviceScan, CommandError> {
+    tauri::async_runtime::spawn_blocking(scan_network_devices_impl)
+        .await
+        .map_err(|error| CommandError::network_scan_failed(error.to_string()))?
 }
 
 #[tauri::command]
@@ -490,6 +497,227 @@ fn normalize_address(address: String) -> String {
         "127.0.0.1" | "::1" => "localhost".to_string(),
         _ => address,
     }
+}
+
+#[cfg(windows)]
+fn scan_network_devices_impl() -> Result<NetworkDeviceScan, CommandError> {
+        use serde::Deserialize;
+        use std::os::windows::process::CommandExt;
+
+        #[derive(Deserialize)]
+        #[serde(rename_all = "PascalCase")]
+        struct WindowsNetworkDeviceRow {
+                ip_address: String,
+                mac_address: Option<String>,
+                hostname: Option<String>,
+                interface_name: Option<String>,
+                state: Option<String>,
+                source: Option<String>,
+                reachable: Option<bool>,
+                network_count: Option<usize>,
+        }
+
+        let script = r#"
+$configs = @(Get-NetIPConfiguration | Where-Object { $_.IPv4Address -and $_.NetAdapter.Status -eq 'Up' -and $_.NetAdapter.HardwareInterface })
+if ($configs.Count -eq 0) {
+    $configs = @(Get-NetIPConfiguration | Where-Object { $_.IPv4Address -and $_.NetAdapter.Status -eq 'Up' })
+}
+$networks = @()
+$localRows = @()
+function ConvertTo-UInt32Ip($ip) {
+    $bytes = [System.Net.IPAddress]::Parse($ip).GetAddressBytes()
+    [Array]::Reverse($bytes)
+    [BitConverter]::ToUInt32($bytes, 0)
+}
+function ConvertFrom-UInt32Ip([uint32]$value) {
+    $bytes = [BitConverter]::GetBytes($value)
+    [Array]::Reverse($bytes)
+    [System.Net.IPAddress]::new($bytes).ToString()
+}
+foreach ($config in $configs) {
+    foreach ($address in @($config.IPv4Address)) {
+        if (-not $address.IPAddress -or $address.IPAddress.StartsWith('169.254.')) { continue }
+        $parts = $address.IPAddress.Split('.')
+        if ($parts.Count -ne 4) { continue }
+        $prefix = [int]$address.PrefixLength
+        if ($prefix -lt 1 -or $prefix -gt 30) { continue }
+        $hostBits = 32 - $prefix
+        if ($hostBits -gt 12) { $prefix = 24; $hostBits = 8 }
+        $ipValue = ConvertTo-UInt32Ip $address.IPAddress
+        $hostMask = ([uint64]1 -shl (32 - $prefix)) - 1
+        $mask = [uint32](4294967295 - $hostMask)
+        $networkValue = [uint32]($ipValue -band $mask)
+        $hostCount = [uint64]1 -shl $hostBits
+        $networks += [pscustomobject]@{
+            Start = [uint64]$networkValue + 1
+            End = [uint64]$networkValue + $hostCount - 2
+            InterfaceIndex = $config.InterfaceIndex
+            InterfaceAlias = $config.InterfaceAlias
+        }
+        $localRows += [pscustomobject]@{
+            IpAddress = $address.IPAddress
+            MacAddress = $config.NetAdapter.MacAddress
+            Hostname = $env:COMPUTERNAME
+            InterfaceName = $config.InterfaceAlias
+            State = 'Local'
+            Source = 'Local adapter'
+            Reachable = $true
+            NetworkCount = 0
+        }
+    }
+}
+$networks = @($networks | Sort-Object Start, End, InterfaceIndex -Unique)
+$targets = @($networks | ForEach-Object { for ($value = [uint64]$_.Start; $value -le [uint64]$_.End; $value++) { ConvertFrom-UInt32Ip ([uint32]$value) } } | Sort-Object -Unique)
+$reachable = @{}
+$batchSize = 96
+for ($offset = 0; $offset -lt $targets.Count; $offset += $batchSize) {
+    $end = [Math]::Min($offset + $batchSize - 1, $targets.Count - 1)
+    $batchTargets = @($targets[$offset..$end])
+    $jobs = @($batchTargets | ForEach-Object {
+        $ping = [System.Net.NetworkInformation.Ping]::new()
+        [pscustomobject]@{ Ip = $_; Ping = $ping; Task = $ping.SendPingAsync($_, 900) }
+    })
+    if ($jobs.Count -gt 0) {
+        [void][System.Threading.Tasks.Task]::WaitAll([System.Threading.Tasks.Task[]]$jobs.Task, 3500)
+    }
+    foreach ($job in $jobs) {
+        if ($job.Task.IsCompleted -and -not $job.Task.IsFaulted -and $job.Task.Result.Status -eq 'Success') { $reachable[$job.Ip] = $true }
+        $job.Ping.Dispose()
+    }
+}
+$tcpOpen = @{}
+for ($offset = 0; $offset -lt $targets.Count; $offset += $batchSize) {
+    $end = [Math]::Min($offset + $batchSize - 1, $targets.Count - 1)
+    $batchTargets = @($targets[$offset..$end])
+    $jobs = @($batchTargets | ForEach-Object {
+        $client = [System.Net.Sockets.TcpClient]::new()
+        [pscustomobject]@{ Ip = $_; Client = $client; Task = $client.ConnectAsync($_, 80) }
+    })
+    if ($jobs.Count -gt 0) {
+        [void][System.Threading.Tasks.Task]::WaitAll([System.Threading.Tasks.Task[]]$jobs.Task, 1200)
+    }
+    foreach ($job in $jobs) {
+        if ($job.Task.IsCompleted -and -not $job.Task.IsFaulted -and $job.Client.Connected) { $tcpOpen[$job.Ip] = $true }
+        $job.Client.Dispose()
+    }
+}
+$interfaceNames = @{}
+foreach ($network in $networks) { $interfaceNames[[int]$network.InterfaceIndex] = $network.InterfaceAlias }
+$targetSet = @{}
+foreach ($target in $targets) { $targetSet[$target] = $true }
+$neighborRows = @(Get-NetNeighbor -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object {
+    $targetSet.ContainsKey($_.IPAddress) -and $_.LinkLayerAddress -and $_.LinkLayerAddress -notin @('00-00-00-00-00-00', 'ff-ff-ff-ff-ff-ff')
+} | ForEach-Object {
+    [pscustomobject]@{
+        IpAddress = $_.IPAddress
+        MacAddress = $_.LinkLayerAddress
+        Hostname = $null
+        InterfaceName = if ($interfaceNames.ContainsKey([int]$_.InterfaceIndex)) { $interfaceNames[[int]$_.InterfaceIndex] } else { $_.InterfaceAlias }
+        State = $_.State.ToString()
+        Source = 'Neighbor cache'
+        Reachable = $reachable.ContainsKey($_.IPAddress) -or $tcpOpen.ContainsKey($_.IPAddress)
+        NetworkCount = 0
+    }
+})
+$neighborIps = @{}
+foreach ($row in $neighborRows) { $neighborIps[$row.IpAddress] = $true }
+$pingRows = @($reachable.Keys | Where-Object { -not $neighborIps.ContainsKey($_) } | ForEach-Object {
+    [pscustomobject]@{
+        IpAddress = $_
+        MacAddress = $null
+        Hostname = $null
+        InterfaceName = ''
+        State = 'Reachable'
+        Source = 'Ping sweep'
+        Reachable = $true
+        NetworkCount = 0
+    }
+})
+$rows = @($localRows + $neighborRows + $pingRows | Sort-Object IpAddress, MacAddress -Unique)
+if ($rows.Count -gt 0) { $rows[0].NetworkCount = $networks.Count }
+$rows | Sort-Object {[version]$_.IpAddress} | ConvertTo-Json -Compress -Depth 3
+"#;
+
+        let output = std::process::Command::new("powershell.exe")
+                .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script])
+                .creation_flags(0x08000000)
+                .output()
+                .map_err(|error| CommandError::network_scan_failed(error.to_string()))?;
+
+        if !output.status.success() {
+                return Err(CommandError::network_scan_failed(String::from_utf8_lossy(&output.stderr).trim().to_string()));
+        }
+
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let trimmed = stdout.trim();
+        if trimmed.is_empty() {
+                return Ok(NetworkDeviceScan { scanned_at: unix_timestamp_string(), network_count: 0, devices: Vec::new() });
+        }
+
+        let rows: Vec<WindowsNetworkDeviceRow> = match serde_json::from_str(trimmed) {
+                Ok(rows) => rows,
+                Err(_) => {
+                        let row: WindowsNetworkDeviceRow = serde_json::from_str(trimmed)
+                                .map_err(|error| CommandError::network_scan_failed(error.to_string()))?;
+                        vec![row]
+                }
+        };
+        let network_count = rows.iter().find_map(|row| row.network_count).unwrap_or(0);
+
+        Ok(NetworkDeviceScan {
+                scanned_at: unix_timestamp_string(),
+                network_count,
+                devices: rows
+                        .into_iter()
+                        .filter(|row| !row.ip_address.trim().is_empty())
+                        .map(|row| NetworkDevice {
+                                ip_address: row.ip_address,
+                                mac_address: row.mac_address.filter(|value| !value.trim().is_empty()),
+                                hostname: row.hostname.filter(|value| !value.trim().is_empty()),
+                                interface_name: row.interface_name.unwrap_or_default(),
+                                state: row.state.unwrap_or_else(|| "Unknown".to_string()),
+                                source: row.source.unwrap_or_else(|| "Scan".to_string()),
+                                reachable: row.reachable.unwrap_or(false),
+                        })
+                        .collect(),
+        })
+}
+
+#[cfg(not(windows))]
+fn scan_network_devices_impl() -> Result<NetworkDeviceScan, CommandError> {
+        let output = std::process::Command::new("arp")
+                .arg("-a")
+                .output()
+                .map_err(|error| CommandError::network_scan_failed(error.to_string()))?;
+
+        if !output.status.success() {
+                return Err(CommandError::network_scan_failed(String::from_utf8_lossy(&output.stderr).trim().to_string()));
+        }
+
+        Ok(NetworkDeviceScan {
+                scanned_at: unix_timestamp_string(),
+                network_count: 0,
+                devices: String::from_utf8_lossy(&output.stdout)
+                        .lines()
+                        .filter_map(parse_arp_device_line)
+                        .collect(),
+        })
+}
+
+#[cfg(not(windows))]
+fn parse_arp_device_line(line: &str) -> Option<NetworkDevice> {
+        let columns: Vec<&str> = line.split_whitespace().collect();
+        let ip_address = columns.iter().find(|value| value.chars().filter(|character| *character == '.').count() == 3)?.trim_matches(['(', ')']).to_string();
+        let mac_address = columns.iter().find(|value| value.contains(':') && value.len() >= 11).map(|value| value.to_string());
+        Some(NetworkDevice {
+                ip_address,
+                mac_address,
+                hostname: None,
+                interface_name: String::new(),
+                state: "Cached".to_string(),
+                source: "ARP cache".to_string(),
+                reachable: false,
+        })
 }
 
 fn unix_timestamp_string() -> String {

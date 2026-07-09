@@ -192,6 +192,26 @@ pub struct PortScan {
 
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct NetworkDevice {
+    pub ip_address: String,
+    pub mac_address: Option<String>,
+    pub hostname: Option<String>,
+    pub interface_name: String,
+    pub state: String,
+    pub source: String,
+    pub reachable: bool,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NetworkDeviceScan {
+    pub scanned_at: String,
+    pub network_count: usize,
+    pub devices: Vec<NetworkDevice>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SshKeyInfo {
     pub name: String,
     pub key_type: String,
@@ -399,6 +419,13 @@ impl CommandError {
     pub fn port_scan_failed(message: impl Into<String>) -> Self {
         Self {
             code: "portScanFailed".to_string(),
+            message: message.into(),
+        }
+    }
+
+    pub fn network_scan_failed(message: impl Into<String>) -> Self {
+        Self {
+            code: "networkScanFailed".to_string(),
             message: message.into(),
         }
     }

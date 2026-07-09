@@ -70,6 +70,7 @@ export class AppComponent implements OnDestroy, OnInit {
     { id: "performance", label: "Performance", icon: "bi-activity" },
     { id: "storage", label: "Storage", icon: "bi-device-ssd" },
     { id: "ports", label: "Ports", icon: "bi-ethernet" },
+    { id: "network-devices", label: "Network", icon: "bi-router" },
     { id: "ssh-keys", label: "SSH Keys", icon: "bi-key" },
     { id: "startup", label: "Startup Apps", icon: "bi-rocket-takeoff" },
     { id: "system", label: "System Info", icon: "bi-info-circle" },

@@ -74,6 +74,7 @@ pub fn run() {
             commands::get_docker_dashboard,
             commands::list_docker_registry_images,
             commands::get_disk_cleanup_scan,
+            commands::get_network_device_scan,
             commands::get_port_scan,
             commands::generate_ssh_key,
             commands::get_process_snapshot,

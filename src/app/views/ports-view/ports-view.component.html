@@ -79,8 +79,18 @@
                 </div>
             </div>
 
-            <mtx-data-grid [columns]="columns" [rows]="filteredPorts()" [rowKey]="rowKey" [selectedKey]="selectedKey()" [loading]="loading()"
-              loadingText="Scanning ports..." emptyText="No ports matched." (rowSelected)="selectPort($event)" />
+            <div class="relative h-full min-h-0">
+                @if (loading()) {
+                <div class="pointer-events-none absolute inset-0 z-20 grid place-items-center bg-[rgba(5,11,18,0.38)] text-[12px] text-[#dce7f0]">
+                    <div class="inline-flex items-center gap-2 rounded-[5px] border border-[#2d9cff]/30 bg-[#081521]/95 px-3 py-2 shadow-lg shadow-black/20">
+                        <i class="bi bi-arrow-clockwise animate-spin text-[#2d9cff]"></i>
+                        <span>Scanning ports...</span>
+                    </div>
+                </div>
+                }
+                <mtx-data-grid [columns]="columns" [rows]="filteredPorts()" [rowKey]="rowKey" [selectedKey]="selectedKey()" [loading]="loading()"
+                  loadingText="Scanning ports..." emptyText="No ports matched." (rowSelected)="selectPort($event)" />
+            </div>
         </section>
 
         <aside

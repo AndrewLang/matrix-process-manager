@@ -1,0 +1,125 @@
+<section class="grid h-full min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] gap-2.5 overflow-hidden px-2.5 py-3">
+    <section class="grid gap-3 rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-3">
+        <div class="flex min-w-0 items-start gap-3">
+            <div class="min-w-0">
+                <h1>Network Devices</h1>
+                <p>Devices discovered on the current local network</p>
+            </div>
+            <div class="ml-auto flex items-center gap-2 text-[12px]">
+                @if (actionMessage()) {
+                <span class="rounded border border-[rgba(34,206,116,0.28)] bg-[rgba(34,206,116,0.12)] px-2.5 py-1 text-(--green)">{{ actionMessage() }}</span>
+                }
+                @if (error()) {
+                <span class="max-w-80 truncate rounded border border-[rgba(255,75,67,0.28)] bg-[rgba(255,75,67,0.12)] px-2.5 py-1 text-(--red)">{{ error()
+                    }}</span>
+                }
+                <button type="button"
+                  class="inline-flex h-7.5 items-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(16,31,45,0.86)] px-3 hover:bg-white/6 disabled:opacity-55"
+                  [disabled]="loading()" (click)="refresh()">
+                    <i class="bi bi-arrow-clockwise" [class.animate-spin]="loading()"></i>{{ loading() ? "Scanning" : "Refresh" }}
+                </button>
+            </div>
+        </div>
+
+        <div class="grid gap-2.5 md:grid-cols-4">
+            <article class="rounded-md border border-(--border) bg-[rgba(16,31,45,0.62)] p-3">
+                <span class="text-[12px] text-(--muted)">Devices</span>
+                <strong class="mt-1 block text-[24px] text-[#e6f0fa]">{{ devices().length }}</strong>
+                <small class="text-(--muted)">Last scan {{ scannedAtText() }}</small>
+            </article>
+            <article class="rounded-md border border-(--border) bg-[rgba(16,31,45,0.62)] p-3">
+                <span class="text-[12px] text-(--muted)">Reachable</span>
+                <strong class="mt-1 block text-[24px] text-(--green)">{{ reachableCount() }}</strong>
+                <small class="text-(--muted)">Answered ping sweep</small>
+            </article>
+            <article class="rounded-md border border-(--border) bg-[rgba(16,31,45,0.62)] p-3">
+                <span class="text-[12px] text-(--muted)">Known MACs</span>
+                <strong class="mt-1 block text-[24px] text-(--blue)">{{ macCount() }}</strong>
+                <small class="text-(--muted)">From neighbor cache</small>
+            </article>
+            <article class="rounded-md border border-(--border) bg-[rgba(16,31,45,0.62)] p-3">
+                <span class="text-[12px] text-(--muted)">Networks</span>
+                <strong class="mt-1 block text-[24px] text-(--orange)">{{ scan()?.networkCount ?? 0 }}</strong>
+                <small class="text-(--muted)">{{ localCount() }} local adapters</small>
+            </article>
+        </div>
+    </section>
+
+    <section class="grid min-h-0 min-w-0 grid-cols-[minmax(0,1fr)_330px] gap-2.5 overflow-hidden max-[1080px]:grid-cols-[minmax(0,1fr)]">
+        <section
+          class="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))]">
+            <div class="grid gap-2 border-b border-(--border) p-3">
+                <div class="flex min-w-0 items-center gap-2">
+                    <div
+                      class="flex h-8 min-w-0 flex-1 items-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(15,28,40,0.84)] px-2.5 text-[12px] text-(--muted)">
+                        <i class="bi bi-search"></i>
+                        <input class="h-full min-w-0 flex-1 bg-transparent text-[#dfe8f1] outline-none placeholder:text-(--muted)" type="text"
+                          placeholder="Search IP, host, MAC, interface..." [value]="query()" (input)="setQuery($any($event.target).value)" />
+                    </div>
+                    <select class="h-8 rounded-md border border-(--border) bg-[rgba(10,22,33,0.86)] px-2 text-[12px] text-[#dfe8f1] outline-none"
+                      [value]="stateFilter()" (change)="setStateFilter($any($event.target).value)">
+                        <option value="all">All devices</option>
+                        <option value="reachable">Reachable</option>
+                        <option value="local">Local adapters</option>
+                    </select>
+                </div>
+                <div class="flex min-w-0 items-center gap-2 text-[12px] text-(--muted)">
+                    @if (loading()) {
+                    <i class="bi bi-arrow-clockwise animate-spin text-[#2d9cff]"></i>
+                    <span>Scanning network devices...</span>
+                    } @else {
+                    <span>{{ filteredDevices().length }} matching devices</span>
+                    }
+                </div>
+            </div>
+
+            <div class="relative h-full min-h-0">
+                @if (loading()) {
+                <div class="pointer-events-none absolute inset-0 z-20 grid place-items-center bg-[rgba(5,11,18,0.38)] text-[12px] text-[#dce7f0]">
+                    <div class="inline-flex items-center gap-2 rounded-[5px] border border-[#2d9cff]/30 bg-[#081521]/95 px-3 py-2 shadow-lg shadow-black/20">
+                        <i class="bi bi-arrow-clockwise animate-spin text-[#2d9cff]"></i>
+                        <span>Scanning network devices...</span>
+                    </div>
+                </div>
+                }
+                <mtx-data-grid [columns]="columns" [rows]="filteredDevices()" [rowKey]="rowKey" [selectedKey]="selectedKey()" [loading]="loading()"
+                  loadingText="Scanning network devices..." emptyText="No network devices matched." (rowSelected)="selectDevice($event)" />
+            </div>
+        </section>
+
+        <aside
+          class="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))]">
+            <div class="border-b border-(--border) p-3">
+                <h2>Device Details</h2>
+                <p class="text-[12px] text-(--muted)">Inspect the selected network device.</p>
+            </div>
+            <div class="min-h-0 overflow-auto p-3">
+                @if (selectedDevice(); as device) {
+                <div class="grid gap-3">
+                    <div class="rounded-md border border-(--border) bg-[rgba(16,31,45,0.48)] p-3">
+                        <div class="text-[12px] text-(--muted)">Address</div>
+                        <div class="mt-1 font-mono text-[18px] text-[#e6f0fa]">{{ device.ipAddress }}</div>
+                        <div class="mt-1 text-[12px] text-(--muted)">{{ device.hostname ?? "Unknown host" }}</div>
+                    </div>
+                    <dl class="grid grid-cols-[86px_minmax(0,1fr)] gap-x-3 gap-y-2 text-[12px]">
+                        <dt class="text-(--muted)">MAC</dt>
+                        <dd class="truncate font-mono">{{ device.macAddress ?? "Unavailable" }}</dd>
+                        <dt class="text-(--muted)">Interface</dt>
+                        <dd class="truncate">{{ device.interfaceName || "-" }}</dd>
+                        <dt class="text-(--muted)">State</dt>
+                        <dd>{{ device.state }}</dd>
+                        <dt class="text-(--muted)">Source</dt>
+                        <dd>{{ device.source }}</dd>
+                    </dl>
+                    <button type="button" class="h-8 rounded-md border border-(--border) bg-white/5 px-3 text-left text-[12px] hover:bg-white/8"
+                      (click)="copyAddress(device)">
+                        <i class="bi bi-copy mr-2"></i>Copy IP address
+                    </button>
+                </div>
+                } @else {
+                <div class="grid h-full place-items-center text-[12px] text-(--muted)">Select a device.</div>
+                }
+            </div>
+        </aside>
+    </section>
+</section>

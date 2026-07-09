@@ -24,6 +24,7 @@ Workstation Console should be a handy workstation utility for both Windows and m
 
 ## Network Tools
 
+- Network device discovery: scan current local network segments and show IP, MAC, interface, reachability, and source.
 - Port scanner for localhost and LAN.
 - DNS lookup, ping, traceroute, and WHOIS.
 - Active connections viewer: process, remote address, port, and protocol.

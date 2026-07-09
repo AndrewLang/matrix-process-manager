@@ -1,4 +1,4 @@
-export type ViewId = "dashboard" | "processes" | "performance" | "startup" | "system" | "command-center" | "settings" | "storage" | "ports" | "ssh-keys" | "docker" | "disk" | "terminal" | "more";
+export type ViewId = "dashboard" | "processes" | "performance" | "startup" | "system" | "command-center" | "settings" | "storage" | "ports" | "network-devices" | "ssh-keys" | "docker" | "disk" | "terminal" | "more";
 export type NativeToolId = "taskManager" | "systemSettings" | "diskManager" | "terminal" | "envVariables" | "snippingTool";
 export type ProcessGroup = "apps" | "background" | "windows";
 export type UpdateFrequency = "high" | "normal" | "low" | "paused";
@@ -219,6 +219,22 @@ export interface PortUsage {
 export interface PortScan {
     scannedAt: string;
     ports: PortUsage[];
+}
+
+export interface NetworkDevice {
+    ipAddress: string;
+    macAddress?: string;
+    hostname?: string;
+    interfaceName: string;
+    state: string;
+    source: string;
+    reachable: boolean;
+}
+
+export interface NetworkDeviceScan {
+    scannedAt: string;
+    networkCount: number;
+    devices: NetworkDevice[];
 }
 
 export interface SshKeyInfo {

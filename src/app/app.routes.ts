@@ -3,6 +3,7 @@ import { CommandCenterViewComponent } from "./views/command-center/command-cente
 import { DashboardViewComponent } from "./views/dashboard-view/dashboard-view.component";
 import { DiskViewComponent } from "./views/disk-view/disk-view.component";
 import { DockerViewComponent } from "./views/docker-view/docker-view.component";
+import { NetworkDevicesViewComponent } from "./views/network-devices-view/network-devices-view.component";
 import { CpuMonitorComponent } from "./views/performance-view/components/cpu-monitor/cpu-monitor.component";
 import { DiskMonitorComponent } from "./views/performance-view/components/disk-monitor/disk-monitor.component";
 import { GpuMonitorComponent } from "./views/performance-view/components/gpu-monitor/gpu-monitor.component";
@@ -39,6 +40,7 @@ export const routes: Routes = [
     { path: "settings", component: SettingsViewComponent },
     { path: "storage", component: DiskViewComponent },
     { path: "ports", component: PortsViewComponent },
+    { path: "network-devices", component: NetworkDevicesViewComponent },
     { path: "ssh-keys", component: SshKeysViewComponent },
     { path: "docker", component: DockerViewComponent },
     { path: "disk", pathMatch: "full", redirectTo: "storage" },
