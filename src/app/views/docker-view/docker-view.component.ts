@@ -1,4 +1,4 @@
-import { Component, HostListener, OnInit, computed, signal } from "@angular/core";
+import { Component, ElementRef, HostListener, OnInit, ViewChild, computed, signal } from "@angular/core";
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { DockerContainer, DockerDashboard, DockerImage, DockerRegistryImage } from "../../app.models";
@@ -94,6 +94,8 @@ export class DockerViewComponent implements OnInit {
     containerTableWidth = computed(() => this.containerColumns().reduce((total, column) => total + column.width, 0));
 
     private resizingContainerColumn?: { index: number; startX: number; startWidth: number };
+
+    @ViewChild("containerLogsOutput") private containerLogsOutput?: ElementRef<HTMLPreElement>;
 
     ngOnInit(): void {
         this.loadSavedDockerHosts();
@@ -498,7 +500,10 @@ export class DockerViewComponent implements OnInit {
         this.logsLoading.set(true);
         this.error.set("");
         invoke<string>("get_docker_container_logs", { containerId: container.id, dockerHost: this.currentDockerHost() })
-            .then((logs) => this.containerLogs.set(logs.trim() || "No logs returned."))
+            .then((logs) => {
+                this.containerLogs.set(logs.trim() || "No logs returned.");
+                this.scrollContainerLogsToBottom();
+            })
             .catch((error: unknown) => {
                 this.containerLogs.set("");
                 this.error.set(error instanceof Error ? error.message : "Docker logs failed.");
@@ -510,6 +515,15 @@ export class DockerViewComponent implements OnInit {
         this.logsContainerId.set("");
         this.logsContainerName.set("");
         this.containerLogs.set("");
+    }
+
+    private scrollContainerLogsToBottom(): void {
+        window.setTimeout(() => {
+            const output = this.containerLogsOutput?.nativeElement;
+            if (output) {
+                output.scrollTop = output.scrollHeight;
+            }
+        });
     }
 
     containerRowSelected(row: DockerContainerRow): boolean {

@@ -191,28 +191,28 @@
 
             @if (activeTab() === "containers" || activeTab() === "remote" && dockerHost().trim()) {
             <div class="min-h-0 overflow-auto">
-              <table class="min-w-full table-fixed border-collapse text-[12px]" [style.width.px]="containerTableWidth()">
+                <table class="min-w-full table-fixed border-collapse text-[12px]" [style.width.px]="containerTableWidth()">
                     <colgroup>
-                  @for (column of containerColumns(); track column.key) {
-                  <col [style.width.px]="column.width" />
-                  }
+                        @for (column of containerColumns(); track column.key) {
+                        <col [style.width.px]="column.width" />
+                        }
                     </colgroup>
                     <thead class="sticky top-0 z-10 bg-[rgba(10,22,33,0.98)] text-(--muted)">
                         <tr>
-                    @for (column of containerColumns(); track column.key; let columnIndex = $index) {
-                    <th class="relative select-none bg-[rgba(10,22,33,0.98)] px-3 py-2 font-medium" [class.text-center]="column.align === 'center'"
-                      [class.text-left]="column.align !== 'center'">
-                      @if (column.key === "select") {
-                      <span class="mx-auto block h-4 w-4 rounded border border-[#7ea1bb]"></span>
-                      } @else {
-                      <span class="block truncate">{{ column.label }}</span>
-                      }
-                      @if (column.resizable !== false) {
-                      <span class="absolute top-0 right-0 h-full w-1 cursor-col-resize hover:bg-(--blue)"
-                        (mousedown)="startContainerColumnResize($event, columnIndex)"></span>
-                      }
-                    </th>
-                    }
+                            @for (column of containerColumns(); track column.key; let columnIndex = $index) {
+                            <th class="relative select-none bg-[rgba(10,22,33,0.98)] px-3 py-2 font-medium" [class.text-center]="column.align === 'center'"
+                              [class.text-left]="column.align !== 'center'">
+                                @if (column.key === "select") {
+                                <span class="mx-auto block h-4 w-4 rounded border border-[#7ea1bb]"></span>
+                                } @else {
+                                <span class="block truncate">{{ column.label }}</span>
+                                }
+                                @if (column.resizable !== false) {
+                                <span class="absolute top-0 right-0 h-full w-1 cursor-col-resize hover:bg-(--blue)"
+                                  (mousedown)="startContainerColumnResize($event, columnIndex)"></span>
+                                }
+                            </th>
+                            }
                         </tr>
                     </thead>
                     <tbody>
@@ -332,7 +332,7 @@
                         <i class="bi bi-x-lg"></i>
                     </button>
                 </div>
-                <pre
+                <pre #containerLogsOutput
                   class="min-h-32 overflow-auto whitespace-pre-wrap bg-[#050b12] p-3 font-mono text-[11px] leading-5 text-[#dce7f0]">{{ logsLoading() ? "Loading logs..." : containerLogs() }}</pre>
             </section>
             }
