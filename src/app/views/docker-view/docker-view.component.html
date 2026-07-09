@@ -55,7 +55,7 @@
                     <div>
                         <h2>Docker Resources</h2>
                         <p class="text-[12px] text-(--muted)">{{ activeTab() === "containers" ? "Containers from docker ps -a" : activeTab() === "images" ?
-                            "Images from docker images" : "Private registry repositories and tags" }}
+                            "Images from docker images" : activeTab() === "registry" ? "Private registry repositories and tags" : "Remote Docker over SSH" }}
                         </p>
                     </div>
                     <div class="flex gap-1" role="tablist" aria-label="Docker tabs">
@@ -73,6 +73,11 @@
                           [class.border-transparent]="activeTab() !== 'registry'" [class.text-[#1d9bff]]="activeTab() === 'registry'"
                           (click)="setActiveTab('registry')">
                             Registry
+                        </button>
+                        <button type="button" class="h-8 border-b-2 px-3 text-[12px] hover:bg-white/6" [class.border-[#1596ff]]="activeTab() === 'remote'"
+                          [class.border-transparent]="activeTab() !== 'remote'" [class.text-[#1d9bff]]="activeTab() === 'remote'"
+                          (click)="setActiveTab('remote')">
+                            Remote
                         </button>
                     </div>
                 </div>
@@ -102,12 +107,18 @@
                       placeholder="Filter by repository, tag, image id, size..." [value]="imageFilter()" (input)="setImageFilter($any($event.target).value)" />
                     <span class="flex-none">{{ filteredImages().length }} / {{ images().length }}</span>
                 </div>
-                } @else {
+                } @else if (activeTab() === "registry") {
                 <form class="grid gap-2" (submit)="$event.preventDefault(); listRegistryImages()">
                     <div class="grid min-w-0 gap-2 lg:grid-cols-[minmax(220px,1.4fr)_minmax(140px,0.8fr)_minmax(140px,0.8fr)_auto_auto]">
                         <input
                           class="h-8 min-w-0 rounded-[5px] border border-(--border) bg-[rgba(15,28,40,0.84)] px-2.5 text-[12px] text-[#dfe8f1] outline-none placeholder:text-(--muted)"
-                          type="text" placeholder="https://registry.example.com" [value]="registryUrl()" (input)="setRegistryUrl($any($event.target).value)" />
+                          type="text" list="docker-registries" placeholder="https://registry.example.com" [value]="registryUrl()"
+                          (input)="setRegistryUrl($any($event.target).value)" />
+                        <datalist id="docker-registries">
+                            @for (profile of savedRegistries(); track profile.registry) {
+                            <option [value]="profile.registry"></option>
+                            }
+                        </datalist>
                         <input
                           class="h-8 min-w-0 rounded-[5px] border border-(--border) bg-[rgba(15,28,40,0.84)] px-2.5 text-[12px] text-[#dfe8f1] outline-none placeholder:text-(--muted)"
                           type="text" placeholder="Username" [value]="registryUsername()" (input)="setRegistryUsername($any($event.target).value)" />
@@ -121,26 +132,11 @@
                             <i class="bi bi-cloud-arrow-down"></i>{{ registryLoading() ? "Loading" : "List" }}
                         </button>
                         <button type="button"
-                          class="inline-flex h-8 items-center justify-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(16,31,45,0.86)] px-3 text-[12px] hover:bg-white/6 disabled:opacity-55"
-                          [disabled]="!registryUrl().trim()" (click)="saveRegistry()">
-                            <i class="bi bi-floppy"></i>Save
-                        </button>
-                    </div>
-                    @if (savedRegistries().length) {
-                    <div class="flex min-w-0 items-center gap-2 text-[12px] text-(--muted)">
-                        <select class="h-8 min-w-0 flex-1 rounded-[5px] border border-(--border) bg-[rgba(15,28,40,0.84)] px-2.5 text-[#dfe8f1] outline-none"
-                          [value]="selectedRegistryProfile()" (change)="selectSavedRegistry($any($event.target).value)">
-                            @for (profile of savedRegistries(); track profile.registry) {
-                            <option [value]="profile.registry">{{ profile.registry }}</option>
-                            }
-                        </select>
-                        <button type="button"
-                          class="inline-flex h-8 items-center justify-center gap-2 rounded-[5px] border border-[rgba(255,75,67,0.38)] bg-[rgba(255,75,67,0.08)] px-3 text-[12px] text-(--red) hover:bg-[rgba(255,75,67,0.14)]"
-                          (click)="removeSavedRegistry()">
+                          class="inline-flex h-8 items-center justify-center gap-2 rounded-[5px] border border-[rgba(255,75,67,0.38)] bg-[rgba(255,75,67,0.08)] px-3 text-[12px] text-(--red) hover:bg-[rgba(255,75,67,0.14)] disabled:opacity-55"
+                          [disabled]="registryLoading() || !registrySaved()" (click)="removeSavedRegistry()">
                             <i class="bi bi-trash3"></i>Forget
                         </button>
                     </div>
-                    }
                     <div
                       class="flex h-8 min-w-0 items-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(15,28,40,0.84)] px-2.5 text-[12px] text-(--muted)">
                         <i class="bi bi-search"></i>
@@ -149,10 +145,51 @@
                         <span class="flex-none">{{ filteredRegistryImages().length }} / {{ registryImages().length }}</span>
                     </div>
                 </form>
+                } @else {
+                <form class="grid gap-2" (submit)="$event.preventDefault(); saveDockerHost()">
+                    <div class="flex min-w-0 items-center gap-2 text-[12px] text-(--muted)">
+                        <i class="bi text-[15px]" [class.bi-arrow-clockwise]="loading()" [class.animate-spin]="loading()"
+                          [class.bi-hdd-network]="!loading()"></i>
+                        <span>{{ loading() ? "Running" : "Current command" }}</span>
+                        <span class="truncate font-mono text-[#7ea1bb]">{{ dockerHost().trim() ? "ssh " + dockerHost().trim() + " docker ps" : "Enter a remote
+                            target" }}</span>
+                    </div>
+                    <div class="grid min-w-0 gap-2 lg:grid-cols-[minmax(260px,1fr)_auto_auto]">
+                        <input
+                          class="h-8 min-w-0 rounded-[5px] border border-(--border) bg-[rgba(15,28,40,0.84)] px-2.5 text-[12px] text-[#dfe8f1] outline-none placeholder:text-(--muted)"
+                          type="text" list="docker-remote-hosts" placeholder="Enter SSH target or IP, e.g. andy@192.168.7.175" [value]="dockerHost()"
+                          (input)="setDockerHost($any($event.target).value)" />
+                        <datalist id="docker-remote-hosts">
+                            @for (host of savedDockerHosts(); track host) {
+                            <option [value]="host"></option>
+                            }
+                        </datalist>
+                        <button type="submit"
+                          class="inline-flex h-8 items-center justify-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(16,31,45,0.86)] px-3 text-[12px] hover:bg-white/6 disabled:opacity-55"
+                          [disabled]="loading() || !dockerHost().trim()">
+                            <i class="bi" [class.bi-arrow-clockwise]="loading()" [class.animate-spin]="loading()" [class.bi-terminal]="!loading()"></i>{{
+                            loading() ? "Connecting" : "Connect" }}
+                        </button>
+                        <button type="button"
+                          class="inline-flex h-8 items-center justify-center gap-2 rounded-[5px] border border-[rgba(255,75,67,0.38)] bg-[rgba(255,75,67,0.08)] px-3 text-[12px] text-(--red) hover:bg-[rgba(255,75,67,0.14)] disabled:opacity-55"
+                          [disabled]="loading() || !dockerHost().trim() || !savedDockerHosts().includes(dockerHost().trim())" (click)="removeSavedDockerHost()">
+                            <i class="bi bi-trash3"></i>Forget
+                        </button>
+                    </div>
+                    @if (loading() && dockerHost().trim()) {
+                    <div
+                      class="flex min-w-0 items-center gap-2 rounded-[5px] border border-[#2d9cff]/30 bg-[#2d9cff]/10 px-2.5 py-2 text-[12px] text-[#dce7f0]">
+                        <i class="bi bi-arrow-clockwise animate-spin text-[#2d9cff]"></i>
+                        <span class="flex-none">Listing containers with</span>
+                        <span class="min-w-0 truncate font-mono text-[#7ea1bb]">ssh {{ dockerHost().trim() }} docker ps</span>
+                    </div>
+                    }
+                    <div class="text-[12px] text-(--muted)">Connect saves the target and lists containers from that remote Docker host below.</div>
+                </form>
                 }
             </div>
 
-            @if (activeTab() === "containers") {
+            @if (activeTab() === "containers" || activeTab() === "remote" && dockerHost().trim()) {
             <div class="min-h-0 overflow-auto">
                 <table class="min-w-full table-fixed border-collapse text-[12px]">
                     <colgroup>
@@ -268,8 +305,16 @@
                         </tr>
                         } @empty {
                         <tr>
-                            <td class="px-3 py-10 text-center text-(--muted)" colspan="8">{{ loading() ? "Loading containers..." : "No Docker containers found."
-                                }}</td>
+                            <td class="px-3 py-10 text-center text-(--muted)" colspan="8">
+                                @if (loading()) {
+                                <span class="inline-flex items-center gap-2">
+                                    <i class="bi bi-arrow-clockwise animate-spin text-[#2d9cff]"></i>
+                                    <span>Loading containers...</span>
+                                </span>
+                                } @else {
+                                <span>No Docker containers found.</span>
+                                }
+                            </td>
                         </tr>
                         }
                     </tbody>
@@ -290,27 +335,35 @@
                   class="min-h-32 overflow-auto whitespace-pre-wrap bg-[#050b12] p-3 font-mono text-[11px] leading-5 text-[#dce7f0]">{{ logsLoading() ? "Loading logs..." : containerLogs() }}</pre>
             </section>
             }
-            } @else {
-            @if (activeTab() === "images") {
+            } @else if (activeTab() === "images") {
             <mtx-data-grid [columns]="imageColumns" [rows]="filteredImages()" [rowKey]="imageKey" [selectedKey]="selectedImageId()" [loading]="loading()"
               loadingText="Loading images..." emptyText="No Docker images found." (rowSelected)="selectImage($event)" />
-            } @else {
+            } @else if (activeTab() === "registry") {
             <mtx-data-grid [columns]="registryColumns" [rows]="filteredRegistryImages()" [rowKey]="registryImageKey"
               [selectedKey]="selectedRegistryRepository()" [loading]="registryLoading()" loadingText="Loading registry images..."
               emptyText="No registry images loaded." (rowSelected)="selectRegistryImage($event)" />
-            }
+            } @else {
+            <div class="grid place-items-center p-6 text-center text-[12px] text-(--muted)">
+                <div class="grid max-w-md gap-2">
+                    <i class="bi bi-hdd-network text-[28px] text-[#2d9cff]"></i>
+                    <h3 class="text-[14px] font-semibold text-[#e6f0fa]">Remote Docker Target</h3>
+                    <p>Enter an SSH target above to list containers on a remote host.</p>
+                </div>
+            </div>
             }
         </section>
 
         <aside
           class="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))]">
             <div class="border-b border-(--border) p-3">
-                <h2>{{ activeTab() === "containers" ? "Container Actions" : activeTab() === "images" ? "Image Details" : "Registry Image Details" }}</h2>
-                <p class="text-[12px] text-(--muted)">{{ activeTab() === "registry" ? "Inspect private registry repositories and tags." : "Inspect and manage
-                    selected Docker resources." }}</p>
+                <h2>{{ activeTab() === "containers" || activeTab() === "remote" ? "Container Actions" : activeTab() === "images" ? "Image Details" : activeTab()
+                    === "registry" ? "Registry
+                    Image Details" : "Remote Docker" }}</h2>
+                <p class="text-[12px] text-(--muted)">{{ activeTab() === "registry" ? "Inspect private registry repositories and tags." : activeTab() ===
+                    "remote" ? "Choose where Docker operations run." : "Inspect and manage selected Docker resources." }}</p>
             </div>
             <div class="min-h-0 overflow-auto p-3">
-                @if (activeTab() === "containers") {
+                @if (activeTab() === "containers" || activeTab() === "remote") {
                 @if (selectedContainer(); as container) {
                 <div class="grid gap-3">
                     <div class="rounded-md border border-(--border) bg-[rgba(16,31,45,0.48)] p-3">
@@ -401,7 +454,7 @@
                 } @else {
                 <div class="grid h-full place-items-center text-[12px] text-(--muted)">Select an image.</div>
                 }
-                } @else {
+                } @else if (activeTab() === "registry") {
                 @if (selectedRegistryImage(); as image) {
                 <dl class="grid grid-cols-[88px_minmax(0,1fr)] gap-x-3 gap-y-2 text-[12px]">
                     <dt class="text-(--muted)">Repository</dt>
@@ -417,6 +470,17 @@
                 } @else {
                 <div class="grid h-full place-items-center text-[12px] text-(--muted)">Add a registry to list images.</div>
                 }
+                } @else {
+                <dl class="grid grid-cols-[88px_minmax(0,1fr)] gap-x-3 gap-y-2 text-[12px]">
+                    <dt class="text-(--muted)">Mode</dt>
+                    <dd>{{ dockerHost().trim() ? "Remote SSH" : "Not connected" }}</dd>
+                    <dt class="text-(--muted)">Target</dt>
+                    <dd class="truncate font-mono">{{ dockerHost().trim() || "-" }}</dd>
+                    <dt class="text-(--muted)">Command</dt>
+                    <dd class="truncate font-mono">{{ dockerHost().trim() ? "ssh " + dockerHost().trim() + " docker ps" : "-" }}</dd>
+                    <dt class="text-(--muted)">Saved</dt>
+                    <dd>{{ savedDockerHosts().length }}</dd>
+                </dl>
                 }
             </div>
         </aside>

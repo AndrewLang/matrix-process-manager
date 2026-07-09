@@ -103,15 +103,15 @@ pub async fn generate_ssh_key(
 }
 
 #[tauri::command]
-pub async fn get_docker_availability() -> Result<DockerAvailability, CommandError> {
-    tauri::async_runtime::spawn_blocking(docker_availability_impl)
+pub async fn get_docker_availability(docker_host: Option<String>) -> Result<DockerAvailability, CommandError> {
+    tauri::async_runtime::spawn_blocking(move || docker_availability_impl(docker_host.as_deref()))
         .await
         .map_err(|error| CommandError::docker_failed(error.to_string()))?
 }
 
 #[tauri::command]
-pub async fn get_docker_dashboard() -> Result<DockerDashboard, CommandError> {
-    tauri::async_runtime::spawn_blocking(docker_dashboard_impl)
+pub async fn get_docker_dashboard(docker_host: Option<String>) -> Result<DockerDashboard, CommandError> {
+    tauri::async_runtime::spawn_blocking(move || docker_dashboard_impl(docker_host.as_deref()))
         .await
         .map_err(|error| CommandError::docker_failed(error.to_string()))?
 }
@@ -120,29 +120,30 @@ pub async fn get_docker_dashboard() -> Result<DockerDashboard, CommandError> {
 pub async fn run_docker_container_action(
     container_id: String,
     action: String,
+    docker_host: Option<String>,
 ) -> Result<(), CommandError> {
-    tauri::async_runtime::spawn_blocking(move || docker_container_action_impl(&container_id, &action))
+    tauri::async_runtime::spawn_blocking(move || docker_container_action_impl(&container_id, &action, docker_host.as_deref()))
         .await
         .map_err(|error| CommandError::docker_failed(error.to_string()))?
 }
 
 #[tauri::command]
-pub async fn remove_docker_image(image_id: String) -> Result<(), CommandError> {
-    tauri::async_runtime::spawn_blocking(move || run_docker_text(&["rmi", &image_id]).map(|_| ()))
+pub async fn remove_docker_image(image_id: String, docker_host: Option<String>) -> Result<(), CommandError> {
+    tauri::async_runtime::spawn_blocking(move || run_docker_text(docker_host.as_deref(), &["rmi", &image_id]).map(|_| ()))
         .await
         .map_err(|error| CommandError::docker_failed(error.to_string()))?
 }
 
 #[tauri::command]
-pub async fn get_docker_container_inspect(container_id: String) -> Result<String, CommandError> {
-    tauri::async_runtime::spawn_blocking(move || run_docker_text(&["inspect", &container_id]))
+pub async fn get_docker_container_inspect(container_id: String, docker_host: Option<String>) -> Result<String, CommandError> {
+    tauri::async_runtime::spawn_blocking(move || run_docker_text(docker_host.as_deref(), &["inspect", &container_id]))
         .await
         .map_err(|error| CommandError::docker_failed(error.to_string()))?
 }
 
 #[tauri::command]
-pub async fn get_docker_container_logs(container_id: String) -> Result<String, CommandError> {
-    tauri::async_runtime::spawn_blocking(move || run_docker_text(&["logs", "--tail", "200", &container_id]))
+pub async fn get_docker_container_logs(container_id: String, docker_host: Option<String>) -> Result<String, CommandError> {
+    tauri::async_runtime::spawn_blocking(move || run_docker_text(docker_host.as_deref(), &["logs", "--tail", "200", &container_id]))
         .await
         .map_err(|error| CommandError::docker_failed(error.to_string()))?
 }
@@ -635,10 +636,8 @@ fn ssh_key_fingerprint(public_path: &std::path::Path) -> Option<String> {
     Some(text.trim().to_string()).filter(|value| !value.is_empty())
 }
 
-fn docker_availability_impl() -> Result<DockerAvailability, CommandError> {
-    let output = std::process::Command::new("docker")
-        .arg("--version")
-        .output();
+fn docker_availability_impl(docker_host: Option<&str>) -> Result<DockerAvailability, CommandError> {
+    let output = docker_command(docker_host, &["--version"]);
 
     match output {
         Ok(output) if output.status.success() => Ok(DockerAvailability {
@@ -657,21 +656,21 @@ fn docker_availability_impl() -> Result<DockerAvailability, CommandError> {
     }
 }
 
-fn docker_dashboard_impl() -> Result<DockerDashboard, CommandError> {
-    let availability = docker_availability_impl()?;
+fn docker_dashboard_impl(docker_host: Option<&str>) -> Result<DockerDashboard, CommandError> {
+    let availability = docker_availability_impl(docker_host)?;
     if !availability.installed {
         return Ok(DockerDashboard {
             installed: false,
             running: false,
             version: None,
             server_version: None,
-            error: Some("Docker CLI is not installed.".to_string()),
+            error: Some(if docker_target(docker_host).is_some() { "SSH or remote Docker CLI is not available.".to_string() } else { "Docker CLI is not installed.".to_string() }),
             containers: Vec::new(),
             images: Vec::new(),
         });
     }
 
-    let server_version = run_docker_text(&["version", "--format", "{{.Server.Version}}"]);
+    let server_version = run_docker_text(docker_host, &["version", "--format", "{{.Server.Version}}"]);
     let running = server_version.is_ok();
     if !running {
         let error = match server_version.err() {
@@ -695,12 +694,12 @@ fn docker_dashboard_impl() -> Result<DockerDashboard, CommandError> {
         version: availability.version,
         server_version: server_version.ok(),
         error: None,
-        containers: docker_containers()?,
-        images: docker_images()?,
+        containers: docker_containers(docker_host)?,
+        images: docker_images(docker_host)?,
     })
 }
 
-fn docker_container_action_impl(container_id: &str, action: &str) -> Result<(), CommandError> {
+    fn docker_container_action_impl(container_id: &str, action: &str, docker_host: Option<&str>) -> Result<(), CommandError> {
     let command = match action {
         "start" => "start",
         "stop" => "stop",
@@ -711,14 +710,14 @@ fn docker_container_action_impl(container_id: &str, action: &str) -> Result<(), 
     };
 
     if action == "forceRemove" {
-        run_docker_text(&[command, "-f", container_id]).map(|_| ())
+        run_docker_text(docker_host, &[command, "-f", container_id]).map(|_| ())
     } else {
-        run_docker_text(&[command, container_id]).map(|_| ())
+        run_docker_text(docker_host, &[command, container_id]).map(|_| ())
     }
 }
 
-fn docker_containers() -> Result<Vec<DockerContainer>, CommandError> {
-    let text = run_docker_text(&["ps", "-a", "--format", "{{json .}}"])?;
+fn docker_containers(docker_host: Option<&str>) -> Result<Vec<DockerContainer>, CommandError> {
+    let text = run_docker_text(docker_host, &["ps", "-a", "--format", "{{json .}}"])?;
     Ok(text
         .lines()
         .filter_map(|line| serde_json::from_str::<serde_json::Value>(line).ok())
@@ -743,8 +742,8 @@ fn docker_containers() -> Result<Vec<DockerContainer>, CommandError> {
         .collect())
 }
 
-fn docker_images() -> Result<Vec<DockerImage>, CommandError> {
-    let text = run_docker_text(&["images", "--format", "{{json .}}"])?;
+fn docker_images(docker_host: Option<&str>) -> Result<Vec<DockerImage>, CommandError> {
+    let text = run_docker_text(docker_host, &["images", "--format", "{{json .}}"])?;
     Ok(text
         .lines()
         .filter_map(|line| serde_json::from_str::<serde_json::Value>(line).ok())
@@ -884,10 +883,8 @@ impl DockerRegistryClient {
     }
 }
 
-fn run_docker_text(args: &[&str]) -> Result<String, CommandError> {
-    let output = std::process::Command::new("docker")
-        .args(args)
-        .output()
+fn run_docker_text(docker_host: Option<&str>, args: &[&str]) -> Result<String, CommandError> {
+    let output = docker_command(docker_host, args)
         .map_err(|error| CommandError::docker_failed(error.to_string()))?;
 
     if output.status.success() {
@@ -896,6 +893,48 @@ fn run_docker_text(args: &[&str]) -> Result<String, CommandError> {
         Err(CommandError::docker_failed(
             String::from_utf8_lossy(&output.stderr).trim().to_string(),
         ))
+    }
+}
+
+fn docker_command(docker_host: Option<&str>, args: &[&str]) -> std::io::Result<std::process::Output> {
+    if let Some(target) = docker_target(docker_host) {
+        std::process::Command::new("ssh")
+            .arg(target)
+            .arg(DockerSshCommand::new(args).command())
+            .output()
+    } else {
+        std::process::Command::new("docker")
+            .args(args)
+            .output()
+    }
+}
+
+fn docker_target(docker_host: Option<&str>) -> Option<&str> {
+    docker_host.map(str::trim).filter(|value| !value.is_empty())
+}
+
+struct DockerSshCommand<'a> {
+    args: &'a [&'a str],
+}
+
+impl<'a> DockerSshCommand<'a> {
+    fn new(args: &'a [&'a str]) -> Self {
+        Self { args }
+    }
+
+    fn command(&self) -> String {
+        std::iter::once("docker".to_string())
+            .chain(self.args.iter().map(|arg| Self::quote(arg)))
+            .collect::<Vec<_>>()
+            .join(" ")
+    }
+
+    fn quote(value: &str) -> String {
+        if value.chars().all(|character| character.is_ascii_alphanumeric() || matches!(character, '_' | '-' | '.' | '/' | ':' | '=')) {
+            return value.to_string();
+        }
+
+        format!("'{}'", value.replace('\'', "'\\''"))
     }
 }
 

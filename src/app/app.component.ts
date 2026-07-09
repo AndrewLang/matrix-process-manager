@@ -203,7 +203,7 @@ export class AppComponent implements OnDestroy, OnInit {
   }
 
   refreshDockerAvailability(): void {
-    invoke<DockerAvailability>("get_docker_availability")
+    invoke<DockerAvailability>("get_docker_availability", { dockerHost: "" })
       .then((availability) => this.dockerInstalled.set(availability.installed))
       .catch(() => this.dockerInstalled.set(false));
   }
