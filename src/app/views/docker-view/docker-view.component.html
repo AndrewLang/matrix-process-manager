@@ -138,6 +138,7 @@
                                       (click)="viewContainerLogs($event, row.container)" title="View logs">
                                         {{ containerRowName(row) }}
                                     </button>
+                                                                        <mtx-copy-button [value]="row.container.name" label="Copy container name" />
                                     } @else {
                                     <strong class="truncate text-[13px] font-semibold">
                                         {{ containerRowName(row) }}
@@ -148,7 +149,16 @@
                                     }
                                 </span>
                             </td>
-                            <td class="px-3 py-2 font-mono text-[#dce7f0]">{{ containerRowId(row) }}</td>
+                            <td class="px-3 py-2 font-mono text-[#dce7f0]">
+                                @if (row.kind === "container") {
+                                <span class="inline-flex min-w-0 items-center gap-2">
+                                    <span class="truncate">{{ row.container.id }}</span>
+                                    <mtx-copy-button [value]="row.container.id" label="Copy container ID" />
+                                </span>
+                                } @else {
+                                <span>-</span>
+                                }
+                            </td>
                             <td class="px-3 py-2 font-mono text-[#2d9cff]">
                                 <div class="grid gap-1">
                                     @for (port of containerRowPortLinks(row); track port.key) {
@@ -227,7 +237,10 @@
                 <div class="grid gap-3">
                     <div class="rounded-md border border-(--border) bg-[rgba(16,31,45,0.48)] p-3">
                         <div class="text-[12px] text-(--muted)">Selected Container</div>
-                        <div class="mt-1 truncate font-mono text-[18px] text-[#e6f0fa]">{{ container.name }}</div>
+                        <div class="mt-1 flex min-w-0 items-center gap-2 font-mono text-[18px] text-[#e6f0fa]">
+                            <span class="truncate">{{ container.name }}</span>
+                            <mtx-copy-button [value]="container.name" label="Copy container name" />
+                        </div>
                         <div class="mt-1 text-[12px] text-(--muted)">{{ container.image }}</div>
                     </div>
                     <dl class="grid grid-cols-[78px_minmax(0,1fr)] gap-x-3 gap-y-2 text-[12px]">
@@ -249,7 +262,11 @@
                             }
                             }
                         </dd>
-                        <dt class="text-(--muted)">ID</dt><dd class="truncate font-mono">{{ container.id }}</dd>
+                        <dt class="text-(--muted)">ID</dt>
+                        <dd class="flex min-w-0 items-center gap-2 font-mono">
+                            <span class="truncate">{{ container.id }}</span>
+                            <mtx-copy-button [value]="container.id" label="Copy container ID" />
+                        </dd>
                     </dl>
                     <div class="grid gap-2">
                         <button type="button" class="h-8 rounded-md border border-(--border) bg-white/5 px-3 text-left text-[12px] hover:bg-white/8 disabled:opacity-45"
@@ -263,9 +280,6 @@
                         <button type="button" class="h-8 rounded-md border border-(--border) bg-white/5 px-3 text-left text-[12px] hover:bg-white/8 disabled:opacity-45"
                           [disabled]="!container.running || actionRunning()" (click)="runContainerAction('restart', container)">
                             <i class="bi bi-arrow-clockwise mr-2"></i>Restart
-                        </button>
-                        <button type="button" class="h-8 rounded-md border border-(--border) bg-white/5 px-3 text-left text-[12px] hover:bg-white/8" (click)="copyContainerId(container)">
-                            <i class="bi bi-copy mr-2"></i>Copy container ID
                         </button>
                         <button type="button" class="h-8 rounded-md border border-[rgba(255,75,67,0.38)] bg-[rgba(255,75,67,0.08)] px-3 text-left text-[12px] text-(--red) hover:bg-[rgba(255,75,67,0.14)] disabled:opacity-45"
                           [disabled]="actionRunning()" (click)="removeContainer(container)">

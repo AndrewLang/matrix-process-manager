@@ -2,6 +2,7 @@ import { Component, OnInit, computed, signal } from "@angular/core";
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { DockerContainer, DockerDashboard, DockerImage } from "../../app.models";
+import { CopyButtonComponent } from "../../components/copy-button/copy-button.component";
 import { DataGridColumn, DataGridComponent } from "../../components/data-grid/data-grid.component";
 
 type DockerTab = "containers" | "images";
@@ -12,7 +13,7 @@ type DockerContainerRow =
 
 @Component({
     selector: "mtx-docker-view",
-    imports: [DataGridComponent],
+    imports: [CopyButtonComponent, DataGridComponent],
     templateUrl: "./docker-view.component.html",
 })
 export class DockerViewComponent implements OnInit {
@@ -216,18 +217,6 @@ export class DockerViewComponent implements OnInit {
             })
             .catch((error: unknown) => this.error.set(error instanceof Error ? error.message : "Docker image remove failed."))
             .finally(() => this.actionRunning.set(false));
-    }
-
-    copyContainerId(container: DockerContainer | undefined): void {
-        if (!container) {
-            return;
-        }
-
-        this.closeContainerMenu();
-        navigator.clipboard.writeText(container.id).then(
-            () => this.actionMessage.set("Container ID copied."),
-            () => this.actionMessage.set("Container ID could not be copied."),
-        );
     }
 
     hasContainerMenuItems(container: DockerContainer | undefined): boolean {
