@@ -1,15 +1,16 @@
 import { Component, OnInit, computed, signal } from "@angular/core";
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { DockerContainer, DockerDashboard, DockerImage } from "../../app.models";
+import { DockerContainer, DockerDashboard, DockerImage, DockerRegistryImage } from "../../app.models";
 import { CopyButtonComponent } from "../../components/copy-button/copy-button.component";
 import { DataGridColumn, DataGridComponent } from "../../components/data-grid/data-grid.component";
 
-type DockerTab = "containers" | "images";
+type DockerTab = "containers" | "images" | "registry";
 type DockerPortLink = { key: string; label: string; url?: string };
 type DockerContainerRow =
     | { kind: "group"; key: string; name: string; containers: DockerContainer[]; running: boolean }
     | { kind: "container"; key: string; container: DockerContainer; child: boolean };
+type DockerRegistryProfile = { registry: string; username: string; password: string };
 
 @Component({
     selector: "mtx-docker-view",
@@ -17,6 +18,8 @@ type DockerContainerRow =
     templateUrl: "./docker-view.component.html",
 })
 export class DockerViewComponent implements OnInit {
+    private readonly savedRegistriesKey = "matrixProcessManager.docker.savedRegistries";
+
     dashboard = signal<DockerDashboard | undefined>(undefined);
     selectedContainerId = signal("");
     selectedImageId = signal("");
@@ -34,6 +37,15 @@ export class DockerViewComponent implements OnInit {
     logsContainerName = signal("");
     containerLogs = signal("");
     logsLoading = signal(false);
+    registryUrl = signal("");
+    registryUsername = signal("");
+    registryPassword = signal("");
+    registryFilter = signal("");
+    registryImages = signal<DockerRegistryImage[]>([]);
+    registryLoading = signal(false);
+    selectedRegistryRepository = signal("");
+    savedRegistries = signal<DockerRegistryProfile[]>([]);
+    selectedRegistryProfile = signal("");
 
     imageColumns: DataGridColumn<DockerImage>[] = [
         { key: "repository", label: "Repository", width: 250, minWidth: 160, align: "left", value: (image) => image.repository, cellClass: () => "font-mono text-[#e6f0fa]" },
@@ -42,20 +54,29 @@ export class DockerViewComponent implements OnInit {
         { key: "size", label: "Size", width: 110, minWidth: 84, value: (image) => image.size },
         { key: "created", label: "Created", width: 130, minWidth: 96, value: (image) => image.created },
     ];
+    registryColumns: DataGridColumn<DockerRegistryImage>[] = [
+        { key: "repository", label: "Repository", width: 320, minWidth: 180, align: "left", value: (image) => image.repository, cellClass: () => "font-mono text-[#e6f0fa]" },
+        { key: "tagCount", label: "Tags", width: 90, minWidth: 70, value: (image) => image.tags.length },
+        { key: "tagList", label: "Tag List", width: 420, minWidth: 220, value: (image) => this.registryTagsText(image), cellClass: () => "font-mono text-(--muted)" },
+    ];
     containerKey = (container: DockerContainer) => container.id;
     imageKey = (image: DockerImage) => image.id;
+    registryImageKey = (image: DockerRegistryImage) => image.repository;
 
     containers = computed(() => this.dashboard()?.containers ?? []);
     images = computed(() => this.dashboard()?.images ?? []);
     filteredContainers = computed(() => this.filterContainers());
     containerRows = computed(() => this.buildContainerRows());
     filteredImages = computed(() => this.filterImages());
+    filteredRegistryImages = computed(() => this.filterRegistryImages());
     runningContainers = computed(() => this.containers().filter((container) => container.running).length);
     stoppedContainers = computed(() => this.containers().filter((container) => !container.running).length);
     selectedContainer = computed(() => this.filteredContainers().find((container) => container.id === this.selectedContainerId()) ?? this.filteredContainers()[0]);
     selectedImage = computed(() => this.filteredImages().find((image) => image.id === this.selectedImageId()) ?? this.filteredImages()[0]);
+    selectedRegistryImage = computed(() => this.filteredRegistryImages().find((image) => image.repository === this.selectedRegistryRepository()) ?? this.filteredRegistryImages()[0]);
 
     ngOnInit(): void {
+        this.loadSavedRegistries();
         this.refresh();
     }
 
@@ -106,6 +127,95 @@ export class DockerViewComponent implements OnInit {
 
     setImageFilter(value: string): void {
         this.imageFilter.set(value);
+    }
+
+    setRegistryUrl(value: string): void {
+        this.registryUrl.set(value);
+    }
+
+    setRegistryUsername(value: string): void {
+        this.registryUsername.set(value);
+    }
+
+    setRegistryPassword(value: string): void {
+        this.registryPassword.set(value);
+    }
+
+    setRegistryFilter(value: string): void {
+        this.registryFilter.set(value);
+    }
+
+    selectSavedRegistry(registry: string): void {
+        this.selectedRegistryProfile.set(registry);
+        const profile = this.savedRegistries().find((item) => item.registry === registry);
+        if (!profile) {
+            return;
+        }
+
+        this.registryUrl.set(profile.registry);
+        this.registryUsername.set(profile.username);
+        this.registryPassword.set(profile.password);
+    }
+
+    saveRegistry(): void {
+        const registry = this.registryUrl().trim();
+        if (!registry) {
+            return;
+        }
+
+        const profile: DockerRegistryProfile = {
+            registry,
+            username: this.registryUsername().trim(),
+            password: this.registryPassword(),
+        };
+        const profiles = [profile, ...this.savedRegistries().filter((item) => item.registry !== registry)]
+            .sort((left, right) => left.registry.localeCompare(right.registry));
+        this.savedRegistries.set(profiles);
+        this.selectedRegistryProfile.set(registry);
+        this.persistSavedRegistries();
+        this.actionMessage.set("Registry saved.");
+    }
+
+    removeSavedRegistry(): void {
+        const registry = this.selectedRegistryProfile() || this.registryUrl().trim();
+        if (!registry) {
+            return;
+        }
+
+        const profiles = this.savedRegistries().filter((item) => item.registry !== registry);
+        this.savedRegistries.set(profiles);
+        this.selectedRegistryProfile.set(profiles[0]?.registry ?? "");
+        this.persistSavedRegistries();
+        this.actionMessage.set("Registry removed.");
+    }
+
+    selectRegistryImage(image: DockerRegistryImage): void {
+        this.selectedRegistryRepository.set(image.repository);
+    }
+
+    listRegistryImages(): void {
+        const registry = this.registryUrl().trim();
+        if (!registry || this.registryLoading()) {
+            return;
+        }
+
+        this.registryLoading.set(true);
+        this.error.set("");
+        this.actionMessage.set("");
+        invoke<DockerRegistryImage[]>("list_docker_registry_images", {
+            request: {
+                registry,
+                username: this.registryUsername(),
+                password: this.registryPassword(),
+            },
+        })
+            .then((images) => {
+                this.registryImages.set(images);
+                this.selectedRegistryRepository.set(images[0]?.repository ?? "");
+                this.actionMessage.set(`${images.length} registry images loaded.`);
+            })
+            .catch((error: unknown) => this.error.set(error instanceof Error ? error.message : "Docker registry images could not be loaded."))
+            .finally(() => this.registryLoading.set(false));
     }
 
     selectContainer(container: DockerContainer): void {
@@ -396,6 +506,43 @@ export class DockerViewComponent implements OnInit {
             image.size,
             image.created,
         ].some((value) => value.toLowerCase().includes(query)));
+    }
+
+    private filterRegistryImages(): DockerRegistryImage[] {
+        const query = this.registryFilter().trim().toLowerCase();
+        if (!query) {
+            return this.registryImages();
+        }
+
+        return this.registryImages().filter((image) => [
+            image.repository,
+            this.registryTagsText(image),
+        ].some((value) => value.toLowerCase().includes(query)));
+    }
+
+    registryTagsText(image: DockerRegistryImage | undefined): string {
+        return image?.tags.length ? image.tags.join(", ") : "-";
+    }
+
+    private loadSavedRegistries(): void {
+        try {
+            const profiles = JSON.parse(localStorage.getItem(this.savedRegistriesKey) ?? "[]") as DockerRegistryProfile[];
+            const validProfiles = profiles.filter((profile) => typeof profile.registry === "string" && profile.registry.trim());
+            this.savedRegistries.set(validProfiles);
+            const firstProfile = validProfiles[0];
+            if (firstProfile) {
+                this.selectedRegistryProfile.set(firstProfile.registry);
+                this.registryUrl.set(firstProfile.registry);
+                this.registryUsername.set(firstProfile.username ?? "");
+                this.registryPassword.set(firstProfile.password ?? "");
+            }
+        } catch {
+            this.savedRegistries.set([]);
+        }
+    }
+
+    private persistSavedRegistries(): void {
+        localStorage.setItem(this.savedRegistriesKey, JSON.stringify(this.savedRegistries()));
     }
 
     private portLinks(ports: string): DockerPortLink[] {

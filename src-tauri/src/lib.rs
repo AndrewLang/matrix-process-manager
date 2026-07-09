@@ -72,6 +72,7 @@ pub fn run() {
             commands::get_docker_container_inspect,
             commands::get_docker_container_logs,
             commands::get_docker_dashboard,
+            commands::list_docker_registry_images,
             commands::get_disk_cleanup_scan,
             commands::get_port_scan,
             commands::generate_ssh_key,

@@ -7,10 +7,15 @@ use crate::disk_cleanup::DiskCleanupManager;
 use crate::models::{
     CommandError, DiskCleanupRequest, DiskCleanupResult, DiskCleanupScan,
     DiskUsageInsightCleanupRequest, DiskUsageInsightCleanupResult, DockerAvailability,
-    DockerContainer, DockerDashboard, DockerImage, PortScan, PortUsage, ProcessSnapshot,
-    SshKeyGenerationRequest, SshKeyInfo, StartupApp,
+    DockerContainer, DockerDashboard, DockerImage, DockerRegistryImage,
+    DockerRegistryRequest, PortScan, PortUsage, ProcessSnapshot, SshKeyGenerationRequest,
+    SshKeyInfo, StartupApp,
     StartupCommandUpdateRequest,
 };
+use reqwest::header::LINK;
+use serde::Deserialize;
+use serde::de::DeserializeOwned;
+use std::time::Duration;
 use crate::terminal::models::{
     TerminalResizeRequest, TerminalSessionInfo, TerminalSessionRequest, TerminalStartRequest,
     TerminalStartResponse, TerminalStopRequest, TerminalWriteRequest,
@@ -138,6 +143,15 @@ pub async fn get_docker_container_inspect(container_id: String) -> Result<String
 #[tauri::command]
 pub async fn get_docker_container_logs(container_id: String) -> Result<String, CommandError> {
     tauri::async_runtime::spawn_blocking(move || run_docker_text(&["logs", "--tail", "200", &container_id]))
+        .await
+        .map_err(|error| CommandError::docker_failed(error.to_string()))?
+}
+
+#[tauri::command]
+pub async fn list_docker_registry_images(
+    request: DockerRegistryRequest,
+) -> Result<Vec<DockerRegistryImage>, CommandError> {
+    tauri::async_runtime::spawn_blocking(move || DockerRegistryClient::new(request)?.images())
         .await
         .map_err(|error| CommandError::docker_failed(error.to_string()))?
 }
@@ -742,6 +756,132 @@ fn docker_images() -> Result<Vec<DockerImage>, CommandError> {
             created: json_string(&value, "CreatedSince"),
         })
         .collect())
+}
+
+#[derive(Deserialize)]
+struct DockerRegistryCatalogPage {
+    repositories: Vec<String>,
+}
+
+#[derive(Deserialize)]
+struct DockerRegistryTagsPage {
+    tags: Option<Vec<String>>,
+}
+
+struct DockerRegistryClient {
+    client: reqwest::blocking::Client,
+    base_url: String,
+    username: String,
+    password: String,
+}
+
+impl DockerRegistryClient {
+    fn new(request: DockerRegistryRequest) -> Result<Self, CommandError> {
+        let registry = request.registry.trim().trim_end_matches('/');
+        if registry.is_empty() {
+            return Err(CommandError::docker_failed("registry URL is required"));
+        }
+
+        let base_url = if registry.starts_with("http://") || registry.starts_with("https://") {
+            registry.to_string()
+        } else {
+            format!("https://{registry}")
+        };
+
+        let client = reqwest::blocking::Client::builder()
+            .timeout(Duration::from_secs(30))
+            .build()
+            .map_err(|error| CommandError::docker_failed(error.to_string()))?;
+
+        Ok(Self {
+            client,
+            base_url,
+            username: request.username,
+            password: request.password,
+        })
+    }
+
+    fn images(&self) -> Result<Vec<DockerRegistryImage>, CommandError> {
+        self.repositories()?
+            .into_iter()
+            .map(|repository| {
+                let tags = self.tags(&repository)?;
+                Ok(DockerRegistryImage { repository, tags })
+            })
+            .collect()
+    }
+
+    fn repositories(&self) -> Result<Vec<String>, CommandError> {
+        let mut repositories = Vec::new();
+        let mut next_url = Some(format!("{}/v2/_catalog?n=100", self.base_url));
+
+        while let Some(url) = next_url {
+            let (page, link) = self.get_json_with_link::<DockerRegistryCatalogPage>(&url)?;
+            repositories.extend(page.repositories);
+            next_url = link.and_then(|value| self.next_url(&value));
+        }
+
+        repositories.sort();
+        repositories.dedup();
+        Ok(repositories)
+    }
+
+    fn tags(&self, repository: &str) -> Result<Vec<String>, CommandError> {
+        let page = self.get_json::<DockerRegistryTagsPage>(&format!("{}/v2/{repository}/tags/list", self.base_url))?;
+        let mut tags = page.tags.unwrap_or_default();
+        tags.sort();
+        Ok(tags)
+    }
+
+    fn get_json<T: DeserializeOwned>(&self, url: &str) -> Result<T, CommandError> {
+        self.get_json_with_link(url).map(|(value, _)| value)
+    }
+
+    fn get_json_with_link<T: DeserializeOwned>(&self, url: &str) -> Result<(T, Option<String>), CommandError> {
+        let mut request = self.client.get(url);
+        if !self.username.trim().is_empty() || !self.password.is_empty() {
+            request = request.basic_auth(self.username.trim(), Some(&self.password));
+        }
+
+        let response = request
+            .send()
+            .map_err(|error| CommandError::docker_failed(error.to_string()))?;
+
+        let status = response.status();
+        let link = response
+            .headers()
+            .get(LINK)
+            .and_then(|value| value.to_str().ok())
+            .map(|value| value.to_string());
+
+        if !status.is_success() {
+            let message = response.text().unwrap_or_else(|_| status.to_string());
+            return Err(CommandError::docker_failed(format!("registry request failed: {status} {message}")));
+        }
+
+        response
+            .json::<T>()
+            .map(|value| (value, link))
+            .map_err(|error| CommandError::docker_failed(error.to_string()))
+    }
+
+    fn next_url(&self, link: &str) -> Option<String> {
+        let target = link
+            .split(',')
+            .find(|item| item.contains("rel=\"next\""))?
+            .split_once('<')?
+            .1
+            .split_once('>')?
+            .0;
+
+        if target.starts_with("http://") || target.starts_with("https://") {
+            Some(target.to_string())
+        } else if target.starts_with('/') {
+            Some(format!("{}{}", self.base_url, target))
+        } else {
+            Some(format!("{}/{}", self.base_url, target))
+        }
+    }
 }
 
 fn run_docker_text(args: &[&str]) -> Result<String, CommandError> {

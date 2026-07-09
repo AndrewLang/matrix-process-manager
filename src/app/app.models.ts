@@ -265,6 +265,11 @@ export interface DockerImage {
     created: string;
 }
 
+export interface DockerRegistryImage {
+    repository: string;
+    tags: string[];
+}
+
 export interface DockerDashboard {
     installed: boolean;
     running: boolean;

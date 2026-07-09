@@ -10,9 +10,11 @@
                 <span class="rounded border border-[rgba(34,206,116,0.28)] bg-[rgba(34,206,116,0.12)] px-2.5 py-1 text-(--green)">{{ actionMessage() }}</span>
                 }
                 @if (error()) {
-                <span class="max-w-96 truncate rounded border border-[rgba(255,75,67,0.28)] bg-[rgba(255,75,67,0.12)] px-2.5 py-1 text-(--red)">{{ error() }}</span>
+                <span class="max-w-96 truncate rounded border border-[rgba(255,75,67,0.28)] bg-[rgba(255,75,67,0.12)] px-2.5 py-1 text-(--red)">{{ error()
+                    }}</span>
                 }
-                <button type="button" class="inline-flex h-7.5 items-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(16,31,45,0.86)] px-3 hover:bg-white/6 disabled:opacity-55"
+                <button type="button"
+                  class="inline-flex h-7.5 items-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(16,31,45,0.86)] px-3 hover:bg-white/6 disabled:opacity-55"
                   [disabled]="loading()" (click)="refresh()">
                     <i class="bi bi-arrow-clockwise"></i>{{ loading() ? "Loading" : "Refresh" }}
                 </button>
@@ -24,7 +26,8 @@
                 <span class="text-[12px] text-(--muted)">Engine</span>
                 <strong class="mt-1 block text-[24px]" [class.text-(--green)]="dashboard()?.running" [class.text-(--orange)]="!dashboard()?.running">{{
                     dashboard()?.running ? "Running" : "Offline" }}</strong>
-                <small class="text-(--muted)">{{ dashboard()?.serverVersion ? "Server " + dashboard()?.serverVersion : dashboard()?.version ?? "Docker CLI" }}</small>
+                <small class="text-(--muted)">{{ dashboard()?.serverVersion ? "Server " + dashboard()?.serverVersion : dashboard()?.version ?? "Docker CLI"
+                    }}</small>
             </article>
             <article class="rounded-md border border-(--border) bg-[rgba(16,31,45,0.62)] p-3">
                 <span class="text-[12px] text-(--muted)">Containers</span>
@@ -45,47 +48,107 @@
     </section>
 
     <section class="grid min-h-0 min-w-0 grid-cols-[minmax(0,1fr)_330px] gap-2.5 overflow-hidden max-[1080px]:grid-cols-[minmax(0,1fr)]">
-        <section class="grid min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))]">
+        <section
+          class="grid min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))]">
             <div class="grid gap-2 border-b border-(--border) p-3">
                 <div class="flex items-center justify-between gap-3">
-                <div>
-                    <h2>Docker Resources</h2>
-                    <p class="text-[12px] text-(--muted)">{{ activeTab() === "containers" ? "Containers from docker ps -a" : "Images from docker images" }}</p>
-                </div>
-                <div class="flex gap-1" role="tablist" aria-label="Docker tabs">
-                    <button type="button" class="h-8 border-b-2 px-3 text-[12px] hover:bg-white/6" [class.border-[#1596ff]]="activeTab() === 'containers'"
-                      [class.border-transparent]="activeTab() !== 'containers'" [class.text-[#1d9bff]]="activeTab() === 'containers'" (click)="setActiveTab('containers')">
-                        Containers
-                    </button>
-                    <button type="button" class="h-8 border-b-2 px-3 text-[12px] hover:bg-white/6" [class.border-[#1596ff]]="activeTab() === 'images'"
-                      [class.border-transparent]="activeTab() !== 'images'" [class.text-[#1d9bff]]="activeTab() === 'images'" (click)="setActiveTab('images')">
-                        Images
-                    </button>
-                </div>
+                    <div>
+                        <h2>Docker Resources</h2>
+                        <p class="text-[12px] text-(--muted)">{{ activeTab() === "containers" ? "Containers from docker ps -a" : activeTab() === "images" ?
+                            "Images from docker images" : "Private registry repositories and tags" }}
+                        </p>
+                    </div>
+                    <div class="flex gap-1" role="tablist" aria-label="Docker tabs">
+                        <button type="button" class="h-8 border-b-2 px-3 text-[12px] hover:bg-white/6" [class.border-[#1596ff]]="activeTab() === 'containers'"
+                          [class.border-transparent]="activeTab() !== 'containers'" [class.text-[#1d9bff]]="activeTab() === 'containers'"
+                          (click)="setActiveTab('containers')">
+                            Containers
+                        </button>
+                        <button type="button" class="h-8 border-b-2 px-3 text-[12px] hover:bg-white/6" [class.border-[#1596ff]]="activeTab() === 'images'"
+                          [class.border-transparent]="activeTab() !== 'images'" [class.text-[#1d9bff]]="activeTab() === 'images'"
+                          (click)="setActiveTab('images')">
+                            Images
+                        </button>
+                        <button type="button" class="h-8 border-b-2 px-3 text-[12px] hover:bg-white/6" [class.border-[#1596ff]]="activeTab() === 'registry'"
+                          [class.border-transparent]="activeTab() !== 'registry'" [class.text-[#1d9bff]]="activeTab() === 'registry'"
+                          (click)="setActiveTab('registry')">
+                            Registry
+                        </button>
+                    </div>
                 </div>
                 @if (activeTab() === "containers") {
                 <div class="flex min-w-0 items-center gap-4">
-                    <div class="flex h-9 min-w-0 max-w-[420px] flex-1 items-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(15,28,40,0.84)] px-2.5 text-[12px] text-(--muted)">
+                    <div
+                      class="flex h-9 min-w-0 max-w-[420px] flex-1 items-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(15,28,40,0.84)] px-2.5 text-[12px] text-(--muted)">
                         <i class="bi bi-search text-[15px]"></i>
-                        <input class="h-full min-w-0 flex-1 bg-transparent text-[#dfe8f1] outline-none placeholder:text-(--muted)" type="text" placeholder="Search"
-                          [value]="containerFilter()" (input)="setContainerFilter($any($event.target).value)" />
+                        <input class="h-full min-w-0 flex-1 bg-transparent text-[#dfe8f1] outline-none placeholder:text-(--muted)" type="text"
+                          placeholder="Search" [value]="containerFilter()" (input)="setContainerFilter($any($event.target).value)" />
                     </div>
                     <button type="button" class="flex h-8 items-center gap-2 bg-transparent text-[12px] text-[#e6f0fa]" (click)="toggleOnlyRunningContainers()">
-                        <span class="grid h-5 w-9 rounded-full p-0.5 transition" [class.justify-end]="onlyRunningContainers()" [class.justify-start]="!onlyRunningContainers()"
-                          [class.bg-[#1596ff]]="onlyRunningContainers()" [class.bg-[#4b5965]]="!onlyRunningContainers()">
+                        <span class="grid h-5 w-9 rounded-full p-0.5 transition" [class.justify-end]="onlyRunningContainers()"
+                          [class.justify-start]="!onlyRunningContainers()" [class.bg-[#1596ff]]="onlyRunningContainers()"
+                          [class.bg-[#4b5965]]="!onlyRunningContainers()">
                             <span class="h-4 w-4 rounded-full bg-white"></span>
                         </span>
                         <span>Only show running containers</span>
                     </button>
                     <span class="ml-auto text-[12px] text-(--muted)">{{ filteredContainers().length }} / {{ containers().length }}</span>
                 </div>
-                } @else {
-                <div class="flex h-8 min-w-0 items-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(15,28,40,0.84)] px-2.5 text-[12px] text-(--muted)">
+                } @else if (activeTab() === "images") {
+                <div
+                  class="flex h-8 min-w-0 items-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(15,28,40,0.84)] px-2.5 text-[12px] text-(--muted)">
                     <i class="bi bi-search"></i>
                     <input class="h-full min-w-0 flex-1 bg-transparent text-[#dfe8f1] outline-none placeholder:text-(--muted)" type="text"
                       placeholder="Filter by repository, tag, image id, size..." [value]="imageFilter()" (input)="setImageFilter($any($event.target).value)" />
                     <span class="flex-none">{{ filteredImages().length }} / {{ images().length }}</span>
                 </div>
+                } @else {
+                <form class="grid gap-2" (submit)="$event.preventDefault(); listRegistryImages()">
+                    <div class="grid min-w-0 gap-2 lg:grid-cols-[minmax(220px,1.4fr)_minmax(140px,0.8fr)_minmax(140px,0.8fr)_auto_auto]">
+                        <input
+                          class="h-8 min-w-0 rounded-[5px] border border-(--border) bg-[rgba(15,28,40,0.84)] px-2.5 text-[12px] text-[#dfe8f1] outline-none placeholder:text-(--muted)"
+                          type="text" placeholder="https://registry.example.com" [value]="registryUrl()" (input)="setRegistryUrl($any($event.target).value)" />
+                        <input
+                          class="h-8 min-w-0 rounded-[5px] border border-(--border) bg-[rgba(15,28,40,0.84)] px-2.5 text-[12px] text-[#dfe8f1] outline-none placeholder:text-(--muted)"
+                          type="text" placeholder="Username" [value]="registryUsername()" (input)="setRegistryUsername($any($event.target).value)" />
+                        <input
+                          class="h-8 min-w-0 rounded-[5px] border border-(--border) bg-[rgba(15,28,40,0.84)] px-2.5 text-[12px] text-[#dfe8f1] outline-none placeholder:text-(--muted)"
+                          type="password" placeholder="Password or token" [value]="registryPassword()"
+                          (input)="setRegistryPassword($any($event.target).value)" />
+                        <button type="submit"
+                          class="inline-flex h-8 items-center justify-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(16,31,45,0.86)] px-3 text-[12px] hover:bg-white/6 disabled:opacity-55"
+                          [disabled]="!registryUrl().trim() || registryLoading()">
+                            <i class="bi bi-cloud-arrow-down"></i>{{ registryLoading() ? "Loading" : "List" }}
+                        </button>
+                        <button type="button"
+                          class="inline-flex h-8 items-center justify-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(16,31,45,0.86)] px-3 text-[12px] hover:bg-white/6 disabled:opacity-55"
+                          [disabled]="!registryUrl().trim()" (click)="saveRegistry()">
+                            <i class="bi bi-floppy"></i>Save
+                        </button>
+                    </div>
+                    @if (savedRegistries().length) {
+                    <div class="flex min-w-0 items-center gap-2 text-[12px] text-(--muted)">
+                        <select class="h-8 min-w-0 flex-1 rounded-[5px] border border-(--border) bg-[rgba(15,28,40,0.84)] px-2.5 text-[#dfe8f1] outline-none"
+                          [value]="selectedRegistryProfile()" (change)="selectSavedRegistry($any($event.target).value)">
+                            @for (profile of savedRegistries(); track profile.registry) {
+                            <option [value]="profile.registry">{{ profile.registry }}</option>
+                            }
+                        </select>
+                        <button type="button"
+                          class="inline-flex h-8 items-center justify-center gap-2 rounded-[5px] border border-[rgba(255,75,67,0.38)] bg-[rgba(255,75,67,0.08)] px-3 text-[12px] text-(--red) hover:bg-[rgba(255,75,67,0.14)]"
+                          (click)="removeSavedRegistry()">
+                            <i class="bi bi-trash3"></i>Forget
+                        </button>
+                    </div>
+                    }
+                    <div
+                      class="flex h-8 min-w-0 items-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(15,28,40,0.84)] px-2.5 text-[12px] text-(--muted)">
+                        <i class="bi bi-search"></i>
+                        <input class="h-full min-w-0 flex-1 bg-transparent text-[#dfe8f1] outline-none placeholder:text-(--muted)" type="text"
+                          placeholder="Filter by repository or tag..." [value]="registryFilter()" (input)="setRegistryFilter($any($event.target).value)" />
+                        <span class="flex-none">{{ filteredRegistryImages().length }} / {{ registryImages().length }}</span>
+                    </div>
+                </form>
                 }
             </div>
 
@@ -121,7 +184,8 @@
                             <td class="px-3 py-2 text-center"><span class="mx-auto block h-4 w-4 rounded border border-[#7ea1bb]"></span></td>
                             <td class="px-1 py-2 text-center">
                                 @if (row.kind === "group") {
-                                <button type="button" class="grid size-6 place-items-center bg-transparent text-[#2d9cff]" (click)="$event.stopPropagation(); toggleParent(row.key)">
+                                <button type="button" class="grid size-6 place-items-center bg-transparent text-[#2d9cff]"
+                                  (click)="$event.stopPropagation(); toggleParent(row.key)">
                                     <i class="bi" [class.bi-chevron-down]="parentExpanded(row.key)" [class.bi-chevron-right]="!parentExpanded(row.key)"></i>
                                 </button>
                                 }
@@ -138,7 +202,7 @@
                                       (click)="viewContainerLogs($event, row.container)" title="View logs">
                                         {{ containerRowName(row) }}
                                     </button>
-                                                                        <mtx-copy-button [value]="row.container.name" label="Copy container name" />
+                                    <mtx-copy-button [value]="row.container.name" label="Copy container name" />
                                     } @else {
                                     <strong class="truncate text-[13px] font-semibold">
                                         {{ containerRowName(row) }}
@@ -163,7 +227,8 @@
                                 <div class="grid gap-1">
                                     @for (port of containerRowPortLinks(row); track port.key) {
                                     @if (port.url) {
-                                    <button type="button" class="inline-flex min-w-0 items-center gap-1 text-left text-[#2d9cff] underline decoration-[#2d9cff]/55 underline-offset-2 hover:text-[#67bdff]"
+                                    <button type="button"
+                                      class="inline-flex min-w-0 items-center gap-1 text-left text-[#2d9cff] underline decoration-[#2d9cff]/55 underline-offset-2 hover:text-[#67bdff]"
                                       (click)="openPort($event, port.url)" [title]="port.url">
                                         <span class="truncate">{{ port.label }}</span>
                                         <i class="bi bi-box-arrow-up-right text-[10px]"></i>
@@ -179,11 +244,13 @@
                                 <div class="flex items-center gap-3">
                                     @if (row.kind === "container") {
                                     <button type="button" class="grid size-8 place-items-center rounded bg-transparent text-[#2d9cff] hover:bg-white/8"
-                                      [disabled]="row.container.running || actionRunning()" (click)="$event.stopPropagation(); runContainerAction('start', row.container)">
+                                      [disabled]="row.container.running || actionRunning()"
+                                      (click)="$event.stopPropagation(); runContainerAction('start', row.container)">
                                         <i class="bi bi-play-fill text-[18px]"></i>
                                     </button>
                                     <button type="button" class="grid size-8 place-items-center rounded bg-transparent text-[#2d9cff] hover:bg-white/8"
-                                      [disabled]="!row.container.running || actionRunning()" (click)="$event.stopPropagation(); runContainerAction('restart', row.container)">
+                                      [disabled]="!row.container.running || actionRunning()"
+                                      (click)="$event.stopPropagation(); runContainerAction('restart', row.container)">
                                         <i class="bi bi-arrow-clockwise text-[17px]"></i>
                                     </button>
                                     } @else {
@@ -201,7 +268,8 @@
                         </tr>
                         } @empty {
                         <tr>
-                            <td class="px-3 py-10 text-center text-(--muted)" colspan="8">{{ loading() ? "Loading containers..." : "No Docker containers found." }}</td>
+                            <td class="px-3 py-10 text-center text-(--muted)" colspan="8">{{ loading() ? "Loading containers..." : "No Docker containers found."
+                                }}</td>
                         </tr>
                         }
                     </tbody>
@@ -212,24 +280,34 @@
                 <div class="flex min-w-0 items-center gap-2 border-b border-white/8 px-3 py-2">
                     <h3 class="text-[13px] font-semibold text-[#e6f0fa]">Recent Logs</h3>
                     <span class="min-w-0 truncate text-[11px] text-(--muted)">{{ logsContainerName() }}</span>
-                    <button type="button" class="ml-auto grid size-7 place-items-center rounded bg-transparent text-(--muted) hover:bg-white/8 hover:text-[#e6f0fa]"
+                    <button type="button"
+                      class="ml-auto grid size-7 place-items-center rounded bg-transparent text-(--muted) hover:bg-white/8 hover:text-[#e6f0fa]"
                       (click)="closeContainerLogs()" title="Close logs">
                         <i class="bi bi-x-lg"></i>
                     </button>
                 </div>
-                <pre class="min-h-32 overflow-auto whitespace-pre-wrap bg-[#050b12] p-3 font-mono text-[11px] leading-5 text-[#dce7f0]">{{ logsLoading() ? "Loading logs..." : containerLogs() }}</pre>
+                <pre
+                  class="min-h-32 overflow-auto whitespace-pre-wrap bg-[#050b12] p-3 font-mono text-[11px] leading-5 text-[#dce7f0]">{{ logsLoading() ? "Loading logs..." : containerLogs() }}</pre>
             </section>
             }
             } @else {
+            @if (activeTab() === "images") {
             <mtx-data-grid [columns]="imageColumns" [rows]="filteredImages()" [rowKey]="imageKey" [selectedKey]="selectedImageId()" [loading]="loading()"
               loadingText="Loading images..." emptyText="No Docker images found." (rowSelected)="selectImage($event)" />
+            } @else {
+            <mtx-data-grid [columns]="registryColumns" [rows]="filteredRegistryImages()" [rowKey]="registryImageKey"
+              [selectedKey]="selectedRegistryRepository()" [loading]="registryLoading()" loadingText="Loading registry images..."
+              emptyText="No registry images loaded." (rowSelected)="selectRegistryImage($event)" />
+            }
             }
         </section>
 
-        <aside class="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))]">
+        <aside
+          class="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))]">
             <div class="border-b border-(--border) p-3">
-                <h2>{{ activeTab() === "containers" ? "Container Actions" : "Image Details" }}</h2>
-                <p class="text-[12px] text-(--muted)">Inspect and manage selected Docker resources.</p>
+                <h2>{{ activeTab() === "containers" ? "Container Actions" : activeTab() === "images" ? "Image Details" : "Registry Image Details" }}</h2>
+                <p class="text-[12px] text-(--muted)">{{ activeTab() === "registry" ? "Inspect private registry repositories and tags." : "Inspect and manage
+                    selected Docker resources." }}</p>
             </div>
             <div class="min-h-0 overflow-auto p-3">
                 @if (activeTab() === "containers") {
@@ -244,15 +322,20 @@
                         <div class="mt-1 text-[12px] text-(--muted)">{{ container.image }}</div>
                     </div>
                     <dl class="grid grid-cols-[78px_minmax(0,1fr)] gap-x-3 gap-y-2 text-[12px]">
-                        <dt class="text-(--muted)">State</dt><dd>{{ container.state }}</dd>
-                        <dt class="text-(--muted)">Parent</dt><dd class="truncate">{{ container.parentName ?? "Standalone" }}</dd>
-                        <dt class="text-(--muted)">Service</dt><dd class="truncate">{{ container.serviceName ?? "-" }}</dd>
-                        <dt class="text-(--muted)">Status</dt><dd class="truncate">{{ container.status }}</dd>
+                        <dt class="text-(--muted)">State</dt>
+                        <dd>{{ container.state }}</dd>
+                        <dt class="text-(--muted)">Parent</dt>
+                        <dd class="truncate">{{ container.parentName ?? "Standalone" }}</dd>
+                        <dt class="text-(--muted)">Service</dt>
+                        <dd class="truncate">{{ container.serviceName ?? "-" }}</dd>
+                        <dt class="text-(--muted)">Status</dt>
+                        <dd class="truncate">{{ container.status }}</dd>
                         <dt class="text-(--muted)">Ports</dt>
                         <dd class="grid gap-1 font-mono">
                             @for (port of containerPortLinks(container); track port.key) {
                             @if (port.url) {
-                            <button type="button" class="inline-flex min-w-0 items-center gap-1 text-left text-[#2d9cff] underline decoration-[#2d9cff]/55 underline-offset-2 hover:text-[#67bdff]"
+                            <button type="button"
+                              class="inline-flex min-w-0 items-center gap-1 text-left text-[#2d9cff] underline decoration-[#2d9cff]/55 underline-offset-2 hover:text-[#67bdff]"
                               (click)="openPort($event, port.url)" [title]="port.url">
                                 <span class="truncate">{{ port.label }}</span>
                                 <i class="bi bi-box-arrow-up-right text-[10px]"></i>
@@ -269,19 +352,23 @@
                         </dd>
                     </dl>
                     <div class="grid gap-2">
-                        <button type="button" class="h-8 rounded-md border border-(--border) bg-white/5 px-3 text-left text-[12px] hover:bg-white/8 disabled:opacity-45"
+                        <button type="button"
+                          class="h-8 rounded-md border border-(--border) bg-white/5 px-3 text-left text-[12px] hover:bg-white/8 disabled:opacity-45"
                           [disabled]="container.running || actionRunning()" (click)="runContainerAction('start', container)">
                             <i class="bi bi-play-fill mr-2"></i>Start
                         </button>
-                        <button type="button" class="h-8 rounded-md border border-(--border) bg-white/5 px-3 text-left text-[12px] hover:bg-white/8 disabled:opacity-45"
+                        <button type="button"
+                          class="h-8 rounded-md border border-(--border) bg-white/5 px-3 text-left text-[12px] hover:bg-white/8 disabled:opacity-45"
                           [disabled]="!container.running || actionRunning()" (click)="runContainerAction('stop', container)">
                             <i class="bi bi-stop-fill mr-2"></i>Stop
                         </button>
-                        <button type="button" class="h-8 rounded-md border border-(--border) bg-white/5 px-3 text-left text-[12px] hover:bg-white/8 disabled:opacity-45"
+                        <button type="button"
+                          class="h-8 rounded-md border border-(--border) bg-white/5 px-3 text-left text-[12px] hover:bg-white/8 disabled:opacity-45"
                           [disabled]="!container.running || actionRunning()" (click)="runContainerAction('restart', container)">
                             <i class="bi bi-arrow-clockwise mr-2"></i>Restart
                         </button>
-                        <button type="button" class="h-8 rounded-md border border-[rgba(255,75,67,0.38)] bg-[rgba(255,75,67,0.08)] px-3 text-left text-[12px] text-(--red) hover:bg-[rgba(255,75,67,0.14)] disabled:opacity-45"
+                        <button type="button"
+                          class="h-8 rounded-md border border-[rgba(255,75,67,0.38)] bg-[rgba(255,75,67,0.08)] px-3 text-left text-[12px] text-(--red) hover:bg-[rgba(255,75,67,0.14)] disabled:opacity-45"
                           [disabled]="actionRunning()" (click)="removeContainer(container)">
                             <i class="bi bi-trash3 mr-2"></i>Remove container
                         </button>
@@ -290,14 +377,19 @@
                 } @else {
                 <div class="grid h-full place-items-center text-[12px] text-(--muted)">Select a container.</div>
                 }
-                } @else {
+                } @else if (activeTab() === "images") {
                 @if (selectedImage(); as image) {
                 <dl class="grid grid-cols-[88px_minmax(0,1fr)] gap-x-3 gap-y-2 text-[12px]">
-                    <dt class="text-(--muted)">Repository</dt><dd class="truncate">{{ image.repository }}</dd>
-                    <dt class="text-(--muted)">Tag</dt><dd>{{ image.tag }}</dd>
-                    <dt class="text-(--muted)">Image ID</dt><dd class="truncate font-mono">{{ image.id }}</dd>
-                    <dt class="text-(--muted)">Size</dt><dd>{{ image.size }}</dd>
-                    <dt class="text-(--muted)">Created</dt><dd>{{ image.created }}</dd>
+                    <dt class="text-(--muted)">Repository</dt>
+                    <dd class="truncate">{{ image.repository }}</dd>
+                    <dt class="text-(--muted)">Tag</dt>
+                    <dd>{{ image.tag }}</dd>
+                    <dt class="text-(--muted)">Image ID</dt>
+                    <dd class="truncate font-mono">{{ image.id }}</dd>
+                    <dt class="text-(--muted)">Size</dt>
+                    <dd>{{ image.size }}</dd>
+                    <dt class="text-(--muted)">Created</dt>
+                    <dd>{{ image.created }}</dd>
                 </dl>
                 <div class="mt-3 grid gap-2">
                     <button type="button"
@@ -308,6 +400,22 @@
                 </div>
                 } @else {
                 <div class="grid h-full place-items-center text-[12px] text-(--muted)">Select an image.</div>
+                }
+                } @else {
+                @if (selectedRegistryImage(); as image) {
+                <dl class="grid grid-cols-[88px_minmax(0,1fr)] gap-x-3 gap-y-2 text-[12px]">
+                    <dt class="text-(--muted)">Repository</dt>
+                    <dd class="flex min-w-0 items-center gap-2 font-mono">
+                        <span class="truncate">{{ image.repository }}</span>
+                        <mtx-copy-button [value]="image.repository" label="Copy repository" />
+                    </dd>
+                    <dt class="text-(--muted)">Tags</dt>
+                    <dd>{{ image.tags.length }}</dd>
+                    <dt class="text-(--muted)">Tag List</dt>
+                    <dd class="max-h-64 overflow-auto whitespace-pre-wrap wrap-break-word font-mono text-(--muted)">{{ registryTagsText(image) }}</dd>
+                </dl>
+                } @else {
+                <div class="grid h-full place-items-center text-[12px] text-(--muted)">Add a registry to list images.</div>
                 }
                 }
             </div>

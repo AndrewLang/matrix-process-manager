@@ -244,6 +244,21 @@ pub struct DockerImage {
     pub created: String,
 }
 
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DockerRegistryRequest {
+    pub registry: String,
+    pub username: String,
+    pub password: String,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DockerRegistryImage {
+    pub repository: String,
+    pub tags: Vec<String>,
+}
+
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DockerDashboard {
