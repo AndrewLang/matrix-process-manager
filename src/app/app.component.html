@@ -3,7 +3,7 @@
       (settingsRequested)="openSettingsDialog()" />
 
     <div class="grid h-full min-h-0 overflow-hidden" [style.gridTemplateColumns]="sidebarWidth() + 'px 4px minmax(0, 1fr)'">
-        <mtx-sidebar [overviewItems]="overviewItems" [toolItems]="enabledToolItems()" [activeView]="activeView()" [workstationName]="workstationName()"
+        <mtx-sidebar [overviewItems]="overviewItems()" [toolItems]="enabledToolItems()" [activeView]="activeView()" [workstationName]="workstationName()"
           (viewChange)="setView($event)" (toolSelected)="openTool($event)" />
 
         <div appSplitter [min]="120" [max]="280" (widthChange)="setSidebarWidth($event)"

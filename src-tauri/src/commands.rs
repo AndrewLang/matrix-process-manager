@@ -6,8 +6,9 @@ use crate::command_knowledge::models::{
 use crate::disk_cleanup::DiskCleanupManager;
 use crate::models::{
     CommandError, DiskCleanupRequest, DiskCleanupResult, DiskCleanupScan,
-    DiskUsageInsightCleanupRequest, DiskUsageInsightCleanupResult, PortScan, PortUsage,
-    ProcessSnapshot, SshKeyGenerationRequest, SshKeyInfo, StartupApp,
+    DiskUsageInsightCleanupRequest, DiskUsageInsightCleanupResult, DockerAvailability,
+    DockerContainer, DockerDashboard, DockerImage, PortScan, PortUsage, ProcessSnapshot,
+    SshKeyGenerationRequest, SshKeyInfo, StartupApp,
     StartupCommandUpdateRequest,
 };
 use crate::terminal::models::{
@@ -94,6 +95,51 @@ pub async fn generate_ssh_key(
     tauri::async_runtime::spawn_blocking(move || generate_ssh_key_impl(request))
         .await
         .map_err(|error| CommandError::ssh_key_failed(error.to_string()))?
+}
+
+#[tauri::command]
+pub async fn get_docker_availability() -> Result<DockerAvailability, CommandError> {
+    tauri::async_runtime::spawn_blocking(docker_availability_impl)
+        .await
+        .map_err(|error| CommandError::docker_failed(error.to_string()))?
+}
+
+#[tauri::command]
+pub async fn get_docker_dashboard() -> Result<DockerDashboard, CommandError> {
+    tauri::async_runtime::spawn_blocking(docker_dashboard_impl)
+        .await
+        .map_err(|error| CommandError::docker_failed(error.to_string()))?
+}
+
+#[tauri::command]
+pub async fn run_docker_container_action(
+    container_id: String,
+    action: String,
+) -> Result<(), CommandError> {
+    tauri::async_runtime::spawn_blocking(move || docker_container_action_impl(&container_id, &action))
+        .await
+        .map_err(|error| CommandError::docker_failed(error.to_string()))?
+}
+
+#[tauri::command]
+pub async fn remove_docker_image(image_id: String) -> Result<(), CommandError> {
+    tauri::async_runtime::spawn_blocking(move || run_docker_text(&["rmi", &image_id]).map(|_| ()))
+        .await
+        .map_err(|error| CommandError::docker_failed(error.to_string()))?
+}
+
+#[tauri::command]
+pub async fn get_docker_container_inspect(container_id: String) -> Result<String, CommandError> {
+    tauri::async_runtime::spawn_blocking(move || run_docker_text(&["inspect", &container_id]))
+        .await
+        .map_err(|error| CommandError::docker_failed(error.to_string()))?
+}
+
+#[tauri::command]
+pub async fn get_docker_container_logs(container_id: String) -> Result<String, CommandError> {
+    tauri::async_runtime::spawn_blocking(move || run_docker_text(&["logs", "--tail", "200", &container_id]))
+        .await
+        .map_err(|error| CommandError::docker_failed(error.to_string()))?
 }
 
 #[tauri::command]
@@ -573,6 +619,159 @@ fn ssh_key_fingerprint(public_path: &std::path::Path) -> Option<String> {
 
     let text = String::from_utf8_lossy(&output.stdout);
     Some(text.trim().to_string()).filter(|value| !value.is_empty())
+}
+
+fn docker_availability_impl() -> Result<DockerAvailability, CommandError> {
+    let output = std::process::Command::new("docker")
+        .arg("--version")
+        .output();
+
+    match output {
+        Ok(output) if output.status.success() => Ok(DockerAvailability {
+            installed: true,
+            version: Some(String::from_utf8_lossy(&output.stdout).trim().to_string()),
+        }),
+        Ok(_) => Ok(DockerAvailability {
+            installed: false,
+            version: None,
+        }),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(DockerAvailability {
+            installed: false,
+            version: None,
+        }),
+        Err(error) => Err(CommandError::docker_failed(error.to_string())),
+    }
+}
+
+fn docker_dashboard_impl() -> Result<DockerDashboard, CommandError> {
+    let availability = docker_availability_impl()?;
+    if !availability.installed {
+        return Ok(DockerDashboard {
+            installed: false,
+            running: false,
+            version: None,
+            server_version: None,
+            error: Some("Docker CLI is not installed.".to_string()),
+            containers: Vec::new(),
+            images: Vec::new(),
+        });
+    }
+
+    let server_version = run_docker_text(&["version", "--format", "{{.Server.Version}}"]);
+    let running = server_version.is_ok();
+    if !running {
+        let error = match server_version.err() {
+            Some(error) => error.message,
+            None => "Docker daemon is not running.".to_string(),
+        };
+        return Ok(DockerDashboard {
+            installed: true,
+            running: false,
+            version: availability.version,
+            server_version: None,
+            error: Some(error),
+            containers: Vec::new(),
+            images: Vec::new(),
+        });
+    }
+
+    Ok(DockerDashboard {
+        installed: true,
+        running: true,
+        version: availability.version,
+        server_version: server_version.ok(),
+        error: None,
+        containers: docker_containers()?,
+        images: docker_images()?,
+    })
+}
+
+fn docker_container_action_impl(container_id: &str, action: &str) -> Result<(), CommandError> {
+    let command = match action {
+        "start" => "start",
+        "stop" => "stop",
+        "restart" => "restart",
+        "remove" => "rm",
+        "forceRemove" => "rm",
+        _ => return Err(CommandError::docker_failed("unsupported Docker container action")),
+    };
+
+    if action == "forceRemove" {
+        run_docker_text(&[command, "-f", container_id]).map(|_| ())
+    } else {
+        run_docker_text(&[command, container_id]).map(|_| ())
+    }
+}
+
+fn docker_containers() -> Result<Vec<DockerContainer>, CommandError> {
+    let text = run_docker_text(&["ps", "-a", "--format", "{{json .}}"])?;
+    Ok(text
+        .lines()
+        .filter_map(|line| serde_json::from_str::<serde_json::Value>(line).ok())
+        .map(|value| {
+            let state = json_string(&value, "State");
+            let labels = json_string(&value, "Labels");
+            let parent_name = docker_label_value(&labels, "com.docker.compose.project");
+            let service_name = docker_label_value(&labels, "com.docker.compose.service");
+            DockerContainer {
+                id: json_string(&value, "ID"),
+                name: json_string(&value, "Names"),
+                image: json_string(&value, "Image"),
+                parent_name,
+                service_name,
+                state: state.clone(),
+                status: json_string(&value, "Status"),
+                ports: json_string(&value, "Ports"),
+                created: json_string(&value, "CreatedAt"),
+                running: state.eq_ignore_ascii_case("running"),
+            }
+        })
+        .collect())
+}
+
+fn docker_images() -> Result<Vec<DockerImage>, CommandError> {
+    let text = run_docker_text(&["images", "--format", "{{json .}}"])?;
+    Ok(text
+        .lines()
+        .filter_map(|line| serde_json::from_str::<serde_json::Value>(line).ok())
+        .map(|value| DockerImage {
+            id: json_string(&value, "ID"),
+            repository: json_string(&value, "Repository"),
+            tag: json_string(&value, "Tag"),
+            size: json_string(&value, "Size"),
+            created: json_string(&value, "CreatedSince"),
+        })
+        .collect())
+}
+
+fn run_docker_text(args: &[&str]) -> Result<String, CommandError> {
+    let output = std::process::Command::new("docker")
+        .args(args)
+        .output()
+        .map_err(|error| CommandError::docker_failed(error.to_string()))?;
+
+    if output.status.success() {
+        Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
+    } else {
+        Err(CommandError::docker_failed(
+            String::from_utf8_lossy(&output.stderr).trim().to_string(),
+        ))
+    }
+}
+
+fn json_string(value: &serde_json::Value, key: &str) -> String {
+    value
+        .get(key)
+        .and_then(|item| item.as_str())
+        .unwrap_or("")
+        .to_string()
+}
+
+fn docker_label_value(labels: &str, key: &str) -> Option<String> {
+    labels
+        .split(',')
+        .filter_map(|label| label.split_once('='))
+        .find_map(|(label_key, label_value)| (label_key == key && !label_value.is_empty()).then(|| label_value.to_string()))
 }
 
 #[cfg(windows)]

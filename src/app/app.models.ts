@@ -1,4 +1,4 @@
-export type ViewId = "dashboard" | "processes" | "performance" | "startup" | "system" | "command-center" | "settings" | "storage" | "ports" | "ssh-keys" | "disk" | "terminal" | "more";
+export type ViewId = "dashboard" | "processes" | "performance" | "startup" | "system" | "command-center" | "settings" | "storage" | "ports" | "ssh-keys" | "docker" | "disk" | "terminal" | "more";
 export type NativeToolId = "taskManager" | "systemSettings" | "diskManager" | "terminal" | "envVariables" | "snippingTool";
 export type ProcessGroup = "apps" | "background" | "windows";
 export type UpdateFrequency = "high" | "normal" | "low" | "paused";
@@ -237,6 +237,42 @@ export interface SshKeyGenerationRequest {
     fileName: string;
     keyType: string;
     comment: string;
+}
+
+export interface DockerAvailability {
+    installed: boolean;
+    version?: string;
+}
+
+export interface DockerContainer {
+    id: string;
+    name: string;
+    image: string;
+    parentName?: string;
+    serviceName?: string;
+    state: string;
+    status: string;
+    ports: string;
+    created: string;
+    running: boolean;
+}
+
+export interface DockerImage {
+    id: string;
+    repository: string;
+    tag: string;
+    size: string;
+    created: string;
+}
+
+export interface DockerDashboard {
+    installed: boolean;
+    running: boolean;
+    version?: string;
+    serverVersion?: string;
+    error?: string;
+    containers: DockerContainer[];
+    images: DockerImage[];
 }
 
 export interface DiskUsageInsightCleanupRequest {

@@ -1,5 +1,5 @@
 <div class="h-full min-h-0 overflow-auto">
-    <table class="min-w-full border-collapse text-[12px]" [style.width.px]="tableWidth()">
+    <table class="data-grid-table min-w-full border-collapse text-[12px]" [style.width.px]="tableWidth()">
         <colgroup>
             @for (column of visibleColumns(); track column.key) {
             <col [style.width.px]="column.width" />
@@ -30,7 +30,12 @@
             <tr class="cursor-pointer border-t border-white/6 hover:bg-white/5" [class.bg-[rgba(23,144,255,0.08)]]="isSelected(row)" (click)="selectRow(row)">
                 @for (column of visibleColumns(); track column.key) {
                 <td class="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2" [class.text-right]="column.align === 'right'" [ngClass]="cellClass(row, column)">
-                    {{ cellText(row, column) }}
+                    <span class="inline-flex min-w-0 items-center gap-1.5">
+                        @if (iconClass(row, column)) {
+                        <i class="bi flex-none text-[11px]" [ngClass]="[iconClass(row, column), iconColorClass(row, column)]"></i>
+                        }
+                        <span class="min-w-0 truncate">{{ cellText(row, column) }}</span>
+                    </span>
                 </td>
                 }
             </tr>

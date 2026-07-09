@@ -13,6 +13,8 @@ export interface DataGridColumn<T = unknown> {
     resizable?: boolean;
     value: (row: T) => string | number | undefined;
     cellClass?: (row: T) => string;
+    iconClass?: (row: T) => string;
+    iconColorClass?: (row: T) => string;
 }
 
 @Component({
@@ -98,6 +100,14 @@ export class DataGridComponent<T = unknown> {
 
     cellClass(row: T, column: DataGridColumn<T>): string {
         return column.cellClass?.(row) ?? "";
+    }
+
+    iconClass(row: T, column: DataGridColumn<T>): string {
+        return column.iconClass?.(row) ?? "";
+    }
+
+    iconColorClass(row: T, column: DataGridColumn<T>): string {
+        return column.iconColorClass?.(row) ?? "";
     }
 
     startResize(event: MouseEvent, index: number): void {

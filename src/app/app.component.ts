@@ -4,7 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { PhysicalPosition, PhysicalSize } from "@tauri-apps/api/dpi";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { filter } from "rxjs";
-import { BackendCpuInfo, BackendProcessRow, BackendProcessSnapshot, BackendWindowsInfo, MetricCard, NativeToolId, NavItem, ProcessGroup, ProcessRow, ResourceBar, ResourceSample, SystemInfoItem, UpdateFrequency, ViewId } from "./app.models";
+import { BackendCpuInfo, BackendProcessRow, BackendProcessSnapshot, BackendWindowsInfo, DockerAvailability, MetricCard, NativeToolId, NavItem, ProcessGroup, ProcessRow, ResourceBar, ResourceSample, SystemInfoItem, UpdateFrequency, ViewId } from "./app.models";
 import { CommonDialogComponent } from "./components/common-dialog/common-dialog.component";
 import { SidebarComponent } from "./components/sidebar/sidebar.component";
 import { TitlebarComponent } from "./components/titlebar/titlebar.component";
@@ -47,6 +47,7 @@ export class AppComponent implements OnDestroy, OnInit {
   sidebarWidth = signal(this.persistedUiState?.sidebarWidth ?? 200);
   workstationName = signal("My Workstation");
   settingsDialogOpen = signal(false);
+  dockerInstalled = signal(false);
   private refreshTimer?: ReturnType<typeof setInterval>;
   private uiSaveTimer?: ReturnType<typeof setTimeout>;
   private windowSaveTimer?: ReturnType<typeof setTimeout>;
@@ -63,7 +64,7 @@ export class AppComponent implements OnDestroy, OnInit {
   private restoringWindowState = false;
   private normalWindowState?: PersistedWindowState;
 
-  overviewItems: NavItem[] = [
+  baseOverviewItems: NavItem[] = [
     { id: "dashboard", label: "Dashboard", icon: "bi-speedometer2" },
     { id: "processes", label: "Processes", icon: "bi-list-task" },
     { id: "performance", label: "Performance", icon: "bi-activity" },
@@ -83,6 +84,9 @@ export class AppComponent implements OnDestroy, OnInit {
     { id: "settings", label: "Env Variables", icon: "bi-braces", nativeTool: "envVariables" },
     { id: "settings", label: "Snipping Tool", icon: "bi-scissors", nativeTool: "snippingTool" },
   ];
+  overviewItems = computed<NavItem[]>(() => this.dockerInstalled()
+    ? [...this.baseOverviewItems.slice(0, 6), { id: "docker", label: "Docker", icon: "bi-box-seam" }, ...this.baseOverviewItems.slice(6)]
+    : this.baseOverviewItems);
 
   enabledToolItems = computed(() => this.toolItems.filter((item) => !item.nativeTool || this.workareaState.appSettings().toolSettings[item.nativeTool]));
 
@@ -120,7 +124,7 @@ export class AppComponent implements OnDestroy, OnInit {
     { label: "Network Receive", value: "4.3 Mbps", width: "31%", accent: "blue" },
   ]);
 
-  activeTitle = computed(() => [...this.overviewItems, ...this.toolItems].find((item) => item.id === this.activeView())?.label ?? "Dashboard");
+  activeTitle = computed(() => [...this.overviewItems(), ...this.toolItems].find((item) => item.id === this.activeView())?.label ?? "Dashboard");
 
   constructor(private router: Router, public workareaState: WorkareaStateService) {
     if (this.persistedUiState) {
@@ -145,6 +149,7 @@ export class AppComponent implements OnDestroy, OnInit {
     this.restoreWindowState().then(() => this.trackWindowState());
     this.restoreRoute();
     this.startProcessWorker();
+    this.refreshDockerAvailability();
     this.updateSystemInfo();
     this.refreshSnapshot();
   }
@@ -195,6 +200,12 @@ export class AppComponent implements OnDestroy, OnInit {
   resetSettings(): void {
     this.workareaState.resetAppSettings();
     invoke<void>("set_start_with_windows", { enabled: false }).catch(() => undefined);
+  }
+
+  refreshDockerAvailability(): void {
+    invoke<DockerAvailability>("get_docker_availability")
+      .then((availability) => this.dockerInstalled.set(availability.installed))
+      .catch(() => this.dockerInstalled.set(false));
   }
 
   refreshSnapshot(): void {
@@ -507,7 +518,7 @@ export class AppComponent implements OnDestroy, OnInit {
   }
 
   private isPersistedViewId(value: unknown): value is ViewId {
-    return value === "dashboard" || value === "processes" || value === "performance" || value === "startup" || value === "system" || value === "command-center" || value === "settings" || value === "storage" || value === "ports" || value === "ssh-keys" || value === "disk" || value === "terminal" || value === "more";
+    return value === "dashboard" || value === "processes" || value === "performance" || value === "startup" || value === "system" || value === "command-center" || value === "settings" || value === "storage" || value === "ports" || value === "ssh-keys" || value === "docker" || value === "disk" || value === "terminal" || value === "more";
   }
 
   private isUpdateFrequency(value: unknown): value is UpdateFrequency {
@@ -641,7 +652,7 @@ export class AppComponent implements OnDestroy, OnInit {
   }
 
   private isViewId(view: string): view is ViewId {
-    return [...this.overviewItems, ...this.toolItems].some((item) => item.id === view);
+    return [...this.overviewItems(), ...this.toolItems].some((item) => item.id === view);
   }
 
   private configurePolling(frequency: UpdateFrequency): void {

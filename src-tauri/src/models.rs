@@ -214,6 +214,50 @@ pub struct SshKeyGenerationRequest {
 
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct DockerAvailability {
+    pub installed: bool,
+    pub version: Option<String>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DockerContainer {
+    pub id: String,
+    pub name: String,
+    pub image: String,
+    pub parent_name: Option<String>,
+    pub service_name: Option<String>,
+    pub state: String,
+    pub status: String,
+    pub ports: String,
+    pub created: String,
+    pub running: bool,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DockerImage {
+    pub id: String,
+    pub repository: String,
+    pub tag: String,
+    pub size: String,
+    pub created: String,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DockerDashboard {
+    pub installed: bool,
+    pub running: bool,
+    pub version: Option<String>,
+    pub server_version: Option<String>,
+    pub error: Option<String>,
+    pub containers: Vec<DockerContainer>,
+    pub images: Vec<DockerImage>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct NetworkAdapterUsage {
     pub name: String,
     pub adapter_index: usize,
@@ -347,6 +391,13 @@ impl CommandError {
     pub fn ssh_key_failed(message: impl Into<String>) -> Self {
         Self {
             code: "sshKeyFailed".to_string(),
+            message: message.into(),
+        }
+    }
+
+    pub fn docker_failed(message: impl Into<String>) -> Self {
+        Self {
+            code: "dockerFailed".to_string(),
             message: message.into(),
         }
     }

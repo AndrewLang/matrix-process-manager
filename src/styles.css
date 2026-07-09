@@ -111,6 +111,11 @@
     @apply mx-auto block h-3.5 w-3.5 accent-(--blue);
   }
 
+  .data-grid-table th:first-child,
+  .data-grid-table td:first-child {
+    @apply w-auto px-3 text-left;
+  }
+
   dt {
     @apply text-[#a4b3c1];
   }
