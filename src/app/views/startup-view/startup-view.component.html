@@ -28,17 +28,17 @@
             </div>
             <div class="flex min-w-0 items-center gap-2 text-[12px]">
                 <mtx-search-box [hostClass]="wideFilterSearchClass" placeholder="Search startup apps..." [(value)]="filter" />
-                                <mtx-select class="h-7.5 text-[#cbd7e2]" [value]="sourceFilter()" (valueChange)="sourceFilter.set($event)">
+                <mtx-select class="h-7.5 text-[#cbd7e2]" [value]="sourceFilter()" (valueChange)="sourceFilter.set($event)">
                     <option>All Sources</option>
                     <option>Registry</option>
                     <option>Startup Folder</option>
-                                </mtx-select>
-                                <mtx-select class="h-7.5 text-[#cbd7e2]" [value]="impactFilter()" (valueChange)="impactFilter.set($event)">
+                </mtx-select>
+                <mtx-select class="h-7.5 text-[#cbd7e2]" [value]="impactFilter()" (valueChange)="impactFilter.set($event)">
                     <option>All Impact</option>
                     <option>High</option>
                     <option>Medium</option>
                     <option>Low</option>
-                                </mtx-select>
+                </mtx-select>
                 <button type="button"
                   class="inline-flex h-7.5 items-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(16,31,45,0.86)] px-3 hover:bg-white/6"
                   (click)="toggleDisabled()">

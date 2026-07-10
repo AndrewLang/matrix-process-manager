@@ -27,11 +27,12 @@
                         <strong class="text-[13px] text-[#e2eaf2]">Default shell</strong>
                         <small class="text-[12px] text-(--muted)">Choose the shell Command Center starts with.</small>
                     </span>
-                                        <mtx-select class="ml-auto w-40 flex-none" [value]="state.appSettings().terminalSettings.defaultShell" (valueChange)="setDefaultShell($event)">
+                    <mtx-select class="ml-auto w-40 flex-none" [value]="state.appSettings().terminalSettings.defaultShell"
+                      (valueChange)="setDefaultShell($event)">
                         @for (option of shellOptions; track option.value) {
                         <option [value]="option.value">{{ option.label }}</option>
                         }
-                                        </mtx-select>
+                    </mtx-select>
                 </div>
                 <div class="flex min-h-16 items-center gap-4 border-b border-(--border) px-3 py-3">
                     <span class="grid gap-0.5">
@@ -83,19 +84,19 @@
                 <div class="grid gap-3 px-3 py-3 md:grid-cols-2">
                     <label class="grid gap-1.5">
                         <span class="text-[13px] text-[#e2eaf2]">Cursor style</span>
-                                                <mtx-select class="w-full" [value]="state.appSettings().terminalSettings.cursorStyle" (valueChange)="setCursorStyle($event)">
+                        <mtx-select class="w-full" [value]="state.appSettings().terminalSettings.cursorStyle" (valueChange)="setCursorStyle($event)">
                             @for (option of cursorStyles; track option.value) {
                             <option [value]="option.value">{{ option.label }}</option>
                             }
-                                                </mtx-select>
+                        </mtx-select>
                     </label>
                     <label class="grid gap-1.5">
                         <span class="text-[13px] text-[#e2eaf2]">Terminal theme</span>
-                                                <mtx-select class="w-full" [value]="state.appSettings().terminalSettings.theme" (valueChange)="setTerminalTheme($event)">
+                        <mtx-select class="w-full" [value]="state.appSettings().terminalSettings.theme" (valueChange)="setTerminalTheme($event)">
                             @for (option of terminalThemes; track option.value) {
                             <option [value]="option.value">{{ option.label }}</option>
                             }
-                                                </mtx-select>
+                        </mtx-select>
                     </label>
                 </div>
             </div>
@@ -194,11 +195,11 @@
                         <strong class="text-[13px] text-[#e2eaf2]">{{ item.label }}</strong>
                         <small class="text-[12px] text-(--muted)">{{ item.detail }}</small>
                     </span>
-                                        <mtx-select class="ml-auto w-36 flex-none" [value]="item.value">
+                    <mtx-select class="ml-auto w-36 flex-none" [value]="item.value">
                         @for (option of item.options; track option) {
                         <option [selected]="option === item.value">{{ option }}</option>
                         }
-                                        </mtx-select>
+                    </mtx-select>
                 </div>
                 }
             </div>

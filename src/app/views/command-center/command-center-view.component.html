@@ -1,65 +1,65 @@
 <section class="grid h-full min-h-0 min-w-0 grid-rows-[auto_auto_minmax(0,1fr)_auto] gap-2.5 overflow-hidden px-2.5 py-3">
-    <header
-      class="flex min-w-0 items-center gap-3 rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
-        <div class="min-w-0">
-            <h1>Command Center</h1>
-            <p>Cross-platform terminal session with streamed output.</p>
-        </div>
-        <span class="ml-auto rounded bg-white/6 px-2 py-1 text-[11px] text-(--muted)">{{ vm.status() }}</span>
-                        <mtx-select [value]="vm.shell()" [disabled]="vm.running()" (valueChange)="setShell($event)">
-            @for (shell of vm.shellOptions; track shell) {
-            <option [value]="shell">{{ vm.shellLabel(shell) }}</option>
+      <header
+        class="flex min-w-0 items-center gap-3 rounded-md border border-(--border) bg-[linear-gradient(145deg,rgba(18,35,51,0.92),rgba(9,22,34,0.86))] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+            <div class="min-w-0">
+                  <h1>Command Center</h1>
+                  <p>Cross-platform terminal session with streamed output.</p>
+            </div>
+            <span class="ml-auto rounded bg-white/6 px-2 py-1 text-[11px] text-(--muted)">{{ vm.status() }}</span>
+            <mtx-select [value]="vm.shell()" [disabled]="vm.running()" (valueChange)="setShell($event)">
+                  @for (shell of vm.shellOptions; track shell) {
+                  <option [value]="shell">{{ vm.shellLabel(shell) }}</option>
+                  }
+            </mtx-select>
+            @if (vm.running()) {
+            <button type="button" class="h-8 rounded-md border border-[rgba(255,75,67,0.38)] bg-[rgba(255,75,67,0.08)] px-3 text-[12px] text-(--red)"
+              (click)="vm.stop()">Stop</button>
+            } @else {
+            <button type="button" class="h-8 rounded-md border border-[rgba(23,144,255,0.4)] bg-[rgba(23,144,255,0.12)] px-3 text-[12px] text-[#1d9bff]"
+              (click)="vm.start()">Start</button>
             }
-                        </mtx-select>
-        @if (vm.running()) {
-        <button type="button" class="h-8 rounded-md border border-[rgba(255,75,67,0.38)] bg-[rgba(255,75,67,0.08)] px-3 text-[12px] text-(--red)"
-          (click)="vm.stop()">Stop</button>
-        } @else {
-        <button type="button" class="h-8 rounded-md border border-[rgba(23,144,255,0.4)] bg-[rgba(23,144,255,0.12)] px-3 text-[12px] text-[#1d9bff]"
-          (click)="vm.start()">Start</button>
-        }
-    </header>
+      </header>
 
-    <div class="flex min-w-0 items-center gap-2 overflow-hidden rounded-md border border-(--border) bg-[rgba(5,11,18,0.7)] px-2 py-1.5">
-        <div class="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
-            @for (tab of vm.tabs(); track tab.id) {
-            <button type="button" draggable="true"
-              class="flex h-8 max-w-48 items-center gap-2 rounded border border-transparent px-2 text-[12px] text-[#cbd7e2] hover:bg-white/6"
-              [class.border-[rgba(23,144,255,0.35)]]="vm.activeTabId() === tab.id" [class.bg-[rgba(23,144,255,0.12)]]="vm.activeTabId() === tab.id"
-              (click)="vm.selectTab(tab.id)" (dragstart)="vm.startTabDrag(tab.id)" (dragover)="$event.preventDefault()" (drop)="vm.dropTab(tab.id)">
-                <i class="bi bi-terminal text-[13px]"></i>
-                <span class="truncate">{{ tab.title }}</span>
-                <span class="rounded bg-white/6 px-1 text-[10px] text-(--muted)">drag</span>
-                @if (vm.tabs().length > 1) {
-                <span class="grid size-4 place-items-center rounded hover:bg-white/10" (click)="$event.stopPropagation(); vm.closeTab(tab.id)">×</span>
-                }
-            </button>
+      <div class="flex min-w-0 items-center gap-2 overflow-hidden rounded-md border border-(--border) bg-[rgba(5,11,18,0.7)] px-2 py-1.5">
+            <div class="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
+                  @for (tab of vm.tabs(); track tab.id) {
+                  <button type="button" draggable="true"
+                    class="flex h-8 max-w-48 items-center gap-2 rounded border border-transparent px-2 text-[12px] text-[#cbd7e2] hover:bg-white/6"
+                    [class.border-[rgba(23,144,255,0.35)]]="vm.activeTabId() === tab.id" [class.bg-[rgba(23,144,255,0.12)]]="vm.activeTabId() === tab.id"
+                    (click)="vm.selectTab(tab.id)" (dragstart)="vm.startTabDrag(tab.id)" (dragover)="$event.preventDefault()" (drop)="vm.dropTab(tab.id)">
+                        <i class="bi bi-terminal text-[13px]"></i>
+                        <span class="truncate">{{ tab.title }}</span>
+                        <span class="rounded bg-white/6 px-1 text-[10px] text-(--muted)">drag</span>
+                        @if (vm.tabs().length > 1) {
+                        <span class="grid size-4 place-items-center rounded hover:bg-white/10" (click)="$event.stopPropagation(); vm.closeTab(tab.id)">×</span>
+                        }
+                  </button>
+                  }
+            </div>
+            <button type="button" class="h-8 rounded border border-(--border) bg-white/5 px-2 text-[12px] text-[#dfe8f1]" (click)="vm.duplicateTab()"><i
+                    class="bi bi-copy"></i> Duplicate</button>
+            <button type="button" class="h-8 rounded border border-(--border) bg-white/5 px-2 text-[12px] text-[#dfe8f1]" (click)="vm.toggleSplit()"><i
+                    class="bi bi-layout-split"></i> Split</button>
+            <button type="button" class="h-8 rounded border border-(--border) bg-white/5 px-2 text-[12px] text-[#dfe8f1]" (click)="vm.copyCommand()"><i
+                    class="bi bi-clipboard"></i> Command</button>
+            <button type="button" class="h-8 rounded border border-(--border) bg-white/5 px-2 text-[12px] text-[#dfe8f1]" (click)="vm.copyOutput()"><i
+                    class="bi bi-clipboard-data"></i> Output</button>
+            <button type="button" class="h-8 rounded border border-(--border) bg-white/5 px-2 text-[12px] text-[#dfe8f1]" (click)="vm.exportSession()"><i
+                    class="bi bi-download"></i> Export</button>
+            <label class="grid h-8 cursor-pointer place-items-center rounded border border-(--border) bg-white/5 px-2 text-[12px] text-[#dfe8f1]"><input
+                    class="hidden" type="file" accept=".json,.txt,.log" (change)="importHistory($event)" />Import</label>
+            <button type="button" class="h-8 rounded border border-(--border) bg-white/5 px-2 text-[12px] text-[#dfe8f1]" (click)="vm.clearOutput()"><i
+                    class="bi bi-eraser"></i> Clear</button>
+      </div>
+
+      <div class="grid min-h-0 gap-2" [class.md:grid-cols-2]="vm.splitEnabled()">
+            <mtx-terminal-output [lines]="vm.lines()" />
+            @if (vm.splitEnabled()) {
+            <mtx-terminal-output [lines]="vm.lines()" />
             }
-        </div>
-        <button type="button" class="h-8 rounded border border-(--border) bg-white/5 px-2 text-[12px] text-[#dfe8f1]" (click)="vm.duplicateTab()"><i
-              class="bi bi-copy"></i> Duplicate</button>
-        <button type="button" class="h-8 rounded border border-(--border) bg-white/5 px-2 text-[12px] text-[#dfe8f1]" (click)="vm.toggleSplit()"><i
-              class="bi bi-layout-split"></i> Split</button>
-        <button type="button" class="h-8 rounded border border-(--border) bg-white/5 px-2 text-[12px] text-[#dfe8f1]" (click)="vm.copyCommand()"><i
-              class="bi bi-clipboard"></i> Command</button>
-        <button type="button" class="h-8 rounded border border-(--border) bg-white/5 px-2 text-[12px] text-[#dfe8f1]" (click)="vm.copyOutput()"><i
-              class="bi bi-clipboard-data"></i> Output</button>
-        <button type="button" class="h-8 rounded border border-(--border) bg-white/5 px-2 text-[12px] text-[#dfe8f1]" (click)="vm.exportSession()"><i
-              class="bi bi-download"></i> Export</button>
-        <label class="grid h-8 cursor-pointer place-items-center rounded border border-(--border) bg-white/5 px-2 text-[12px] text-[#dfe8f1]"><input
-              class="hidden" type="file" accept=".json,.txt,.log" (change)="importHistory($event)" />Import</label>
-        <button type="button" class="h-8 rounded border border-(--border) bg-white/5 px-2 text-[12px] text-[#dfe8f1]" (click)="vm.clearOutput()"><i
-              class="bi bi-eraser"></i> Clear</button>
-    </div>
+      </div>
 
-    <div class="grid min-h-0 gap-2" [class.md:grid-cols-2]="vm.splitEnabled()">
-        <mtx-terminal-output [lines]="vm.lines()" />
-        @if (vm.splitEnabled()) {
-        <mtx-terminal-output [lines]="vm.lines()" />
-        }
-    </div>
-
-    <mtx-terminal-input [value]="vm.input()" [disabled]="!vm.running()" [suggestions]="vm.suggestions()" [autocompleteOpen]="vm.autocompleteOpen()"
-      [autocompleteLoading]="vm.autocompleteLoading()" (valueChange)="vm.setInput($event)" (selectSuggestion)="vm.acceptSuggestion($event)"
-      (dismissAutocomplete)="vm.closeAutocomplete()" (submitInput)="vm.submitInput()" />
+      <mtx-terminal-input [value]="vm.input()" [disabled]="!vm.running()" [suggestions]="vm.suggestions()" [autocompleteOpen]="vm.autocompleteOpen()"
+        [autocompleteLoading]="vm.autocompleteLoading()" (valueChange)="vm.setInput($event)" (selectSuggestion)="vm.acceptSuggestion($event)"
+        (dismissAutocomplete)="vm.closeAutocomplete()" (submitInput)="vm.submitInput()" />
 </section>

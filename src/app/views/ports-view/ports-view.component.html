@@ -56,16 +56,16 @@
                         <input class="h-full min-w-0 flex-1 bg-transparent text-[#dfe8f1] outline-none placeholder:text-(--muted)" type="text"
                           placeholder="Search port, process, PID, address..." [value]="query()" (input)="setQuery($any($event.target).value)" />
                     </div>
-                                        <mtx-select [value]="protocolFilter()" (valueChange)="setProtocolFilter($any($event))">
+                    <mtx-select [value]="protocolFilter()" (valueChange)="setProtocolFilter($any($event))">
                         <option value="all">All protocols</option>
                         <option value="tcp">TCP</option>
                         <option value="udp">UDP</option>
-                                        </mtx-select>
-                                        <mtx-select [value]="stateFilter()" (valueChange)="setStateFilter($any($event))">
+                    </mtx-select>
+                    <mtx-select [value]="stateFilter()" (valueChange)="setStateFilter($any($event))">
                         <option value="all">All states</option>
                         <option value="listening">Listening/Open</option>
                         <option value="established">Established</option>
-                                        </mtx-select>
+                    </mtx-select>
                 </div>
                 <div class="flex min-w-0 items-center gap-2 text-[12px] text-(--muted)">
                     @if (loading()) {
