@@ -634,6 +634,34 @@ $pingRows = @($reachable.Keys | Where-Object { -not $neighborIps.ContainsKey($_)
     }
 })
 $rows = @($localRows + $neighborRows + $pingRows | Sort-Object IpAddress, MacAddress -Unique)
+function Resolve-DeviceHostname($ip) {
+    $hostname = $null
+    try {
+        $ptr = Resolve-DnsName -Name $ip -ErrorAction Stop | Where-Object { $_.Type -eq 'PTR' -and $_.NameHost } | Select-Object -First 1
+        if ($ptr) { $hostname = $ptr.NameHost }
+    } catch {}
+    if (-not $hostname) {
+        try {
+            $entry = [System.Net.Dns]::GetHostEntry($ip)
+            if ($entry.HostName) { $hostname = $entry.HostName }
+        } catch {}
+    }
+    if (-not $hostname) {
+        try {
+            $nbt = nbtstat -A $ip 2>$null
+            foreach ($line in $nbt) {
+                if ($line -match '^\s*([^\s<]+)\s+<00>\s+UNIQUE') {
+                    $hostname = $matches[1]
+                    break
+                }
+            }
+        } catch {}
+    }
+    if ($hostname) { $hostname.Trim().TrimEnd('.') } else { $null }
+}
+foreach ($row in $rows) {
+    if (-not $row.Hostname) { $row.Hostname = Resolve-DeviceHostname $row.IpAddress }
+}
 if ($rows.Count -gt 0) { $rows[0].NetworkCount = $networks.Count }
 $rows | Sort-Object {[version]$_.IpAddress} | ConvertTo-Json -Compress -Depth 3
 "#;

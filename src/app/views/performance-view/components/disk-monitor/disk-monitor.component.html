@@ -4,11 +4,10 @@
         <h2>Physical disks</h2>
         <div class="flex items-center gap-2">
             <span class="text-[11px] text-(--muted)">{{ diskDrives().length }} detected</span>
-            <select class="h-7 rounded border border-white/8 bg-[#07131f] px-2 text-[11px] text-[#dfeaf4] outline-none" [value]="sortMode()"
-              (change)="setSortMode($any($event.target).value)" aria-label="Sort disks">
+            <mtx-select class="h-7 text-[11px] text-[#dfeaf4]" [value]="sortMode()" (valueChange)="setSortMode($event)" ariaLabel="Sort disks">
                 <option value="label">Sort by label</option>
                 <option value="index">Sort by index</option>
-            </select>
+            </mtx-select>
         </div>
     </div>
     @if (diskDrives().length > 0) {

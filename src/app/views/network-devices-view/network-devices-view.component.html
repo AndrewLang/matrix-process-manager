@@ -56,12 +56,11 @@
                         <input class="h-full min-w-0 flex-1 bg-transparent text-[#dfe8f1] outline-none placeholder:text-(--muted)" type="text"
                           placeholder="Search IP, host, MAC, interface..." [value]="query()" (input)="setQuery($any($event.target).value)" />
                     </div>
-                    <select class="h-8 rounded-md border border-(--border) bg-[rgba(10,22,33,0.86)] px-2 text-[12px] text-[#dfe8f1] outline-none"
-                      [value]="stateFilter()" (change)="setStateFilter($any($event.target).value)">
+                                        <mtx-select [value]="stateFilter()" (valueChange)="setStateFilter($any($event))">
                         <option value="all">All devices</option>
                         <option value="reachable">Reachable</option>
                         <option value="local">Local adapters</option>
-                    </select>
+                                        </mtx-select>
                 </div>
                 <div class="flex min-w-0 items-center gap-2 text-[12px] text-(--muted)">
                     @if (loading()) {

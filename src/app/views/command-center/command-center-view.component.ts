@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit, inject } from "@angular/core";
+import { SelectComponent } from "../../components/select/select.component";
 import { TerminalShell } from "./command-center.models";
 import { TerminalInputComponent } from "./components/terminal-input/terminal-input.component";
 import { TerminalOutputComponent } from "./components/terminal-output/terminal-output.component";
@@ -7,7 +8,7 @@ import { CommandCenterViewModel } from "./view-models/command-center.viewmodel";
 
 @Component({
     selector: "mtx-command-center-view",
-    imports: [TerminalInputComponent, TerminalOutputComponent],
+    imports: [SelectComponent, TerminalInputComponent, TerminalOutputComponent],
     providers: [CommandCenterViewModel, TerminalService],
     templateUrl: "./command-center-view.component.html",
 })

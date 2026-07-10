@@ -1,11 +1,13 @@
 import { Component, computed, effect, inject, signal } from "@angular/core";
 import { BackendDiskDriveUsage } from "../../../../app.models";
+import { SelectComponent } from "../../../../components/select/select.component";
 import { WorkareaStateService } from "../../../../services/workarea-state.service";
 
 type DiskSortMode = "label" | "index";
 
 @Component({
     selector: "mtx-disk-monitor",
+    imports: [SelectComponent],
     templateUrl: "./disk-monitor.component.html",
 })
 export class DiskMonitorComponent {

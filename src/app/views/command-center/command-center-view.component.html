@@ -6,12 +6,11 @@
             <p>Cross-platform terminal session with streamed output.</p>
         </div>
         <span class="ml-auto rounded bg-white/6 px-2 py-1 text-[11px] text-(--muted)">{{ vm.status() }}</span>
-        <select class="h-8 rounded-md border border-(--border) bg-[rgba(10,22,33,0.86)] px-2 text-[12px] text-[#dfe8f1] outline-none" [value]="vm.shell()"
-          [disabled]="vm.running()" (change)="setShell($any($event.target).value)">
+                        <mtx-select [value]="vm.shell()" [disabled]="vm.running()" (valueChange)="setShell($event)">
             @for (shell of vm.shellOptions; track shell) {
             <option [value]="shell">{{ vm.shellLabel(shell) }}</option>
             }
-        </select>
+                        </mtx-select>
         @if (vm.running()) {
         <button type="button" class="h-8 rounded-md border border-[rgba(255,75,67,0.38)] bg-[rgba(255,75,67,0.08)] px-3 text-[12px] text-(--red)"
           (click)="vm.stop()">Stop</button>

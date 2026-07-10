@@ -3,13 +3,14 @@ import { invoke } from "@tauri-apps/api/core";
 import { openUrl, revealItemInDir } from "@tauri-apps/plugin-opener";
 import { PortScan, PortUsage } from "../../app.models";
 import { DataGridColumn, DataGridComponent } from "../../components/data-grid/data-grid.component";
+import { SelectComponent } from "../../components/select/select.component";
 
 type ProtocolFilter = "all" | "tcp" | "udp";
 type StateFilter = "all" | "listening" | "established";
 
 @Component({
     selector: "mtx-ports-view",
-    imports: [DataGridComponent],
+    imports: [DataGridComponent, SelectComponent],
     templateUrl: "./ports-view.component.html",
 })
 export class PortsViewComponent implements OnInit {

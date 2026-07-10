@@ -61,11 +61,10 @@
                 </label>
                 <label class="grid gap-1.5 text-[12px]">
                     <span class="text-(--muted)">Key type</span>
-                    <select class="h-8 rounded-md border border-(--border) bg-[rgba(10,22,33,0.86)] px-3 text-[#dfe8f1] outline-none" [value]="newKeyType()"
-                      (change)="setNewKeyType($any($event.target).value)">
+                                        <mtx-select [value]="newKeyType()" (valueChange)="setNewKeyType($event)">
                         <option value="ed25519">ed25519</option>
                         <option value="rsa">rsa 4096</option>
-                    </select>
+                                        </mtx-select>
                 </label>
                 <label class="grid gap-1.5 text-[12px]">
                     <span class="text-(--muted)">Comment</span>
