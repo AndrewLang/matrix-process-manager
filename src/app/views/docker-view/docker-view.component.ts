@@ -30,6 +30,7 @@ export class DockerViewComponent implements OnInit {
     dockerHost = signal("");
     savedDockerHosts = signal<string[]>([]);
     selectedContainerId = signal("");
+    checkedContainerIds = signal<ReadonlySet<string>>(new Set());
     selectedImageId = signal("");
     activeTab = signal<DockerTab>("containers");
     loading = signal(false);
@@ -111,6 +112,7 @@ export class DockerViewComponent implements OnInit {
         if (this.dashboardDockerHost() !== dockerHost) {
             this.dashboard.set(undefined);
             this.selectedContainerId.set("");
+            this.checkedContainerIds.set(new Set());
             this.selectedImageId.set("");
         }
         this.loading.set(true);
@@ -127,6 +129,7 @@ export class DockerViewComponent implements OnInit {
                 const selectedContainer = dashboard.containers.find((container) => container.id === this.selectedContainerId()) ?? dashboard.containers[0];
                 const selectedImage = dashboard.images.find((image) => image.id === this.selectedImageId()) ?? dashboard.images[0];
                 this.selectedContainerId.set(selectedContainer?.id ?? "");
+                this.pruneCheckedContainers(dashboard.containers);
                 this.selectedImageId.set(selectedImage?.id ?? "");
             })
             .catch((error: unknown) => {
@@ -334,6 +337,43 @@ export class DockerViewComponent implements OnInit {
 
     selectContainer(container: DockerContainer): void {
         this.selectedContainerId.set(container.id);
+        this.checkedContainerIds.update((ids) => new Set(ids).add(container.id));
+        this.actionMessage.set("");
+    }
+
+    toggleContainerChecked(container: DockerContainer, checked: boolean): void {
+        this.selectedContainerId.set(container.id);
+        this.checkedContainerIds.update((ids) => {
+            const next = new Set(ids);
+            if (checked) {
+                next.add(container.id);
+            } else {
+                next.delete(container.id);
+            }
+
+            return next;
+        });
+        this.actionMessage.set("");
+    }
+
+    toggleContainerGroupChecked(row: DockerContainerRow, checked: boolean): void {
+        if (row.kind !== "group") {
+            return;
+        }
+
+        this.checkedContainerIds.update((ids) => {
+            const next = new Set(ids);
+            for (const container of row.containers) {
+                if (checked) {
+                    next.add(container.id);
+                } else {
+                    next.delete(container.id);
+                }
+            }
+
+            return next;
+        });
+        this.selectedContainerId.set(row.containers[0]?.id ?? this.selectedContainerId());
         this.actionMessage.set("");
     }
 
@@ -527,7 +567,19 @@ export class DockerViewComponent implements OnInit {
     }
 
     containerRowSelected(row: DockerContainerRow): boolean {
-        return row.kind === "container" && row.container.id === this.selectedContainerId();
+        return row.kind === "group" ? this.containerGroupChecked(row) : row.container.id === this.selectedContainerId() || this.checkedContainerIds().has(row.container.id);
+    }
+
+    containerRowChecked(row: DockerContainerRow): boolean {
+        return row.kind === "group" ? this.containerGroupChecked(row) : this.checkedContainerIds().has(row.container.id);
+    }
+
+    containerGroupChecked(row: DockerContainerRow): boolean {
+        return row.kind === "group" && row.containers.length > 0 && row.containers.every((container) => this.checkedContainerIds().has(container.id));
+    }
+
+    containerGroupIndeterminate(row: DockerContainerRow): boolean {
+        return row.kind === "group" && row.containers.some((container) => this.checkedContainerIds().has(container.id)) && !this.containerGroupChecked(row);
     }
 
     containerRowRunning(row: DockerContainerRow): boolean {
@@ -617,6 +669,11 @@ export class DockerViewComponent implements OnInit {
 
         rows.push(...standalone.map((container) => ({ kind: "container" as const, key: container.id, container, child: false })));
         return rows;
+    }
+
+    private pruneCheckedContainers(containers: DockerContainer[]): void {
+        const ids = new Set(containers.map((container) => container.id));
+        this.checkedContainerIds.update((checkedIds) => new Set([...checkedIds].filter((id) => ids.has(id))));
     }
 
     private filterImages(): DockerImage[] {

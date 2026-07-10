@@ -219,7 +219,17 @@
                         @for (row of containerRows(); track row.key) {
                         <tr class="border-t border-white/8 hover:bg-white/5" [class.bg-[rgba(23,144,255,0.08)]]="containerRowSelected(row)"
                           (click)="row.kind === 'container' ? selectContainer(row.container) : toggleParent(row.key)">
-                            <td class="px-3 py-2 text-center"><span class="mx-auto block h-4 w-4 rounded border border-[#7ea1bb]"></span></td>
+                            <td class="px-3 py-2 text-center">
+                                @if (row.kind === "container") {
+                                <input type="checkbox" class="mx-auto block size-4 rounded border border-[#7ea1bb] bg-transparent accent-[#2d9cff]"
+                                  [checked]="containerRowChecked(row)" (click)="$event.stopPropagation()"
+                                  (change)="toggleContainerChecked(row.container, $any($event.target).checked)" />
+                                } @else {
+                                <input type="checkbox" class="mx-auto block size-4 rounded border border-[#7ea1bb] bg-transparent accent-[#2d9cff]"
+                                  [checked]="containerRowChecked(row)" [indeterminate]="containerGroupIndeterminate(row)" (click)="$event.stopPropagation()"
+                                  (change)="toggleContainerGroupChecked(row, $any($event.target).checked)" />
+                                }
+                            </td>
                             <td class="px-1 py-2 text-center">
                                 @if (row.kind === "group") {
                                 <button type="button" class="grid size-6 place-items-center bg-transparent text-[#2d9cff]"
