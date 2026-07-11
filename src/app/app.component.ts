@@ -74,7 +74,7 @@ export class AppComponent implements OnDestroy, OnInit {
     { id: "ssh-keys", label: "SSH Keys", icon: "bi-key" },
     { id: "startup", label: "Startup Apps", icon: "bi-rocket-takeoff" },
     { id: "system", label: "System Info", icon: "bi-info-circle" },
-    { id: "command-center", label: "Command Center", icon: "bi-terminal-plus" },
+    { id: "command-center", label: "Console (Beta)", icon: "bi-terminal-plus" },
   ];
 
   toolItems: NavItem[] = [
