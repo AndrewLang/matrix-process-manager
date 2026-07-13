@@ -633,9 +633,17 @@ export class AppComponent implements OnDestroy, OnInit {
   }
 
   private findLocalIpAddress(): string {
-    return this.workareaState.networkAdapters()
-      .flatMap((adapter) => adapter.ipv4Addresses)
-      .find((address) => this.isUsableLocalIpAddress(address)) ?? "Unavailable";
+    const adapters = [...this.workareaState.networkAdapters()]
+      .sort((left, right) => this.networkAdapterPriority(right) - this.networkAdapterPriority(left));
+
+    for (const adapter of adapters) {
+      const match = adapter.ipv4Addresses.find((address) => this.isUsableLocalIpAddress(address));
+      if (match) {
+        return match;
+      }
+    }
+
+    return "Unavailable";
   }
 
   private isUsableLocalIpAddress(address: string): boolean {
@@ -643,6 +651,22 @@ export class AppComponent implements OnDestroy, OnInit {
       && address !== "127.0.0.1"
       && !address.startsWith("169.254.")
       && !address.startsWith("0.");
+  }
+
+  private networkAdapterPriority(adapter: BackendProcessSnapshot["networkAdapters"][number]): number {
+    const traffic = adapter.receiveBytesPerSec + adapter.sendBytesPerSec;
+    const hasUsableIp = adapter.ipv4Addresses.some((address) => this.isUsableLocalIpAddress(address));
+    const linkSpeedBoost = adapter.linkSpeedBitsPerSec && adapter.linkSpeedBitsPerSec > 0 ? 1_000 : 0;
+    const details = `${adapter.name} ${adapter.connectionName ?? ""} ${adapter.adapterType ?? ""}`.toLowerCase();
+    const preferredTypeBoost = /(wi-?fi|wireless|ethernet|lan)/.test(details) ? 400 : 0;
+    const deprioritizedTypePenalty = /(virtual|vmware|hyper-v|bluetooth|loopback|tunnel|tap|vpn|vethernet|wsl)/.test(details) ? 600 : 0;
+
+    return (hasUsableIp ? 10_000 : 0)
+      + Math.min(traffic, 10_000_000)
+      + Math.round(adapter.utilizationPercent * 100)
+      + linkSpeedBoost
+      + preferredTypeBoost
+      - deprioritizedTypePenalty;
   }
 
   private classifyProcess(row: BackendProcessRow): ProcessGroup {
