@@ -1,8 +1,12 @@
+#[cfg(windows)]
+use crate::models::GpuEngineUsage;
 use crate::models::{
-    CommandError, CpuInfo, DiskDriveUsage, GpuAdapterUsage, GpuEngineUsage, MemoryInfo,
-    NetworkAdapterUsage, ProcessInfo, ProcessMetrics, ProcessRow, ProcessSnapshot, WindowsInfo,
+    CommandError, CpuInfo, DiskDriveUsage, GpuAdapterUsage, MemoryInfo, NetworkAdapterUsage,
+    ProcessInfo, ProcessMetrics, ProcessRow, ProcessSnapshot, WindowsInfo,
 };
-use std::collections::{BTreeMap, HashMap, HashSet};
+#[cfg(windows)]
+use std::collections::BTreeMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Mutex;
 use sysinfo::{ProcessesToUpdate, System};
 
@@ -18,6 +22,8 @@ pub struct SysinfoProcessProvider {
     network_usage: Mutex<NetworkUsageCollector>,
     memory_usage: Mutex<MemoryUsageCollector>,
     memory_info: Mutex<MemoryInfoCollector>,
+    cpu_cache_info: CpuCacheInfo,
+    cpu_virtualization: Option<String>,
     windows_info: WindowsInfo,
 }
 
@@ -31,6 +37,8 @@ impl SysinfoProcessProvider {
             network_usage: Mutex::new(NetworkUsageCollector::new()),
             memory_usage: Mutex::new(MemoryUsageCollector::new()),
             memory_info: Mutex::new(MemoryInfoCollector::new()),
+            cpu_cache_info: CpuCacheInfo::read(),
+            cpu_virtualization: cpu_virtualization_status(),
             windows_info: WindowsInfoReader::read(),
         }
     }
@@ -52,7 +60,6 @@ impl ProcessProvider for SysinfoProcessProvider {
             .ok()
             .and_then(|mut collector| collector.sample())
             .unwrap_or_else(|| system.global_cpu_usage());
-        let cache_info = CpuCacheInfo::read();
         let cpu_info = CpuInfo {
             model: system
                 .cpus()
@@ -71,10 +78,10 @@ impl ProcessProvider for SysinfoProcessProvider {
             uptime_seconds: System::uptime(),
             total_threads: total_thread_count(&system),
             total_handles: total_handle_count(&system),
-            virtualization: cpu_virtualization_status(),
-            l1_cache_bytes: cache_info.l1_bytes,
-            l2_cache_bytes: cache_info.l2_bytes,
-            l3_cache_bytes: cache_info.l3_bytes,
+            virtualization: self.cpu_virtualization.clone(),
+            l1_cache_bytes: self.cpu_cache_info.l1_bytes,
+            l2_cache_bytes: self.cpu_cache_info.l2_bytes,
+            l3_cache_bytes: self.cpu_cache_info.l3_bytes,
         };
         let gpu_usage = self
             .gpu_usage
@@ -227,7 +234,78 @@ fn windows_info() -> Option<WindowsInfo> {
     })
 }
 
-#[cfg(not(windows))]
+#[cfg(target_os = "macos")]
+fn windows_info() -> Option<WindowsInfo> {
+    let hardware = std::process::Command::new("/usr/sbin/system_profiler")
+        .args(["SPHardwareDataType", "-json", "-detailLevel", "mini"])
+        .output()
+        .ok()
+        .filter(|output| output.status.success())
+        .map(|output| String::from_utf8_lossy(&output.stdout).into_owned());
+    let version = std::process::Command::new("/usr/bin/sw_vers")
+        .output()
+        .ok()
+        .filter(|output| output.status.success())
+        .map(|output| String::from_utf8_lossy(&output.stdout).into_owned());
+
+    macos_info_from_outputs(hardware.as_deref(), version.as_deref(), System::host_name())
+}
+
+#[cfg(target_os = "macos")]
+fn macos_info_from_outputs(
+    hardware_output: Option<&str>,
+    version_output: Option<&str>,
+    device_name: Option<String>,
+) -> Option<WindowsInfo> {
+    let hardware =
+        hardware_output.and_then(|output| serde_json::from_str::<serde_json::Value>(output).ok());
+    let overview = hardware
+        .as_ref()
+        .and_then(|value| value.get("SPHardwareDataType"))
+        .and_then(serde_json::Value::as_array)
+        .and_then(|items| items.first())
+        .and_then(serde_json::Value::as_object);
+    let hardware_value = |key: &str| {
+        overview
+            .and_then(|values| values.get(key))
+            .and_then(serde_json::Value::as_str)
+            .map(str::to_string)
+    };
+    let version_values = version_output
+        .into_iter()
+        .flat_map(str::lines)
+        .filter_map(|line| line.split_once(':'))
+        .map(|(key, value)| (key.trim(), value.trim().to_string()))
+        .collect::<HashMap<_, _>>();
+
+    if overview.is_none() && version_values.is_empty() && device_name.is_none() {
+        return None;
+    }
+
+    let machine_name = hardware_value("machine_name");
+    let machine_model = hardware_value("machine_model");
+    let model = match (machine_name, machine_model) {
+        (Some(name), Some(identifier)) => Some(format!("{name} ({identifier})")),
+        (name, identifier) => name.or(identifier),
+    };
+
+    Some(WindowsInfo {
+        device_name,
+        manufacturer: Some("Apple Inc.".to_string()),
+        model,
+        system_type: hardware_value("chip_type")
+            .or_else(|| Some(std::env::consts::ARCH.to_string())),
+        device_id: None,
+        product_id: hardware_value("model_number"),
+        os_edition: version_values.get("ProductName").cloned(),
+        os_version: version_values.get("ProductVersion").cloned(),
+        installed_on: None,
+        os_build: version_values.get("BuildVersion").cloned(),
+        experience: hardware_value("boot_rom_version"),
+    })
+}
+
+#[cfg(not(any(windows, target_os = "macos")))]
 fn windows_info() -> Option<WindowsInfo> {
     None
 }
@@ -241,12 +319,12 @@ struct CpuCacheInfo {
 
 impl CpuCacheInfo {
     fn read() -> Self {
-        windows_cpu_cache_info().unwrap_or_default()
+        platform_cpu_cache_info().unwrap_or_default()
     }
 }
 
 #[cfg(windows)]
-fn windows_cpu_cache_info() -> Option<CpuCacheInfo> {
+fn platform_cpu_cache_info() -> Option<CpuCacheInfo> {
     use windows_sys::Win32::System::SystemInformation::{
         GetLogicalProcessorInformationEx, RelationCache, SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX,
     };
@@ -301,8 +379,84 @@ fn windows_cpu_cache_info() -> Option<CpuCacheInfo> {
     Some(cache_info)
 }
 
-#[cfg(not(windows))]
-fn windows_cpu_cache_info() -> Option<CpuCacheInfo> {
+#[cfg(target_os = "macos")]
+fn platform_cpu_cache_info() -> Option<CpuCacheInfo> {
+    let output = std::process::Command::new("/usr/sbin/sysctl")
+        .arg("-a")
+        .output()
+        .ok()?;
+    output
+        .status
+        .success()
+        .then(|| macos_cpu_cache_info_from_sysctl(&String::from_utf8_lossy(&output.stdout)))
+}
+
+#[cfg(target_os = "macos")]
+fn macos_cpu_cache_info_from_sysctl(output: &str) -> CpuCacheInfo {
+    let values = output
+        .lines()
+        .filter_map(|line| line.split_once(':'))
+        .filter_map(|(key, value)| Some((key.trim(), value.trim().parse::<u64>().ok()?)))
+        .collect::<HashMap<_, _>>();
+    let mut l1_bytes = 0u64;
+    let mut l2_bytes = 0u64;
+
+    for level in 0..8 {
+        let prefix = format!("hw.perflevel{level}");
+        let core_count = values
+            .get(format!("{prefix}.physicalcpu").as_str())
+            .copied()
+            .unwrap_or_default();
+        if core_count == 0 {
+            continue;
+        }
+
+        let l1_data = values
+            .get(format!("{prefix}.l1dcachesize").as_str())
+            .copied()
+            .unwrap_or_default();
+        let l1_instruction = values
+            .get(format!("{prefix}.l1icachesize").as_str())
+            .copied()
+            .unwrap_or_default();
+        l1_bytes = l1_bytes.saturating_add(
+            l1_data
+                .saturating_add(l1_instruction)
+                .saturating_mul(core_count),
+        );
+        l2_bytes = l2_bytes.saturating_add(
+            values
+                .get(format!("{prefix}.l2cachesize").as_str())
+                .copied()
+                .unwrap_or_default(),
+        );
+    }
+
+    if l1_bytes == 0 {
+        let core_count = values.get("hw.physicalcpu").copied().unwrap_or(1);
+        l1_bytes = values
+            .get("hw.l1dcachesize")
+            .copied()
+            .unwrap_or_default()
+            .saturating_add(values.get("hw.l1icachesize").copied().unwrap_or_default())
+            .saturating_mul(core_count);
+    }
+    if l2_bytes == 0 {
+        l2_bytes = values.get("hw.l2cachesize").copied().unwrap_or_default();
+    }
+
+    CpuCacheInfo {
+        l1_bytes: (l1_bytes > 0).then_some(l1_bytes),
+        l2_bytes: (l2_bytes > 0).then_some(l2_bytes),
+        l3_bytes: values
+            .get("hw.l3cachesize")
+            .copied()
+            .filter(|size| *size > 0),
+    }
+}
+
+#[cfg(not(any(windows, target_os = "macos")))]
+fn platform_cpu_cache_info() -> Option<CpuCacheInfo> {
     None
 }
 
@@ -322,7 +476,24 @@ fn cpu_virtualization_status() -> Option<String> {
     )
 }
 
-#[cfg(not(windows))]
+#[cfg(target_os = "macos")]
+fn cpu_virtualization_status() -> Option<String> {
+    let output = std::process::Command::new("/usr/sbin/sysctl")
+        .args(["-n", "kern.hv_support"])
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+
+    match String::from_utf8_lossy(&output.stdout).trim() {
+        "1" => Some("Supported".to_string()),
+        "0" => Some("Unavailable".to_string()),
+        _ => None,
+    }
+}
+
+#[cfg(not(any(windows, target_os = "macos")))]
 fn cpu_virtualization_status() -> Option<String> {
     None
 }
@@ -574,6 +745,7 @@ struct GpuUsageSnapshot {
     adapters: Vec<GpuAdapterUsage>,
 }
 
+#[cfg(windows)]
 #[derive(Default)]
 struct GpuAdapterAccumulator {
     engines: HashMap<String, f32>,
@@ -860,6 +1032,7 @@ struct DiskUsageSnapshot {
     drives: Vec<DiskDriveUsage>,
 }
 
+#[cfg(windows)]
 #[derive(Clone, Default)]
 struct DiskDriveDetails {
     disk_index: usize,
@@ -1179,6 +1352,7 @@ struct NetworkUsageSnapshot {
     adapters: Vec<NetworkAdapterUsage>,
 }
 
+#[cfg(windows)]
 #[derive(Clone, Default)]
 struct NetworkAdapterDetails {
     adapter_index: Option<usize>,
@@ -1926,10 +2100,132 @@ impl MemoryUsageCollector {
     }
 }
 
-#[cfg(not(windows))]
+#[cfg(target_os = "macos")]
+struct MemoryInfoCollector {
+    hardware: MemoryHardwareInfo,
+}
+
+#[cfg(target_os = "macos")]
+impl MemoryInfoCollector {
+    fn new() -> Self {
+        Self {
+            hardware: macos_memory_hardware_info(),
+        }
+    }
+
+    fn sample(&mut self, total_memory_bytes: u64, used_memory_bytes: u64) -> MemoryInfo {
+        let installed_bytes = self.hardware.installed_bytes.or(Some(total_memory_bytes));
+        MemoryInfo {
+            installed_bytes,
+            in_use_bytes: used_memory_bytes,
+            compressed_bytes: macos_compressed_memory_bytes(),
+            available_bytes: total_memory_bytes.saturating_sub(used_memory_bytes),
+            committed_bytes: used_memory_bytes,
+            commit_limit_bytes: total_memory_bytes,
+            cached_bytes: 0,
+            paged_pool_bytes: 0,
+            non_paged_pool_bytes: 0,
+            speed_mhz: self.hardware.speed_mhz,
+            slots_used: self.hardware.slots_used,
+            slots_total: self.hardware.slots_total,
+            form_factor: self.hardware.form_factor.clone(),
+            hardware_reserved_bytes: installed_bytes
+                .and_then(|installed| installed.checked_sub(total_memory_bytes)),
+        }
+    }
+
+    fn fallback(total_memory_bytes: u64, used_memory_bytes: u64) -> MemoryInfo {
+        MemoryInfo {
+            installed_bytes: Some(total_memory_bytes),
+            in_use_bytes: used_memory_bytes,
+            compressed_bytes: None,
+            available_bytes: total_memory_bytes.saturating_sub(used_memory_bytes),
+            committed_bytes: used_memory_bytes,
+            commit_limit_bytes: total_memory_bytes,
+            cached_bytes: 0,
+            paged_pool_bytes: 0,
+            non_paged_pool_bytes: 0,
+            speed_mhz: None,
+            slots_used: None,
+            slots_total: None,
+            form_factor: None,
+            hardware_reserved_bytes: None,
+        }
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn macos_memory_hardware_info() -> MemoryHardwareInfo {
+    let Some(profile) = macos_system_profiler(&["SPMemoryDataType", "SPHardwareDataType"]) else {
+        return MemoryHardwareInfo::default();
+    };
+    let memory = profile
+        .get("SPMemoryDataType")
+        .and_then(serde_json::Value::as_array)
+        .and_then(|items| items.first())
+        .and_then(serde_json::Value::as_object);
+    let hardware = profile
+        .get("SPHardwareDataType")
+        .and_then(serde_json::Value::as_array)
+        .and_then(|items| items.first())
+        .and_then(serde_json::Value::as_object);
+    let capacity = memory
+        .and_then(|values| values.get("SPMemoryDataType"))
+        .and_then(serde_json::Value::as_str)
+        .or_else(|| {
+            hardware
+                .and_then(|values| values.get("physical_memory"))
+                .and_then(serde_json::Value::as_str)
+        })
+        .and_then(macos_capacity_bytes);
+    let memory_type = memory
+        .and_then(|values| values.get("dimm_type"))
+        .and_then(serde_json::Value::as_str);
+
+    MemoryHardwareInfo {
+        installed_bytes: capacity,
+        speed_mhz: None,
+        slots_used: None,
+        slots_total: None,
+        form_factor: Some(
+            memory_type
+                .map(|kind| format!("{kind} unified memory"))
+                .unwrap_or_else(|| "Unified memory".to_string()),
+        ),
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn macos_compressed_memory_bytes() -> Option<u64> {
+    let output = std::process::Command::new("/usr/sbin/sysctl")
+        .args(["-n", "vm.compressor_bytes_used"])
+        .output()
+        .ok()?;
+    output
+        .status
+        .success()
+        .then(|| String::from_utf8_lossy(&output.stdout).trim().parse().ok())
+        .flatten()
+}
+
+#[cfg(target_os = "macos")]
+fn macos_capacity_bytes(value: &str) -> Option<u64> {
+    let mut parts = value.split_whitespace();
+    let amount = parts.next()?.parse::<f64>().ok()?;
+    let multiplier = match parts.next()?.to_ascii_uppercase().as_str() {
+        "TB" => 1024_u64.pow(4),
+        "GB" => 1024_u64.pow(3),
+        "MB" => 1024_u64.pow(2),
+        "KB" => 1024,
+        _ => return None,
+    };
+    Some((amount * multiplier as f64) as u64)
+}
+
+#[cfg(not(any(windows, target_os = "macos")))]
 struct MemoryInfoCollector;
 
-#[cfg(not(windows))]
+#[cfg(not(any(windows, target_os = "macos")))]
 impl MemoryInfoCollector {
     fn new() -> Self {
         Self
@@ -1959,10 +2255,96 @@ impl MemoryInfoCollector {
     }
 }
 
-#[cfg(not(windows))]
+#[cfg(target_os = "macos")]
+struct DiskUsageCollector {
+    disks: sysinfo::Disks,
+    last_sample: std::time::Instant,
+}
+
+#[cfg(target_os = "macos")]
+impl DiskUsageCollector {
+    fn new() -> Self {
+        Self {
+            disks: sysinfo::Disks::new_with_refreshed_list(),
+            last_sample: std::time::Instant::now(),
+        }
+    }
+
+    fn sample(&mut self) -> DiskUsageSnapshot {
+        self.disks.refresh(true);
+        let elapsed_seconds = self.last_sample.elapsed().as_secs_f64().max(0.001);
+        self.last_sample = std::time::Instant::now();
+        let mut drives = self
+            .disks
+            .list()
+            .iter()
+            .filter(|disk| macos_disk_is_visible(disk))
+            .enumerate()
+            .map(|(disk_index, disk)| {
+                let usage = disk.usage();
+                let read_bytes_per_sec = (usage.read_bytes as f64 / elapsed_seconds) as u64;
+                let write_bytes_per_sec = (usage.written_bytes as f64 / elapsed_seconds) as u64;
+                let throughput = read_bytes_per_sec.saturating_add(write_bytes_per_sec);
+                let active_time_percent = (throughput as f64 / (500.0 * 1024.0 * 1024.0) * 100.0)
+                    .clamp(0.0, 100.0) as f32;
+                let mount_point = disk.mount_point().to_string_lossy().into_owned();
+                let name = disk.name().to_string_lossy().into_owned();
+                let file_system = disk.file_system().to_string_lossy();
+
+                DiskDriveUsage {
+                    name: if name.is_empty() {
+                        mount_point.clone()
+                    } else {
+                        name
+                    },
+                    labels: vec![mount_point.clone()],
+                    disk_index,
+                    active_time_percent,
+                    average_response_time_ms: 0.0,
+                    read_bytes_per_sec,
+                    write_bytes_per_sec,
+                    capacity_bytes: (disk.total_space() > 0).then(|| disk.total_space()),
+                    formatted_bytes: Some(
+                        disk.total_space().saturating_sub(disk.available_space()),
+                    ),
+                    system_disk: Some(mount_point == "/"),
+                    page_file: None,
+                    disk_type: Some(format!("{:?} ({file_system})", disk.kind())),
+                }
+            })
+            .collect::<Vec<_>>();
+        drives.sort_by(|left, right| {
+            right
+                .system_disk
+                .cmp(&left.system_disk)
+                .then_with(|| left.name.cmp(&right.name))
+        });
+        for (disk_index, drive) in drives.iter_mut().enumerate() {
+            drive.disk_index = disk_index;
+        }
+
+        DiskUsageSnapshot {
+            total_percent: drives
+                .iter()
+                .map(|drive| drive.active_time_percent)
+                .fold(0.0, f32::max),
+            drives,
+        }
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn macos_disk_is_visible(disk: &sysinfo::Disk) -> bool {
+    let mount_point = disk.mount_point().to_string_lossy();
+    disk.total_space() > 0
+        && (mount_point == "/" || mount_point.starts_with("/Volumes/"))
+        && !mount_point.starts_with("/System/Volumes/")
+}
+
+#[cfg(not(any(windows, target_os = "macos")))]
 struct DiskUsageCollector;
 
-#[cfg(not(windows))]
+#[cfg(not(any(windows, target_os = "macos")))]
 impl DiskUsageCollector {
     fn new() -> Self {
         Self
@@ -1973,10 +2355,91 @@ impl DiskUsageCollector {
     }
 }
 
-#[cfg(not(windows))]
+#[cfg(target_os = "macos")]
+struct NetworkUsageCollector {
+    networks: sysinfo::Networks,
+    last_sample: std::time::Instant,
+}
+
+#[cfg(target_os = "macos")]
+impl NetworkUsageCollector {
+    fn new() -> Self {
+        Self {
+            networks: sysinfo::Networks::new_with_refreshed_list(),
+            last_sample: std::time::Instant::now(),
+        }
+    }
+
+    fn sample(&mut self) -> NetworkUsageSnapshot {
+        self.networks.refresh(true);
+        let elapsed_seconds = self.last_sample.elapsed().as_secs_f64().max(0.001);
+        self.last_sample = std::time::Instant::now();
+
+        let mut interfaces = self.networks.list().iter().collect::<Vec<_>>();
+        interfaces.sort_by(|left, right| left.0.cmp(right.0));
+        let adapters = interfaces
+            .into_iter()
+            .filter(|(name, _)| macos_network_is_visible(name))
+            .enumerate()
+            .map(|(adapter_index, (name, data))| {
+                let mut ipv4_addresses = Vec::new();
+                let mut ipv6_addresses = Vec::new();
+                for network in data.ip_networks() {
+                    match network.addr {
+                        std::net::IpAddr::V4(address) => ipv4_addresses.push(address.to_string()),
+                        std::net::IpAddr::V6(address) => ipv6_addresses.push(address.to_string()),
+                    }
+                }
+                let mac_address = data.mac_address().to_string();
+
+                NetworkAdapterUsage {
+                    name: name.clone(),
+                    adapter_index,
+                    utilization_percent: 0.0,
+                    receive_bytes_per_sec: (data.received() as f64 / elapsed_seconds) as u64,
+                    send_bytes_per_sec: (data.transmitted() as f64 / elapsed_seconds) as u64,
+                    link_speed_bits_per_sec: None,
+                    connection_name: Some(name.clone()),
+                    mac_address: (mac_address != "00:00:00:00:00:00").then_some(mac_address),
+                    adapter_type: Some(macos_network_type(name).to_string()),
+                    ipv4_addresses,
+                    ipv6_addresses,
+                }
+            })
+            .collect::<Vec<_>>();
+
+        NetworkUsageSnapshot {
+            total_percent: 0.0,
+            adapters,
+        }
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn macos_network_is_visible(name: &str) -> bool {
+    name != "lo0"
+        && !name.starts_with("awdl")
+        && !name.starts_with("llw")
+        && !name.starts_with("utun")
+        && !name.starts_with("gif")
+        && !name.starts_with("stf")
+}
+
+#[cfg(target_os = "macos")]
+fn macos_network_type(name: &str) -> &'static str {
+    if name.starts_with("en") {
+        "Ethernet or Wi-Fi"
+    } else if name.starts_with("bridge") {
+        "Network bridge"
+    } else {
+        "Network interface"
+    }
+}
+
+#[cfg(not(any(windows, target_os = "macos")))]
 struct NetworkUsageCollector;
 
-#[cfg(not(windows))]
+#[cfg(not(any(windows, target_os = "macos")))]
 impl NetworkUsageCollector {
     fn new() -> Self {
         Self
@@ -1987,10 +2450,78 @@ impl NetworkUsageCollector {
     }
 }
 
-#[cfg(not(windows))]
+#[cfg(target_os = "macos")]
+struct GpuUsageCollector {
+    adapters: Vec<GpuAdapterUsage>,
+}
+
+#[cfg(target_os = "macos")]
+impl GpuUsageCollector {
+    fn new() -> Self {
+        Self {
+            adapters: macos_gpu_adapters(),
+        }
+    }
+
+    fn sample(&mut self) -> GpuUsageSnapshot {
+        GpuUsageSnapshot {
+            adapters: self.adapters.clone(),
+            ..GpuUsageSnapshot::default()
+        }
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn macos_gpu_adapters() -> Vec<GpuAdapterUsage> {
+    let Some(profile) = macos_system_profiler(&["SPDisplaysDataType"]) else {
+        return Vec::new();
+    };
+    profile
+        .get("SPDisplaysDataType")
+        .and_then(serde_json::Value::as_array)
+        .into_iter()
+        .flatten()
+        .enumerate()
+        .filter_map(|(adapter_index, value)| {
+            let values = value.as_object()?;
+            let model = values
+                .get("sppci_model")
+                .or_else(|| values.get("_name"))
+                .and_then(serde_json::Value::as_str)?;
+            let cores = values
+                .get("sppci_cores")
+                .and_then(serde_json::Value::as_str)
+                .filter(|cores| !cores.is_empty());
+            Some(GpuAdapterUsage {
+                name: cores
+                    .map(|cores| format!("{model} ({cores} cores)"))
+                    .unwrap_or_else(|| model.to_string()),
+                adapter_index,
+                utilization_percent: 0.0,
+                engines: Vec::new(),
+            })
+        })
+        .collect()
+}
+
+#[cfg(target_os = "macos")]
+fn macos_system_profiler(data_types: &[&str]) -> Option<serde_json::Value> {
+    let output = std::process::Command::new("/usr/sbin/system_profiler")
+        .args(data_types)
+        .args(["-json", "-detailLevel", "mini"])
+        .output()
+        .ok()?;
+    output
+        .status
+        .success()
+        .then(|| serde_json::from_slice(&output.stdout).ok())
+        .flatten()
+}
+
+#[cfg(not(any(windows, target_os = "macos")))]
 struct GpuUsageCollector;
 
-#[cfg(not(windows))]
+#[cfg(not(any(windows, target_os = "macos")))]
 impl GpuUsageCollector {
     fn new() -> Self {
         Self
@@ -2005,6 +2536,7 @@ impl GpuUsageCollector {
 pub(crate) fn file_icon_data_url(path: &str) -> Option<String> {
     use base64::Engine;
     use image::{codecs::png::PngEncoder, ColorType, ImageEncoder};
+
     use std::ffi::OsStr;
     use std::mem::size_of;
     use std::os::windows::ffi::OsStrExt;
@@ -2136,4 +2668,145 @@ pub(crate) fn file_icon_data_url(path: &str) -> Option<String> {
 #[cfg(not(windows))]
 pub(crate) fn file_icon_data_url(_path: &str) -> Option<String> {
     None
+}
+
+#[cfg(all(test, target_os = "macos"))]
+mod macos_tests {
+    use super::{
+        cpu_virtualization_status, macos_capacity_bytes, macos_cpu_cache_info_from_sysctl,
+        macos_info_from_outputs, platform_cpu_cache_info, windows_info, DiskUsageCollector,
+        GpuUsageCollector, MemoryInfoCollector, NetworkUsageCollector,
+    };
+
+    #[test]
+    fn aggregates_heterogeneous_mac_cpu_caches() {
+        let output = r#"
+hw.perflevel0.physicalcpu: 4
+hw.perflevel0.l1dcachesize: 131072
+hw.perflevel0.l1icachesize: 196608
+hw.perflevel0.l2cachesize: 16777216
+hw.perflevel1.physicalcpu: 6
+hw.perflevel1.l1dcachesize: 65536
+hw.perflevel1.l1icachesize: 131072
+hw.perflevel1.l2cachesize: 6291456
+"#;
+
+        let info = macos_cpu_cache_info_from_sysctl(output);
+
+        assert_eq!(info.l1_bytes, Some(2_490_368));
+        assert_eq!(info.l2_bytes, Some(23_068_672));
+        assert_eq!(info.l3_bytes, None);
+    }
+
+    #[test]
+    fn reads_current_mac_cpu_metadata() {
+        let info = platform_cpu_cache_info().expect("macOS CPU cache metadata");
+
+        assert!(info.l1_bytes.is_some_and(|bytes| bytes > 0));
+        assert!(info.l2_bytes.is_some_and(|bytes| bytes > 0));
+        assert_eq!(cpu_virtualization_status().as_deref(), Some("Supported"));
+    }
+
+    #[test]
+    fn parses_mac_memory_capacity() {
+        assert_eq!(macos_capacity_bytes("16 GB"), Some(16 * 1024_u64.pow(3)));
+        assert_eq!(
+            macos_capacity_bytes("1.5 TB"),
+            Some((1.5 * 1024_u64.pow(4) as f64) as u64)
+        );
+        assert_eq!(macos_capacity_bytes("unknown"), None);
+    }
+
+    #[test]
+    fn reads_current_mac_gpu_inventory() {
+        let snapshot = GpuUsageCollector::new().sample();
+
+        assert!(!snapshot.adapters.is_empty());
+        assert!(snapshot
+            .adapters
+            .iter()
+            .all(|adapter| !adapter.name.is_empty()));
+    }
+
+    #[test]
+    fn reads_current_mac_memory_information() {
+        let mut collector = MemoryInfoCollector::new();
+        let info = collector.sample(16 * 1024_u64.pow(3), 8 * 1024_u64.pow(3));
+
+        assert!(info.installed_bytes.is_some_and(|bytes| bytes > 0));
+        assert!(info.compressed_bytes.is_some());
+        assert!(info
+            .form_factor
+            .as_deref()
+            .is_some_and(|value| value.contains("memory")));
+    }
+
+    #[test]
+    fn reads_current_mac_network_inventory() {
+        let snapshot = NetworkUsageCollector::new().sample();
+
+        assert!(!snapshot.adapters.is_empty());
+        assert!(snapshot
+            .adapters
+            .iter()
+            .all(|adapter| adapter.name != "lo0"));
+        assert!(snapshot.adapters.iter().any(
+            |adapter| !adapter.ipv4_addresses.is_empty() || !adapter.ipv6_addresses.is_empty()
+        ));
+    }
+
+    #[test]
+    fn reads_current_mac_disk_inventory() {
+        let snapshot = DiskUsageCollector::new().sample();
+        let system_disk = snapshot
+            .drives
+            .iter()
+            .find(|drive| drive.system_disk == Some(true))
+            .expect("macOS root volume");
+
+        assert!(system_disk.capacity_bytes.is_some_and(|bytes| bytes > 0));
+        assert_eq!(system_disk.labels, vec!["/"]);
+    }
+
+    #[test]
+    fn reads_current_mac_system_information() {
+        let info = windows_info().expect("macOS system information");
+
+        assert!(info.device_name.is_some());
+        assert_eq!(info.manufacturer.as_deref(), Some("Apple Inc."));
+        assert_eq!(info.os_edition.as_deref(), Some("macOS"));
+        assert!(info.os_version.is_some());
+        assert!(info.os_build.is_some());
+    }
+
+    #[test]
+    fn parses_hardware_and_os_information() {
+        let hardware = r#"{
+            "SPHardwareDataType": [{
+                "boot_rom_version": "18000.121.3",
+                "chip_type": "Apple M5",
+                "machine_model": "Mac17,3",
+                "machine_name": "MacBook Air",
+                "model_number": "MDHE4LL/A"
+            }]
+        }"#;
+        let version = "ProductName: macOS\nProductVersion: 26.5.2\nBuildVersion: 25F84\n";
+
+        let info = macos_info_from_outputs(
+            Some(hardware),
+            Some(version),
+            Some("Andys-MacBook-Air".to_string()),
+        )
+        .expect("valid macOS information");
+
+        assert_eq!(info.device_name.as_deref(), Some("Andys-MacBook-Air"));
+        assert_eq!(info.manufacturer.as_deref(), Some("Apple Inc."));
+        assert_eq!(info.model.as_deref(), Some("MacBook Air (Mac17,3)"));
+        assert_eq!(info.system_type.as_deref(), Some("Apple M5"));
+        assert_eq!(info.product_id.as_deref(), Some("MDHE4LL/A"));
+        assert_eq!(info.os_edition.as_deref(), Some("macOS"));
+        assert_eq!(info.os_version.as_deref(), Some("26.5.2"));
+        assert_eq!(info.os_build.as_deref(), Some("25F84"));
+        assert_eq!(info.experience.as_deref(), Some("18000.121.3"));
+    }
 }

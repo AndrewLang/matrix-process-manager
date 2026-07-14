@@ -27,17 +27,17 @@ export class SystemInfoViewComponent {
             { label: "Device ID", value: this.info("Device ID") },
             { label: "Product ID", value: this.info("Product ID") },
             { label: "System type", value: this.info("System type") },
-            { label: "Pen and touch", value: "Pen support" },
+            { label: "Input support", value: "Standard input devices" },
         ];
     }
 
-    windowsInfo() {
+    operatingSystemInfo() {
         return [
-            { label: "Edition", value: this.info("Windows edition") },
-            { label: "Version", value: this.info("Windows version") },
+            { label: "Edition", value: this.info("OS edition") },
+            { label: "Version", value: this.info("OS version") },
             { label: "Installed on", value: this.info("Installed on") },
             { label: "OS build", value: this.info("OS build") },
-            { label: "Experience", value: this.info("Experience") },
+            { label: "System firmware", value: this.info("System firmware") },
         ];
     }
 
