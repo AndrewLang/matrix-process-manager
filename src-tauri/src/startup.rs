@@ -289,10 +289,10 @@ impl StartupManager {
             .and_then(plist::Value::as_string)
             .map(str::to_string)
             .or_else(|| arguments.first().cloned())?;
-        let command_parts = if arguments.is_empty() {
-            vec![program.clone()]
-        } else {
+        let command_parts = if arguments.first() == Some(&program) {
             arguments
+        } else {
+            std::iter::once(program.clone()).chain(arguments).collect()
         };
         let command = shell_words::join(command_parts);
         let disabled = dictionary
@@ -767,5 +767,69 @@ impl StartupManager {
         }
 
         "Low".to_string()
+    }
+}
+
+#[cfg(all(test, target_os = "macos"))]
+mod tests {
+    use super::StartupManager;
+
+    #[test]
+    fn launch_agent_command_includes_separate_program() {
+        let mut dictionary = plist::Dictionary::new();
+        dictionary.insert(
+            "Label".to_string(),
+            plist::Value::String("com.example.helper".to_string()),
+        );
+        dictionary.insert(
+            "Program".to_string(),
+            plist::Value::String("/Applications/Example App.app/Contents/MacOS/helper".to_string()),
+        );
+        dictionary.insert(
+            "ProgramArguments".to_string(),
+            plist::Value::Array(vec![plist::Value::String("--background".to_string())]),
+        );
+
+        let app = StartupManager::launch_agent_app(
+            std::path::Path::new("/tmp/com.example.helper.plist"),
+            "User LaunchAgent",
+            true,
+            &plist::Value::Dictionary(dictionary),
+        )
+        .expect("valid LaunchAgent");
+
+        assert_eq!(
+            app.command,
+            "'/Applications/Example App.app/Contents/MacOS/helper' --background"
+        );
+        assert_eq!(
+            app.value_name.as_deref(),
+            Some("/tmp/com.example.helper.plist")
+        );
+    }
+
+    #[test]
+    fn disabled_launch_agent_is_reported_as_disabled() {
+        let mut dictionary = plist::Dictionary::new();
+        dictionary.insert(
+            "Label".to_string(),
+            plist::Value::String("com.example.disabled".to_string()),
+        );
+        dictionary.insert(
+            "ProgramArguments".to_string(),
+            plist::Value::Array(vec![plist::Value::String("/usr/bin/false".to_string())]),
+        );
+        dictionary.insert("Disabled".to_string(), plist::Value::Boolean(true));
+
+        let app = StartupManager::launch_agent_app(
+            std::path::Path::new("/tmp/com.example.disabled.plist"),
+            "System LaunchAgent",
+            false,
+            &plist::Value::Dictionary(dictionary),
+        )
+        .expect("valid LaunchAgent");
+
+        assert_eq!(app.status, "Disabled");
+        assert!(app.value_name.is_none());
     }
 }
