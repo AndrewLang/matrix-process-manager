@@ -1,0 +1,121 @@
+{
+    "slug": "prism",
+    "title": "Prism",
+    "subtitle": "Monitor and manage your workstation",
+    "description": "Prism is a desktop app for monitoring processes and system performance and managing startup apps, storage, ports, network devices, SSH keys, Docker, and terminal sessions on Windows and macOS.",
+    "icon": "images/app.png",
+    "version": "1.0.0",
+    "heroImage": "images/hero.png",
+    "navigation": [
+        {
+            "title": "Get Started",
+            "items": [
+                {
+                    "title": "Overview",
+                    "slug": "overview",
+                    "icon": "house"
+                },
+                {
+                    "title": "Installation",
+                    "slug": "installation",
+                    "icon": "download"
+                },
+                {
+                    "title": "Quick Start",
+                    "slug": "quick-start",
+                    "icon": "rocket"
+                }
+            ]
+        },
+        {
+            "title": "Monitoring",
+            "items": [
+                {
+                    "title": "Dashboard",
+                    "slug": "monitoring/dashboard",
+                    "icon": "speedometer2"
+                },
+                {
+                    "title": "Processes",
+                    "slug": "monitoring/processes",
+                    "icon": "list-task"
+                },
+                {
+                    "title": "Performance",
+                    "slug": "monitoring/performance",
+                    "icon": "activity"
+                },
+                {
+                    "title": "System Info",
+                    "slug": "monitoring/system-info",
+                    "icon": "info-circle"
+                }
+            ]
+        },
+        {
+            "title": "System Tools",
+            "items": [
+                {
+                    "title": "Startup Apps",
+                    "slug": "tools/startup-apps",
+                    "icon": "rocket-takeoff"
+                },
+                {
+                    "title": "Storage Cleanup",
+                    "slug": "tools/storage-cleanup",
+                    "icon": "hdd"
+                },
+                {
+                    "title": "Ports",
+                    "slug": "tools/ports",
+                    "icon": "ethernet"
+                },
+                {
+                    "title": "Network Devices",
+                    "slug": "tools/network-devices",
+                    "icon": "router"
+                },
+                {
+                    "title": "SSH Keys",
+                    "slug": "tools/ssh-keys",
+                    "icon": "key"
+                },
+                {
+                    "title": "Docker",
+                    "slug": "tools/docker",
+                    "icon": "box-seam"
+                }
+            ]
+        },
+        {
+            "title": "Console",
+            "items": [
+                {
+                    "title": "Command Center",
+                    "slug": "console/command-center",
+                    "icon": "terminal"
+                }
+            ]
+        },
+        {
+            "title": "Settings",
+            "items": [
+                {
+                    "title": "Settings",
+                    "slug": "settings/general",
+                    "icon": "gear"
+                }
+            ]
+        },
+        {
+            "title": "Help",
+            "items": [
+                {
+                    "title": "Troubleshooting",
+                    "slug": "troubleshooting/common-issues",
+                    "icon": "wrench"
+                }
+            ]
+        }
+    ]
+}
