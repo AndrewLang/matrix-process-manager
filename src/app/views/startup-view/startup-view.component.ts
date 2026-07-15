@@ -47,7 +47,7 @@ export class StartupViewComponent implements OnInit {
     highImpactCount = computed(() => this.apps().filter((app) => app.impact === "High").length);
     filteredApps = computed(() => this.filterApps());
     tableWidth = computed(() => this.columns().reduce((total, column) => total + column.width, 0));
-    commandEditable = computed(() => Boolean(this.selectedApp()?.valueName && this.selectedApp()?.startupType === "Registry"));
+    commandEditable = computed(() => Boolean(this.selectedApp()?.valueName));
     commandDirty = computed(() => this.commandDraft() !== (this.selectedApp()?.command ?? ""));
 
     wideFilterSearchClass = "flex h-7.5 min-w-0 flex-1 items-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(15,28,40,0.84)] px-2.5 py-0 text-[12px] text-(--muted)";

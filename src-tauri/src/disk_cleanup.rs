@@ -128,6 +128,8 @@ impl DiskCleanupManager {
                 | "torch_cache"
                 | "android_gradle_cache"
                 | "npm_cache"
+                | "pnpm_cache_macos"
+                | "pnpm_store_macos"
                 | "pnpm_store_roaming"
                 | "composer_cache"
                 | "pnpm_store_local"
@@ -273,6 +275,11 @@ impl DiskCleanupManager {
     }
 
     fn push_known_usage_insights(insights: &mut Vec<UsageInsightDefinition>) {
+        #[cfg(target_os = "macos")]
+        if let Some(home) = std::env::var_os("HOME") {
+            Self::push_macos_usage_insights(insights, &PathBuf::from(home));
+        }
+
         if let Some(user_profile) = std::env::var_os("USERPROFILE") {
             let user_profile = PathBuf::from(user_profile);
             Self::push_usage_insight(
@@ -625,6 +632,123 @@ impl DiskCleanupManager {
         }
     }
 
+    #[cfg(target_os = "macos")]
+    fn push_macos_usage_insights(insights: &mut Vec<UsageInsightDefinition>, home: &Path) {
+        let library = home.join("Library");
+        let caches = library.join("Caches");
+        let definitions = [
+            (
+                "cargo_registry",
+                "Cargo registry",
+                home.join(".cargo/registry"),
+                "Developer cache",
+                "Rust crate registry cache.",
+            ),
+            (
+                "cargo_git",
+                "Cargo git cache",
+                home.join(".cargo/git"),
+                "Developer cache",
+                "Rust git dependency cache.",
+            ),
+            (
+                "rustup_toolchains",
+                "Rust toolchains",
+                home.join(".rustup/toolchains"),
+                "Developer tools",
+                "Installed Rust toolchains managed by rustup.",
+            ),
+            (
+                "npm_cache",
+                "npm cache",
+                home.join(".npm"),
+                "Developer cache",
+                "npm package download cache.",
+            ),
+            (
+                "pnpm_store_macos",
+                "pnpm store",
+                library.join("pnpm/store"),
+                "Developer cache",
+                "pnpm content-addressable package store.",
+            ),
+            (
+                "pnpm_cache_macos",
+                "pnpm cache",
+                caches.join("pnpm"),
+                "Developer cache",
+                "pnpm metadata and downloaded package cache.",
+            ),
+            (
+                "yarn_cache",
+                "Yarn cache",
+                caches.join("Yarn"),
+                "Developer cache",
+                "Yarn package cache.",
+            ),
+            (
+                "pip_cache",
+                "pip cache",
+                caches.join("pip"),
+                "Developer cache",
+                "Python package download and wheel cache.",
+            ),
+            (
+                "poetry_cache",
+                "Poetry cache",
+                caches.join("pypoetry"),
+                "Developer cache",
+                "Poetry package and virtual environment cache.",
+            ),
+            (
+                "maven_repository",
+                "Maven repository",
+                home.join(".m2/repository"),
+                "Developer cache",
+                "Maven dependency artifacts used by Java projects.",
+            ),
+            (
+                "gradle_cache",
+                "Gradle cache",
+                home.join(".gradle/caches"),
+                "Developer cache",
+                "Gradle dependency and build caches.",
+            ),
+            (
+                "go_module_cache",
+                "Go module cache",
+                home.join("go/pkg/mod"),
+                "Developer cache",
+                "Downloaded Go modules used by Go projects.",
+            ),
+            (
+                "vscode_extensions",
+                "VS Code extensions",
+                home.join(".vscode/extensions"),
+                "Developer tools",
+                "Installed Visual Studio Code extensions.",
+            ),
+            (
+                "electron_cache",
+                "Electron cache",
+                caches.join("electron"),
+                "Developer cache",
+                "Electron download and runtime cache.",
+            ),
+            (
+                "electron_builder_cache",
+                "Electron Builder cache",
+                caches.join("electron-builder"),
+                "Developer cache",
+                "Electron Builder downloaded tooling and target caches.",
+            ),
+        ];
+
+        for (id, name, path, category, description) in definitions {
+            Self::push_usage_insight(insights, id, name, path, category, description);
+        }
+    }
+
     fn push_large_app_folders(insights: &mut Vec<UsageInsightDefinition>) {
         let roots = [
             std::env::var_os("ProgramFiles").map(PathBuf::from),
@@ -766,11 +890,50 @@ impl DiskCleanupManager {
         Self::parse_volumes(&String::from_utf8_lossy(&output.stdout))
     }
 
-    #[cfg(not(windows))]
+    #[cfg(target_os = "macos")]
+    fn volumes() -> Vec<DiskVolumeUsage> {
+        let disks = sysinfo::Disks::new_with_refreshed_list();
+        let mut volumes = disks
+            .list()
+            .iter()
+            .filter_map(|disk| {
+                let mount_point = disk.mount_point().to_string_lossy().into_owned();
+                if disk.total_space() == 0
+                    || !(mount_point == "/" || mount_point.starts_with("/Volumes/"))
+                    || mount_point.starts_with("/System/Volumes/")
+                {
+                    return None;
+                }
+
+                let disk_name = disk.name().to_string_lossy().into_owned();
+                Some(DiskVolumeUsage {
+                    label: mount_point.clone(),
+                    name: if disk_name.is_empty() {
+                        mount_point.clone()
+                    } else {
+                        disk_name
+                    },
+                    total_bytes: disk.total_space(),
+                    free_bytes: disk.available_space(),
+                    system_drive: mount_point == "/",
+                })
+            })
+            .collect::<Vec<_>>();
+        volumes.sort_by(|left, right| {
+            right
+                .system_drive
+                .cmp(&left.system_drive)
+                .then_with(|| left.label.cmp(&right.label))
+        });
+        volumes
+    }
+
+    #[cfg(not(any(windows, target_os = "macos")))]
     fn volumes() -> Vec<DiskVolumeUsage> {
         Vec::new()
     }
 
+    #[cfg(windows)]
     fn parse_volumes(output: &str) -> Vec<DiskVolumeUsage> {
         output
             .lines()
@@ -791,5 +954,35 @@ impl DiskCleanupManager {
                 })
             })
             .collect()
+    }
+}
+
+#[cfg(all(test, target_os = "macos"))]
+mod tests {
+    use super::{DiskCleanupManager, UsageInsightDefinition};
+    use std::path::Path;
+
+    #[test]
+    fn macos_usage_insights_use_native_developer_cache_paths() {
+        let home = Path::new("/Users/example");
+        let mut insights = Vec::<UsageInsightDefinition>::new();
+
+        DiskCleanupManager::push_macos_usage_insights(&mut insights, home);
+
+        let path_for = |id: &str| {
+            insights
+                .iter()
+                .find(|insight| insight.id == id)
+                .map(|insight| insight.path.as_path())
+        };
+        assert_eq!(
+            path_for("cargo_registry"),
+            Some(home.join(".cargo/registry").as_path())
+        );
+        assert_eq!(path_for("npm_cache"), Some(home.join(".npm").as_path()));
+        assert_eq!(
+            path_for("pnpm_store_macos"),
+            Some(home.join("Library/pnpm/store").as_path())
+        );
     }
 }

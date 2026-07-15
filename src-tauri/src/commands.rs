@@ -7,20 +7,19 @@ use crate::disk_cleanup::DiskCleanupManager;
 use crate::models::{
     CommandError, DiskCleanupRequest, DiskCleanupResult, DiskCleanupScan,
     DiskUsageInsightCleanupRequest, DiskUsageInsightCleanupResult, DockerAvailability,
-    DockerContainer, DockerDashboard, DockerImage, DockerRegistryImage,
-    DockerRegistryRequest, NetworkDevice, NetworkDeviceScan, PortScan, PortUsage,
-    ProcessSnapshot, SshKeyGenerationRequest, SshKeyInfo, StartupApp,
-    StartupCommandUpdateRequest,
+    DockerContainer, DockerDashboard, DockerImage, DockerRegistryImage, DockerRegistryRequest,
+    NetworkDevice, NetworkDeviceScan, PortScan, PortUsage, ProcessSnapshot,
+    SshKeyGenerationRequest, SshKeyInfo, StartupApp, StartupCommandUpdateRequest,
 };
-use reqwest::header::LINK;
-use serde::Deserialize;
-use serde::de::DeserializeOwned;
-use std::time::Duration;
 use crate::terminal::models::{
     TerminalResizeRequest, TerminalSessionInfo, TerminalSessionRequest, TerminalStartRequest,
     TerminalStartResponse, TerminalStopRequest, TerminalWriteRequest,
 };
 use crate::AppState;
+use reqwest::header::LINK;
+use serde::de::DeserializeOwned;
+use serde::Deserialize;
+use std::time::Duration;
 use tauri::{AppHandle, Manager, State};
 
 #[tauri::command]
@@ -48,7 +47,9 @@ pub fn refresh_window_icon(app_handle: AppHandle) -> Result<(), CommandError> {
     };
 
     let Some(icon) = app_handle.default_window_icon().cloned() else {
-        return Err(CommandError::settings_failed("default window icon is unavailable"));
+        return Err(CommandError::settings_failed(
+            "default window icon is unavailable",
+        ));
     };
 
     window
@@ -110,14 +111,18 @@ pub async fn generate_ssh_key(
 }
 
 #[tauri::command]
-pub async fn get_docker_availability(docker_host: Option<String>) -> Result<DockerAvailability, CommandError> {
+pub async fn get_docker_availability(
+    docker_host: Option<String>,
+) -> Result<DockerAvailability, CommandError> {
     tauri::async_runtime::spawn_blocking(move || docker_availability_impl(docker_host.as_deref()))
         .await
         .map_err(|error| CommandError::docker_failed(error.to_string()))?
 }
 
 #[tauri::command]
-pub async fn get_docker_dashboard(docker_host: Option<String>) -> Result<DockerDashboard, CommandError> {
+pub async fn get_docker_dashboard(
+    docker_host: Option<String>,
+) -> Result<DockerDashboard, CommandError> {
     tauri::async_runtime::spawn_blocking(move || docker_dashboard_impl(docker_host.as_deref()))
         .await
         .map_err(|error| CommandError::docker_failed(error.to_string()))?
@@ -129,30 +134,50 @@ pub async fn run_docker_container_action(
     action: String,
     docker_host: Option<String>,
 ) -> Result<(), CommandError> {
-    tauri::async_runtime::spawn_blocking(move || docker_container_action_impl(&container_id, &action, docker_host.as_deref()))
-        .await
-        .map_err(|error| CommandError::docker_failed(error.to_string()))?
+    tauri::async_runtime::spawn_blocking(move || {
+        docker_container_action_impl(&container_id, &action, docker_host.as_deref())
+    })
+    .await
+    .map_err(|error| CommandError::docker_failed(error.to_string()))?
 }
 
 #[tauri::command]
-pub async fn remove_docker_image(image_id: String, docker_host: Option<String>) -> Result<(), CommandError> {
-    tauri::async_runtime::spawn_blocking(move || run_docker_text(docker_host.as_deref(), &["rmi", &image_id]).map(|_| ()))
-        .await
-        .map_err(|error| CommandError::docker_failed(error.to_string()))?
+pub async fn remove_docker_image(
+    image_id: String,
+    docker_host: Option<String>,
+) -> Result<(), CommandError> {
+    tauri::async_runtime::spawn_blocking(move || {
+        run_docker_text(docker_host.as_deref(), &["rmi", &image_id]).map(|_| ())
+    })
+    .await
+    .map_err(|error| CommandError::docker_failed(error.to_string()))?
 }
 
 #[tauri::command]
-pub async fn get_docker_container_inspect(container_id: String, docker_host: Option<String>) -> Result<String, CommandError> {
-    tauri::async_runtime::spawn_blocking(move || run_docker_text(docker_host.as_deref(), &["inspect", &container_id]))
-        .await
-        .map_err(|error| CommandError::docker_failed(error.to_string()))?
+pub async fn get_docker_container_inspect(
+    container_id: String,
+    docker_host: Option<String>,
+) -> Result<String, CommandError> {
+    tauri::async_runtime::spawn_blocking(move || {
+        run_docker_text(docker_host.as_deref(), &["inspect", &container_id])
+    })
+    .await
+    .map_err(|error| CommandError::docker_failed(error.to_string()))?
 }
 
 #[tauri::command]
-pub async fn get_docker_container_logs(container_id: String, docker_host: Option<String>) -> Result<String, CommandError> {
-    tauri::async_runtime::spawn_blocking(move || run_docker_text(docker_host.as_deref(), &["logs", "--tail", "200", &container_id]))
-        .await
-        .map_err(|error| CommandError::docker_failed(error.to_string()))?
+pub async fn get_docker_container_logs(
+    container_id: String,
+    docker_host: Option<String>,
+) -> Result<String, CommandError> {
+    tauri::async_runtime::spawn_blocking(move || {
+        run_docker_text(
+            docker_host.as_deref(),
+            &["logs", "--tail", "200", &container_id],
+        )
+    })
+    .await
+    .map_err(|error| CommandError::docker_failed(error.to_string()))?
 }
 
 #[tauri::command]
@@ -333,10 +358,26 @@ fn terminate_process_impl(pid: u32) -> Result<(), CommandError> {
     }
 }
 
-#[cfg(not(windows))]
+#[cfg(unix)]
+fn terminate_process_impl(pid: u32) -> Result<(), CommandError> {
+    let status = std::process::Command::new("kill")
+        .args(["-TERM", &pid.to_string()])
+        .status()
+        .map_err(|error| CommandError::process_action_failed(error.to_string()))?;
+
+    if status.success() {
+        Ok(())
+    } else {
+        Err(CommandError::process_action_failed(format!(
+            "kill exited with {status}"
+        )))
+    }
+}
+
+#[cfg(not(any(windows, unix)))]
 fn terminate_process_impl(_: u32) -> Result<(), CommandError> {
     Err(CommandError::process_action_failed(
-        "process termination is only available on Windows",
+        "process termination is not available on this platform",
     ))
 }
 
@@ -392,7 +433,13 @@ $udp = Get-NetUDPEndpoint | ForEach-Object {
 "#;
 
     let output = std::process::Command::new("powershell.exe")
-        .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script])
+        .args([
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-Command",
+            script,
+        ])
         .creation_flags(0x08000000)
         .output()
         .map_err(|error| CommandError::port_scan_failed(error.to_string()))?;
@@ -469,11 +516,20 @@ fn parse_lsof_port_line(line: &str) -> Option<PortUsage> {
         .split('(')
         .nth(1)
         .and_then(|value| value.split(')').next())
-        .unwrap_or(if protocol.contains("UDP") { "Open" } else { "Unknown" })
+        .unwrap_or(if protocol.contains("UDP") {
+            "Open"
+        } else {
+            "Unknown"
+        })
         .to_string();
 
     Some(PortUsage {
-        protocol: if protocol.contains("UDP") { "UDP" } else { "TCP" }.to_string(),
+        protocol: if protocol.contains("UDP") {
+            "UDP"
+        } else {
+            "TCP"
+        }
+        .to_string(),
         local_address,
         local_port,
         remote_address: None,
@@ -501,23 +557,23 @@ fn normalize_address(address: String) -> String {
 
 #[cfg(windows)]
 fn scan_network_devices_impl() -> Result<NetworkDeviceScan, CommandError> {
-        use serde::Deserialize;
-        use std::os::windows::process::CommandExt;
+    use serde::Deserialize;
+    use std::os::windows::process::CommandExt;
 
-        #[derive(Deserialize)]
-        #[serde(rename_all = "PascalCase")]
-        struct WindowsNetworkDeviceRow {
-                ip_address: String,
-                mac_address: Option<String>,
-                hostname: Option<String>,
-                interface_name: Option<String>,
-                state: Option<String>,
-                source: Option<String>,
-                reachable: Option<bool>,
-                network_count: Option<usize>,
-        }
+    #[derive(Deserialize)]
+    #[serde(rename_all = "PascalCase")]
+    struct WindowsNetworkDeviceRow {
+        ip_address: String,
+        mac_address: Option<String>,
+        hostname: Option<String>,
+        interface_name: Option<String>,
+        state: Option<String>,
+        source: Option<String>,
+        reachable: Option<bool>,
+        network_count: Option<usize>,
+    }
 
-        let script = r#"
+    let script = r#"
 $configs = @(Get-NetIPConfiguration | Where-Object { $_.IPv4Address -and $_.NetAdapter.Status -eq 'Up' -and $_.NetAdapter.HardwareInterface })
 if ($configs.Count -eq 0) {
     $configs = @(Get-NetIPConfiguration | Where-Object { $_.IPv4Address -and $_.NetAdapter.Status -eq 'Up' })
@@ -666,86 +722,107 @@ if ($rows.Count -gt 0) { $rows[0].NetworkCount = $networks.Count }
 $rows | Sort-Object {[version]$_.IpAddress} | ConvertTo-Json -Compress -Depth 3
 "#;
 
-        let output = std::process::Command::new("powershell.exe")
-                .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script])
-                .creation_flags(0x08000000)
-                .output()
+    let output = std::process::Command::new("powershell.exe")
+        .args([
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-Command",
+            script,
+        ])
+        .creation_flags(0x08000000)
+        .output()
+        .map_err(|error| CommandError::network_scan_failed(error.to_string()))?;
+
+    if !output.status.success() {
+        return Err(CommandError::network_scan_failed(
+            String::from_utf8_lossy(&output.stderr).trim().to_string(),
+        ));
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let trimmed = stdout.trim();
+    if trimmed.is_empty() {
+        return Ok(NetworkDeviceScan {
+            scanned_at: unix_timestamp_string(),
+            network_count: 0,
+            devices: Vec::new(),
+        });
+    }
+
+    let rows: Vec<WindowsNetworkDeviceRow> = match serde_json::from_str(trimmed) {
+        Ok(rows) => rows,
+        Err(_) => {
+            let row: WindowsNetworkDeviceRow = serde_json::from_str(trimmed)
                 .map_err(|error| CommandError::network_scan_failed(error.to_string()))?;
-
-        if !output.status.success() {
-                return Err(CommandError::network_scan_failed(String::from_utf8_lossy(&output.stderr).trim().to_string()));
+            vec![row]
         }
+    };
+    let network_count = rows.iter().find_map(|row| row.network_count).unwrap_or(0);
 
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        let trimmed = stdout.trim();
-        if trimmed.is_empty() {
-                return Ok(NetworkDeviceScan { scanned_at: unix_timestamp_string(), network_count: 0, devices: Vec::new() });
-        }
-
-        let rows: Vec<WindowsNetworkDeviceRow> = match serde_json::from_str(trimmed) {
-                Ok(rows) => rows,
-                Err(_) => {
-                        let row: WindowsNetworkDeviceRow = serde_json::from_str(trimmed)
-                                .map_err(|error| CommandError::network_scan_failed(error.to_string()))?;
-                        vec![row]
-                }
-        };
-        let network_count = rows.iter().find_map(|row| row.network_count).unwrap_or(0);
-
-        Ok(NetworkDeviceScan {
-                scanned_at: unix_timestamp_string(),
-                network_count,
-                devices: rows
-                        .into_iter()
-                        .filter(|row| !row.ip_address.trim().is_empty())
-                        .map(|row| NetworkDevice {
-                                ip_address: row.ip_address,
-                                mac_address: row.mac_address.filter(|value| !value.trim().is_empty()),
-                                hostname: row.hostname.filter(|value| !value.trim().is_empty()),
-                                interface_name: row.interface_name.unwrap_or_default(),
-                                state: row.state.unwrap_or_else(|| "Unknown".to_string()),
-                                source: row.source.unwrap_or_else(|| "Scan".to_string()),
-                                reachable: row.reachable.unwrap_or(false),
-                        })
-                        .collect(),
-        })
+    Ok(NetworkDeviceScan {
+        scanned_at: unix_timestamp_string(),
+        network_count,
+        devices: rows
+            .into_iter()
+            .filter(|row| !row.ip_address.trim().is_empty())
+            .map(|row| NetworkDevice {
+                ip_address: row.ip_address,
+                mac_address: row.mac_address.filter(|value| !value.trim().is_empty()),
+                hostname: row.hostname.filter(|value| !value.trim().is_empty()),
+                interface_name: row.interface_name.unwrap_or_default(),
+                state: row.state.unwrap_or_else(|| "Unknown".to_string()),
+                source: row.source.unwrap_or_else(|| "Scan".to_string()),
+                reachable: row.reachable.unwrap_or(false),
+            })
+            .collect(),
+    })
 }
 
 #[cfg(not(windows))]
 fn scan_network_devices_impl() -> Result<NetworkDeviceScan, CommandError> {
-        let output = std::process::Command::new("arp")
-                .arg("-a")
-                .output()
-                .map_err(|error| CommandError::network_scan_failed(error.to_string()))?;
+    let output = std::process::Command::new("arp")
+        .arg("-a")
+        .output()
+        .map_err(|error| CommandError::network_scan_failed(error.to_string()))?;
 
-        if !output.status.success() {
-                return Err(CommandError::network_scan_failed(String::from_utf8_lossy(&output.stderr).trim().to_string()));
-        }
+    if !output.status.success() {
+        return Err(CommandError::network_scan_failed(
+            String::from_utf8_lossy(&output.stderr).trim().to_string(),
+        ));
+    }
 
-        Ok(NetworkDeviceScan {
-                scanned_at: unix_timestamp_string(),
-                network_count: 0,
-                devices: String::from_utf8_lossy(&output.stdout)
-                        .lines()
-                        .filter_map(parse_arp_device_line)
-                        .collect(),
-        })
+    Ok(NetworkDeviceScan {
+        scanned_at: unix_timestamp_string(),
+        network_count: 0,
+        devices: String::from_utf8_lossy(&output.stdout)
+            .lines()
+            .filter_map(parse_arp_device_line)
+            .collect(),
+    })
 }
 
 #[cfg(not(windows))]
 fn parse_arp_device_line(line: &str) -> Option<NetworkDevice> {
-        let columns: Vec<&str> = line.split_whitespace().collect();
-        let ip_address = columns.iter().find(|value| value.chars().filter(|character| *character == '.').count() == 3)?.trim_matches(['(', ')']).to_string();
-        let mac_address = columns.iter().find(|value| value.contains(':') && value.len() >= 11).map(|value| value.to_string());
-        Some(NetworkDevice {
-                ip_address,
-                mac_address,
-                hostname: None,
-                interface_name: String::new(),
-                state: "Cached".to_string(),
-                source: "ARP cache".to_string(),
-                reachable: false,
-        })
+    let columns: Vec<&str> = line.split_whitespace().collect();
+    let ip_address = columns
+        .iter()
+        .find(|value| value.chars().filter(|character| *character == '.').count() == 3)?
+        .trim_matches(['(', ')'])
+        .to_string();
+    let mac_address = columns
+        .iter()
+        .find(|value| value.contains(':') && value.len() >= 11)
+        .map(|value| value.to_string());
+    Some(NetworkDevice {
+        ip_address,
+        mac_address,
+        hostname: None,
+        interface_name: String::new(),
+        state: "Cached".to_string(),
+        source: "ARP cache".to_string(),
+        reachable: false,
+    })
 }
 
 fn unix_timestamp_string() -> String {
@@ -834,9 +911,9 @@ fn sanitize_ssh_key_file_name(file_name: &str) -> Result<String, CommandError> {
         || trimmed.contains('\\')
         || trimmed == "."
         || trimmed == ".."
-        || !trimmed
-            .chars()
-            .all(|character| character.is_ascii_alphanumeric() || matches!(character, '_' | '-' | '.'))
+        || !trimmed.chars().all(|character| {
+            character.is_ascii_alphanumeric() || matches!(character, '_' | '-' | '.')
+        })
     {
         return Err(CommandError::ssh_key_failed("invalid SSH key file name"));
     }
@@ -844,7 +921,9 @@ fn sanitize_ssh_key_file_name(file_name: &str) -> Result<String, CommandError> {
     Ok(trimmed.to_string())
 }
 
-fn ssh_key_info_from_public_path(public_path: std::path::PathBuf) -> Result<SshKeyInfo, CommandError> {
+fn ssh_key_info_from_public_path(
+    public_path: std::path::PathBuf,
+) -> Result<SshKeyInfo, CommandError> {
     let public_key = std::fs::read_to_string(&public_path)
         .map_err(|error| CommandError::ssh_key_failed(error.to_string()))?
         .trim()
@@ -869,7 +948,9 @@ fn ssh_key_info_from_public_path(public_path: std::path::PathBuf) -> Result<SshK
         name,
         key_type,
         public_key_path: public_path.display().to_string(),
-        private_key_path: private_path.exists().then(|| private_path.display().to_string()),
+        private_key_path: private_path
+            .exists()
+            .then(|| private_path.display().to_string()),
         public_key,
         fingerprint: ssh_key_fingerprint(&public_path),
         comment: (!comment.is_empty()).then_some(comment),
@@ -920,13 +1001,18 @@ fn docker_dashboard_impl(docker_host: Option<&str>) -> Result<DockerDashboard, C
             running: false,
             version: None,
             server_version: None,
-            error: Some(if docker_target(docker_host).is_some() { "SSH or remote Docker CLI is not available.".to_string() } else { "Docker CLI is not installed.".to_string() }),
+            error: Some(if docker_target(docker_host).is_some() {
+                "SSH or remote Docker CLI is not available.".to_string()
+            } else {
+                "Docker CLI is not installed.".to_string()
+            }),
             containers: Vec::new(),
             images: Vec::new(),
         });
     }
 
-    let server_version = run_docker_text(docker_host, &["version", "--format", "{{.Server.Version}}"]);
+    let server_version =
+        run_docker_text(docker_host, &["version", "--format", "{{.Server.Version}}"]);
     let running = server_version.is_ok();
     if !running {
         let error = match server_version.err() {
@@ -955,14 +1041,22 @@ fn docker_dashboard_impl(docker_host: Option<&str>) -> Result<DockerDashboard, C
     })
 }
 
-    fn docker_container_action_impl(container_id: &str, action: &str, docker_host: Option<&str>) -> Result<(), CommandError> {
+fn docker_container_action_impl(
+    container_id: &str,
+    action: &str,
+    docker_host: Option<&str>,
+) -> Result<(), CommandError> {
     let command = match action {
         "start" => "start",
         "stop" => "stop",
         "restart" => "restart",
         "remove" => "rm",
         "forceRemove" => "rm",
-        _ => return Err(CommandError::docker_failed("unsupported Docker container action")),
+        _ => {
+            return Err(CommandError::docker_failed(
+                "unsupported Docker container action",
+            ))
+        }
     };
 
     if action == "forceRemove" {
@@ -1082,7 +1176,10 @@ impl DockerRegistryClient {
     }
 
     fn tags(&self, repository: &str) -> Result<Vec<String>, CommandError> {
-        let page = self.get_json::<DockerRegistryTagsPage>(&format!("{}/v2/{repository}/tags/list", self.base_url))?;
+        let page = self.get_json::<DockerRegistryTagsPage>(&format!(
+            "{}/v2/{repository}/tags/list",
+            self.base_url
+        ))?;
         let mut tags = page.tags.unwrap_or_default();
         tags.sort();
         Ok(tags)
@@ -1092,7 +1189,10 @@ impl DockerRegistryClient {
         self.get_json_with_link(url).map(|(value, _)| value)
     }
 
-    fn get_json_with_link<T: DeserializeOwned>(&self, url: &str) -> Result<(T, Option<String>), CommandError> {
+    fn get_json_with_link<T: DeserializeOwned>(
+        &self,
+        url: &str,
+    ) -> Result<(T, Option<String>), CommandError> {
         let mut request = self.client.get(url);
         if !self.username.trim().is_empty() || !self.password.is_empty() {
             request = request.basic_auth(self.username.trim(), Some(&self.password));
@@ -1111,7 +1211,9 @@ impl DockerRegistryClient {
 
         if !status.is_success() {
             let message = response.text().unwrap_or_else(|_| status.to_string());
-            return Err(CommandError::docker_failed(format!("registry request failed: {status} {message}")));
+            return Err(CommandError::docker_failed(format!(
+                "registry request failed: {status} {message}"
+            )));
         }
 
         response
@@ -1152,17 +1254,46 @@ fn run_docker_text(docker_host: Option<&str>, args: &[&str]) -> Result<String, C
     }
 }
 
-fn docker_command(docker_host: Option<&str>, args: &[&str]) -> std::io::Result<std::process::Output> {
+fn docker_command(
+    docker_host: Option<&str>,
+    args: &[&str],
+) -> std::io::Result<std::process::Output> {
     if let Some(target) = docker_target(docker_host) {
         std::process::Command::new("ssh")
             .arg(target)
             .arg(DockerSshCommand::new(args).command())
             .output()
     } else {
-        std::process::Command::new("docker")
+        std::process::Command::new(local_docker_program())
             .args(args)
             .output()
     }
+}
+
+#[cfg(target_os = "macos")]
+fn local_docker_program() -> std::path::PathBuf {
+    macos_docker_cli_candidates()
+        .into_iter()
+        .find(|path| path.is_file())
+        .unwrap_or_else(|| std::path::PathBuf::from("docker"))
+}
+
+#[cfg(target_os = "macos")]
+fn macos_docker_cli_candidates() -> Vec<std::path::PathBuf> {
+    let mut candidates = vec![
+        std::path::PathBuf::from("/Applications/Docker.app/Contents/Resources/bin/docker"),
+        std::path::PathBuf::from("/usr/local/bin/docker"),
+        std::path::PathBuf::from("/opt/homebrew/bin/docker"),
+    ];
+    if let Some(home) = std::env::var_os("HOME") {
+        candidates.push(std::path::PathBuf::from(home).join(".docker/bin/docker"));
+    }
+    candidates
+}
+
+#[cfg(not(target_os = "macos"))]
+fn local_docker_program() -> std::path::PathBuf {
+    std::path::PathBuf::from("docker")
 }
 
 fn docker_target(docker_host: Option<&str>) -> Option<&str> {
@@ -1186,7 +1317,10 @@ impl<'a> DockerSshCommand<'a> {
     }
 
     fn quote(value: &str) -> String {
-        if value.chars().all(|character| character.is_ascii_alphanumeric() || matches!(character, '_' | '-' | '.' | '/' | ':' | '=')) {
+        if value.chars().all(|character| {
+            character.is_ascii_alphanumeric()
+                || matches!(character, '_' | '-' | '.' | '/' | ':' | '=')
+        }) {
             return value.to_string();
         }
 
@@ -1206,7 +1340,9 @@ fn docker_label_value(labels: &str, key: &str) -> Option<String> {
     labels
         .split(',')
         .filter_map(|label| label.split_once('='))
-        .find_map(|(label_key, label_value)| (label_key == key && !label_value.is_empty()).then(|| label_value.to_string()))
+        .find_map(|(label_key, label_value)| {
+            (label_key == key && !label_value.is_empty()).then(|| label_value.to_string())
+        })
 }
 
 #[cfg(windows)]
@@ -1248,9 +1384,119 @@ fn open_native_tool_impl(tool_id: &str) -> Result<(), CommandError> {
         .map_err(|error| CommandError::native_tool_failed(error.to_string()))
 }
 
-#[cfg(not(windows))]
+#[cfg(target_os = "macos")]
+fn open_native_tool_impl(tool_id: &str) -> Result<(), CommandError> {
+    let Some((program, args)) = macos_native_tool_command(tool_id) else {
+        return Err(CommandError::native_tool_failed("unknown native tool"));
+    };
+
+    std::process::Command::new(program)
+        .args(args)
+        .spawn()
+        .map(|_| ())
+        .map_err(|error| CommandError::native_tool_failed(error.to_string()))
+}
+
+#[cfg(target_os = "macos")]
+fn macos_native_tool_command(tool_id: &str) -> Option<(&'static str, &'static [&'static str])> {
+    match tool_id {
+        "taskManager" => Some((
+            "/usr/bin/open",
+            &["/System/Applications/Utilities/Activity Monitor.app"],
+        )),
+        "systemSettings" => Some((
+            "/usr/bin/open",
+            &["/System/Applications/System Settings.app"],
+        )),
+        "diskManager" => Some((
+            "/usr/bin/open",
+            &["/System/Applications/Utilities/Disk Utility.app"],
+        )),
+        "terminal" => Some((
+            "/usr/bin/open",
+            &["/System/Applications/Utilities/Terminal.app"],
+        )),
+        "envVariables" => Some((
+            "/usr/bin/osascript",
+            &[
+                "-e",
+                "tell application \"Terminal\" to do script \"printenv | sort\"",
+            ],
+        )),
+        "snippingTool" => Some((
+            "/usr/bin/open",
+            &["/System/Applications/Utilities/Screenshot.app"],
+        )),
+        _ => None,
+    }
+}
+
+#[cfg(not(any(windows, target_os = "macos")))]
 fn open_native_tool_impl(_: &str) -> Result<(), CommandError> {
     Err(CommandError::native_tool_failed(
-        "native tools are only available on Windows",
+        "native tools are not available on this platform",
     ))
+}
+
+#[cfg(all(test, target_os = "macos"))]
+mod macos_native_tool_tests {
+    use super::{macos_docker_cli_candidates, macos_native_tool_command};
+
+    #[test]
+    fn maps_every_supported_native_tool() {
+        assert_eq!(
+            macos_native_tool_command("taskManager"),
+            Some((
+                "/usr/bin/open",
+                &["/System/Applications/Utilities/Activity Monitor.app"][..]
+            ))
+        );
+        assert_eq!(
+            macos_native_tool_command("systemSettings"),
+            Some((
+                "/usr/bin/open",
+                &["/System/Applications/System Settings.app"][..]
+            ))
+        );
+        assert_eq!(
+            macos_native_tool_command("diskManager"),
+            Some((
+                "/usr/bin/open",
+                &["/System/Applications/Utilities/Disk Utility.app"][..]
+            ))
+        );
+        assert_eq!(
+            macos_native_tool_command("terminal"),
+            Some((
+                "/usr/bin/open",
+                &["/System/Applications/Utilities/Terminal.app"][..]
+            ))
+        );
+        assert_eq!(
+            macos_native_tool_command("snippingTool"),
+            Some((
+                "/usr/bin/open",
+                &["/System/Applications/Utilities/Screenshot.app"][..]
+            ))
+        );
+        assert_eq!(
+            macos_native_tool_command("envVariables").map(|command| command.0),
+            Some("/usr/bin/osascript")
+        );
+    }
+
+    #[test]
+    fn rejects_unknown_native_tools() {
+        assert!(macos_native_tool_command("unknown").is_none());
+    }
+
+    #[test]
+    fn checks_docker_desktop_cli_before_path_fallbacks() {
+        assert_eq!(
+            macos_docker_cli_candidates()
+                .first()
+                .and_then(|path| path.to_str()),
+            Some("/Applications/Docker.app/Contents/Resources/bin/docker")
+        );
+    }
 }

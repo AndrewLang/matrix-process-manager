@@ -61,14 +61,23 @@ export class SettingsViewComponent {
         { label: "Language", detail: "Select the application language.", value: "System Default", options: ["System Default", "English"] },
         { label: "Date & time format", detail: "Choose how dates and times are displayed.", value: "System Default", options: ["System Default", "12-hour", "24-hour"] },
     ];
-    toolSettings: Array<{ key: NativeToolId; label: string; detail: string }> = [
-        { key: "taskManager", label: "Task Manager", detail: "Open Windows Task Manager from the Tools menu." },
-        { key: "systemSettings", label: "System Settings", detail: "Open Windows Settings to the About page." },
-        { key: "diskManager", label: "Disk Manager", detail: "Open Windows Disk Management from the Tools menu." },
-        { key: "terminal", label: "Terminal", detail: "Open Windows Terminal from the Tools menu." },
-        { key: "envVariables", label: "Env Variables", detail: "Open Windows Environment Variables from the Tools menu." },
-        { key: "snippingTool", label: "Snipping Tool", detail: "Open Windows Snipping Tool from the Tools menu." },
-    ];
+    toolSettings: Array<{ key: NativeToolId; label: string; detail: string }> = navigator.platform.toLowerCase().includes("mac")
+        ? [
+            { key: "taskManager", label: "Activity Monitor", detail: "Open Activity Monitor from the Tools menu." },
+            { key: "systemSettings", label: "System Settings", detail: "Open macOS System Settings." },
+            { key: "diskManager", label: "Disk Utility", detail: "Open Disk Utility from the Tools menu." },
+            { key: "terminal", label: "Terminal", detail: "Open macOS Terminal from the Tools menu." },
+            { key: "envVariables", label: "Environment", detail: "Open Terminal and list the current shell environment." },
+            { key: "snippingTool", label: "Screenshot", detail: "Open the macOS Screenshot utility." },
+        ]
+        : [
+            { key: "taskManager", label: "Task Manager", detail: "Open Windows Task Manager from the Tools menu." },
+            { key: "systemSettings", label: "System Settings", detail: "Open Windows Settings to the About page." },
+            { key: "diskManager", label: "Disk Manager", detail: "Open Windows Disk Management from the Tools menu." },
+            { key: "terminal", label: "Terminal", detail: "Open Windows Terminal from the Tools menu." },
+            { key: "envVariables", label: "Env Variables", detail: "Open Windows Environment Variables from the Tools menu." },
+            { key: "snippingTool", label: "Snipping Tool", detail: "Open Windows Snipping Tool from the Tools menu." },
+        ];
     aboutItems = [
         { label: "Product", value: "Workstation Console" },
         { label: "Version", value: "1.0.0" },

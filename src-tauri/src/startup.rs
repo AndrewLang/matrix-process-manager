@@ -111,7 +111,52 @@ impl StartupManager {
         Ok(apps)
     }
 
-    #[cfg(not(windows))]
+    #[cfg(target_os = "macos")]
+    fn platform_apps() -> Result<Vec<StartupApp>, CommandError> {
+        use std::path::PathBuf;
+
+        let mut sources = Vec::new();
+        if let Some(home) = std::env::var_os("HOME") {
+            sources.push((
+                PathBuf::from(home).join("Library/LaunchAgents"),
+                "User LaunchAgent",
+                true,
+            ));
+        }
+        sources.extend([
+            (PathBuf::from("/Library/LaunchAgents"), "LaunchAgent", false),
+            (
+                PathBuf::from("/System/Library/LaunchAgents"),
+                "System LaunchAgent",
+                false,
+            ),
+        ]);
+
+        let mut apps = Vec::new();
+        for (directory, source, editable) in sources {
+            let Ok(entries) = std::fs::read_dir(directory) else {
+                continue;
+            };
+
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.extension().and_then(|extension| extension.to_str()) != Some("plist") {
+                    continue;
+                }
+
+                if let Ok(value) = plist::Value::from_file(&path) {
+                    if let Some(app) = Self::launch_agent_app(&path, source, editable, &value) {
+                        apps.push(app);
+                    }
+                }
+            }
+        }
+
+        apps.sort_by(|left, right| left.name.to_lowercase().cmp(&right.name.to_lowercase()));
+        Ok(apps)
+    }
+
+    #[cfg(not(any(windows, target_os = "macos")))]
     fn platform_apps() -> Result<Vec<StartupApp>, CommandError> {
         Ok(Vec::new())
     }
@@ -150,13 +195,130 @@ impl StartupManager {
             .map_err(|error| CommandError::settings_failed(error.to_string()))
     }
 
-    #[cfg(not(windows))]
+    #[cfg(target_os = "macos")]
+    fn platform_update_command(request: StartupCommandUpdateRequest) -> Result<(), CommandError> {
+        let command = request.command.trim();
+        if command.is_empty() {
+            return Err(CommandError::settings_failed(
+                "startup command cannot be empty",
+            ));
+        }
+        if request.source != "User LaunchAgent" {
+            return Err(CommandError::settings_failed(
+                "only user LaunchAgents can be edited",
+            ));
+        }
+
+        let home = std::env::var_os("HOME")
+            .ok_or_else(|| CommandError::settings_failed("home directory is unavailable"))?;
+        let launch_agents = std::path::PathBuf::from(home).join("Library/LaunchAgents");
+        let path = std::path::PathBuf::from(&request.value_name);
+        let canonical_directory = launch_agents
+            .canonicalize()
+            .map_err(|error| CommandError::settings_failed(error.to_string()))?;
+        let canonical_path = path
+            .canonicalize()
+            .map_err(|error| CommandError::settings_failed(error.to_string()))?;
+        if canonical_path.parent() != Some(canonical_directory.as_path())
+            || canonical_path
+                .extension()
+                .and_then(|extension| extension.to_str())
+                != Some("plist")
+        {
+            return Err(CommandError::settings_failed(
+                "startup entry is outside the user LaunchAgents directory",
+            ));
+        }
+
+        let arguments = shell_words::split(command)
+            .map_err(|error| CommandError::settings_failed(error.to_string()))?;
+        let Some(program) = arguments.first() else {
+            return Err(CommandError::settings_failed(
+                "startup command cannot be empty",
+            ));
+        };
+
+        let mut value = plist::Value::from_file(&canonical_path)
+            .map_err(|error| CommandError::settings_failed(error.to_string()))?;
+        let dictionary = value.as_dictionary_mut().ok_or_else(|| {
+            CommandError::settings_failed("LaunchAgent plist is not a dictionary")
+        })?;
+        dictionary.insert("Program".to_string(), plist::Value::String(program.clone()));
+        dictionary.insert(
+            "ProgramArguments".to_string(),
+            plist::Value::Array(arguments.into_iter().map(plist::Value::String).collect()),
+        );
+        value
+            .to_file_xml(canonical_path)
+            .map_err(|error| CommandError::settings_failed(error.to_string()))
+    }
+
+    #[cfg(not(any(windows, target_os = "macos")))]
     fn platform_update_command(_: StartupCommandUpdateRequest) -> Result<(), CommandError> {
         Err(CommandError::settings_failed(
-            "startup command editing is only available on Windows",
+            "startup command editing is not available on this platform",
         ))
     }
 
+    #[cfg(target_os = "macos")]
+    fn launch_agent_app(
+        plist_path: &std::path::Path,
+        source: &str,
+        editable: bool,
+        value: &plist::Value,
+    ) -> Option<StartupApp> {
+        let dictionary = value.as_dictionary()?;
+        let label = dictionary
+            .get("Label")
+            .and_then(plist::Value::as_string)
+            .or_else(|| plist_path.file_stem().and_then(|name| name.to_str()))?
+            .to_string();
+        let arguments = dictionary
+            .get("ProgramArguments")
+            .and_then(plist::Value::as_array)
+            .map(|values| {
+                values
+                    .iter()
+                    .filter_map(plist::Value::as_string)
+                    .map(str::to_string)
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default();
+        let program = dictionary
+            .get("Program")
+            .and_then(plist::Value::as_string)
+            .map(str::to_string)
+            .or_else(|| arguments.first().cloned())?;
+        let command_parts = if arguments.first() == Some(&program) {
+            arguments
+        } else {
+            std::iter::once(program.clone()).chain(arguments).collect()
+        };
+        let command = shell_words::join(command_parts);
+        let disabled = dictionary
+            .get("Disabled")
+            .and_then(plist::Value::as_boolean)
+            .unwrap_or(false);
+
+        Some(StartupApp {
+            name: Self::spaced_name(&label),
+            publisher: Self::path_publisher(&program),
+            icon_data_url: file_icon_data_url(&program),
+            status: if disabled { "Disabled" } else { "Enabled" }.to_string(),
+            impact: Self::impact(&command),
+            startup_type: "LaunchAgent".to_string(),
+            source: source.to_string(),
+            command,
+            path: program,
+            value_name: editable.then(|| plist_path.to_string_lossy().into_owned()),
+            delay_seconds: dictionary
+                .get("ThrottleInterval")
+                .and_then(plist::Value::as_signed_integer)
+                .map(|seconds| seconds as f32),
+        })
+    }
+
+    #[cfg(windows)]
     fn app_from_command(
         name: String,
         command: String,
@@ -182,6 +344,7 @@ impl StartupManager {
         }
     }
 
+    #[cfg(windows)]
     fn executable_path(command: &str) -> String {
         let trimmed = command.trim();
         if let Some(rest) = trimmed.strip_prefix('"') {
@@ -195,10 +358,12 @@ impl StartupManager {
             .to_string()
     }
 
+    #[cfg(windows)]
     fn publisher(path: &str) -> String {
         Self::file_company_name(path).unwrap_or_else(|| Self::path_publisher(path))
     }
 
+    #[cfg(windows)]
     fn display_name(path: &str, fallback: &str) -> String {
         Self::file_version_string(path, "FileDescription")
             .or_else(|| Self::file_version_string(path, "ProductName"))
@@ -220,6 +385,7 @@ impl StartupManager {
         name.trim().to_string()
     }
 
+    #[cfg(windows)]
     fn expand_environment_variables(value: &str) -> String {
         let mut expanded = String::new();
         let mut chars = value.chars().peekable();
@@ -504,16 +670,6 @@ impl StartupManager {
         Self::version_string(&buffer, &format!("\\StringFileInfo\\040904b0\\{key}"))
     }
 
-    #[cfg(not(windows))]
-    fn file_version_string(_path: &str, _key: &str) -> Option<String> {
-        None
-    }
-
-    #[cfg(not(windows))]
-    fn file_company_name(_path: &str) -> Option<String> {
-        None
-    }
-
     #[cfg(windows)]
     fn version_translations(buffer: &[u8]) -> Vec<(u16, u16)> {
         use std::ffi::c_void;
@@ -606,5 +762,69 @@ impl StartupManager {
         }
 
         "Low".to_string()
+    }
+}
+
+#[cfg(all(test, target_os = "macos"))]
+mod tests {
+    use super::StartupManager;
+
+    #[test]
+    fn launch_agent_command_includes_separate_program() {
+        let mut dictionary = plist::Dictionary::new();
+        dictionary.insert(
+            "Label".to_string(),
+            plist::Value::String("com.example.helper".to_string()),
+        );
+        dictionary.insert(
+            "Program".to_string(),
+            plist::Value::String("/Applications/Example App.app/Contents/MacOS/helper".to_string()),
+        );
+        dictionary.insert(
+            "ProgramArguments".to_string(),
+            plist::Value::Array(vec![plist::Value::String("--background".to_string())]),
+        );
+
+        let app = StartupManager::launch_agent_app(
+            std::path::Path::new("/tmp/com.example.helper.plist"),
+            "User LaunchAgent",
+            true,
+            &plist::Value::Dictionary(dictionary),
+        )
+        .expect("valid LaunchAgent");
+
+        assert_eq!(
+            app.command,
+            "'/Applications/Example App.app/Contents/MacOS/helper' --background"
+        );
+        assert_eq!(
+            app.value_name.as_deref(),
+            Some("/tmp/com.example.helper.plist")
+        );
+    }
+
+    #[test]
+    fn disabled_launch_agent_is_reported_as_disabled() {
+        let mut dictionary = plist::Dictionary::new();
+        dictionary.insert(
+            "Label".to_string(),
+            plist::Value::String("com.example.disabled".to_string()),
+        );
+        dictionary.insert(
+            "ProgramArguments".to_string(),
+            plist::Value::Array(vec![plist::Value::String("/usr/bin/false".to_string())]),
+        );
+        dictionary.insert("Disabled".to_string(), plist::Value::Boolean(true));
+
+        let app = StartupManager::launch_agent_app(
+            std::path::Path::new("/tmp/com.example.disabled.plist"),
+            "System LaunchAgent",
+            false,
+            &plist::Value::Dictionary(dictionary),
+        )
+        .expect("valid LaunchAgent");
+
+        assert_eq!(app.status, "Disabled");
+        assert!(app.value_name.is_none());
     }
 }

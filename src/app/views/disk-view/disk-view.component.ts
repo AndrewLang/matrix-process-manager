@@ -162,7 +162,12 @@ export class DiskViewComponent implements OnInit {
         }
 
         const normalizedPath = path.replaceAll("/", "\\").toLowerCase();
-        return normalizedPath.startsWith(`${volumeLabel.toLowerCase()}\\`);
+        const normalizedVolume = volumeLabel.replaceAll("/", "\\").replace(/\\+$/, "").toLowerCase();
+        if (!normalizedVolume) {
+            return normalizedPath.startsWith("\\");
+        }
+
+        return normalizedPath === normalizedVolume || normalizedPath.startsWith(`${normalizedVolume}\\`);
     }
 
     formatBytes(bytes?: number): string {
