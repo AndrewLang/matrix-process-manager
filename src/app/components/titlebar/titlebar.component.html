@@ -1,15 +1,15 @@
 <header class="relative flex h-12 select-none items-center justify-center border-b border-(--border) bg-[rgba(6,14,22,0.82)] py-0 pr-0 pl-3.75"
-  data-tauri-drag-region (mousedown)="dragStart.emit($event)" (dblclick)="toggleMaximizeWindow.emit()">
+  data-tauri-drag-region (mousedown)="startWindowDrag($event)" (dblclick)="maximizeOnDoubleClick($event)">
   @if (!isMacOS) {
-  <div class="absolute left-2 flex h-full items-center gap-1" data-tauri-drag-region (mousedown)="startWindowDrag($event)">
-    <img class="h-7 w-7 rounded-[5px] object-cover" src="assets/app-icon.png" alt="" aria-hidden="true" />
-    <strong class="text-[14px] tracking-normal">Workstation Console</strong>
+  <div id="titleName" class="absolute left-2 flex h-full items-center gap-1" data-tauri-drag-region>
+    <img class="pointer-events-none h-7 w-7 rounded-[5px] object-cover" src="assets/app-icon.png" alt="" aria-hidden="true" />
+    <strong class="pointer-events-none text-[14px] tracking-normal">Workstation Console</strong>
   </div>
   }
 
   <mtx-search-box [hostClass]="searchClass" [inputClass]="searchInputClass" placeholder="Search processes, PID, publisher..." [shortcut]="searchShortcut" />
 
-  <div class="absolute right-0 flex h-full items-center gap-2.5" (mousedown)="$event.stopPropagation()" (dblclick)="$event.stopPropagation()">
+  <div class="absolute right-0 flex h-full items-center gap-2.5">
     <div class="flex h-full items-center">
       @for (action of actions; track action.name) {
       <button class="grid h-full w-11.5 place-items-center rounded-none bg-transparent text-[#b8c4cf] hover:bg-white/10" type="button"

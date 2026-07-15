@@ -1,6 +1,5 @@
 import { NgClass } from "@angular/common";
 import { Component, output } from "@angular/core";
-import { getCurrentWindow } from "@tauri-apps/api/window";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { Action } from "../../app.models";
 import { IconComponent } from "../icon/icon.component";
@@ -47,12 +46,23 @@ export class TitlebarComponent {
     ];
 
     startWindowDrag(event: MouseEvent): void {
-        if (event.button !== 0) {
+        if (event.button !== 0 || this.isInteractiveTarget(event.target)) {
             return;
         }
 
         this.dragStart.emit(event);
-        getCurrentWindow().startDragging().catch(() => undefined);
+    }
+
+    maximizeOnDoubleClick(event: MouseEvent): void {
+        if (this.isInteractiveTarget(event.target)) {
+            return;
+        }
+
+        this.toggleMaximizeWindow.emit();
+    }
+
+    private isInteractiveTarget(target: EventTarget | null): boolean {
+        return target instanceof HTMLElement && target.closest("button, input, a, mtx-search-box") !== null;
     }
 
     openSponsorPage(): void {
