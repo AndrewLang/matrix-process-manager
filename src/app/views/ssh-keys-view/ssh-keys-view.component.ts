@@ -123,6 +123,6 @@ export class SshKeysViewComponent implements OnInit {
     }
 
     private defaultComment(): string {
-        return "workstation-console@local";
+        return "prism@local";
     }
 }

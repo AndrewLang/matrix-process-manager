@@ -30,7 +30,7 @@ interface ProcessSection {
     templateUrl: "./process-grid.component.html",
 })
 export class ProcessGridComponent {
-    private readonly collapsedGroupsKey = "workstation-console.process-grid.collapsed-groups";
+    private readonly collapsedGroupsKey = "prism.process-grid.collapsed-groups";
     private readonly legacyCollapsedGroupsKey = "matrix-process-manager.process-grid.collapsed-groups";
     rows = input.required<ProcessRow[]>();
     selectedProcess = input<ProcessRow | undefined>();

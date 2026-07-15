@@ -54,7 +54,7 @@ export class SettingsViewComponent {
         { value: "paused", label: "Paused", detail: "Stop automatic updates" },
     ];
     generalToggles: Array<{ key: GeneralSettingKey; label: string; detail: string }> = [
-        { key: "startWithWindows", label: "Start with Windows", detail: "Launch Workstation Console automatically when Windows starts." },
+        { key: "startWithWindows", label: "Start with Windows", detail: "Launch Prism automatically when Windows starts." },
         { key: "minimizeToTray", label: "Minimize to system tray", detail: "Minimize the application to system tray instead of the taskbar." },
         { key: "confirmBeforeKillingProcesses", label: "Confirm before killing processes", detail: "Show confirmation dialog before terminating a process." },
     ];
@@ -80,7 +80,7 @@ export class SettingsViewComponent {
             { key: "snippingTool", label: "Snipping Tool", detail: "Open Windows Snipping Tool from the Tools menu." },
         ];
     aboutItems = [
-        { label: "Product", value: "Workstation Console" },
+        { label: "Product", value: "Prism" },
         { label: "Version", value: "1.0.0" },
         { label: "Website", value: "https://matrixrepublic.net/", link: "https://matrixrepublic.net/" },
     ];

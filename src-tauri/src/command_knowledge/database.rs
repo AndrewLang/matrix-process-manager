@@ -33,10 +33,9 @@ impl CommandKnowledgeDatabase {
                 })
         };
 
-        base.map(|path| {
-            path.join("Workstation Console")
-                .join("command-knowledge.sqlite")
-        })
-        .ok_or_else(|| CommandError::terminal_failed("application data directory is unavailable"))
+        base.map(|path| path.join("Prism").join("command-knowledge.sqlite"))
+            .ok_or_else(|| {
+                CommandError::terminal_failed("application data directory is unavailable")
+            })
     }
 }

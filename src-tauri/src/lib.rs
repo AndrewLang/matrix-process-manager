@@ -41,7 +41,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             let icon = app.default_window_icon().cloned();
-            let mut builder = TrayIconBuilder::with_id("main").tooltip("Workstation Console");
+            let mut builder = TrayIconBuilder::with_id("main").tooltip("Prism");
             if let Some(icon) = icon.clone() {
                 builder = builder.icon(icon);
             }

@@ -1,6 +1,6 @@
-# Workstation Console Feature Ideas
+# Prism Feature Ideas
 
-Workstation Console should be a handy workstation utility for both Windows and macOS. This list captures potential integrations grouped by area.
+Prism should be a handy workstation utility for both Windows and macOS. This list captures potential integrations grouped by area.
 
 ## System Tools
 

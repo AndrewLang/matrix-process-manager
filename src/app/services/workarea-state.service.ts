@@ -3,7 +3,7 @@ import { AppSettings, BackendDiskDriveUsage, BackendGpuAdapterUsage, BackendMemo
 
 @Injectable({ providedIn: "root" })
 export class WorkareaStateService {
-    private readonly appSettingsKey = "workstation-console.app-settings";
+    private readonly appSettingsKey = "prism.app-settings";
     private readonly legacyAppSettingsKey = "matrix-process-manager.app-settings";
     private readonly defaultAppSettings: AppSettings = {
         startWithWindows: false,

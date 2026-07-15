@@ -37,9 +37,9 @@ interface PersistedWindowState {
   styleUrl: "./app.component.css",
 })
 export class AppComponent implements OnDestroy, OnInit {
-  private readonly uiStateKey = "workstation-console.ui-state";
+  private readonly uiStateKey = "prism.ui-state";
   private readonly legacyUiStateKey = "matrix-process-manager.ui-state";
-  private readonly windowStateKey = "workstation-console.window-state";
+  private readonly windowStateKey = "prism.window-state";
   private readonly legacyWindowStateKey = "matrix-process-manager.window-state";
   private readonly persistedUiState = this.loadUiState();
   activeView = signal<ViewId>(this.persistedUiState?.activeView ?? "dashboard");

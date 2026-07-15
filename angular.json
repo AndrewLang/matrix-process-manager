@@ -6,7 +6,7 @@
     "analytics": false
   },
   "projects": {
-    "workstation-console": {
+    "prism": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -69,10 +69,10 @@
           },
           "configurations": {
             "production": {
-              "buildTarget": "workstation-console:build:production"
+              "buildTarget": "prism:build:production"
             },
             "development": {
-              "buildTarget": "workstation-console:build:development"
+              "buildTarget": "prism:build:development"
             }
           },
           "defaultConfiguration": "development"

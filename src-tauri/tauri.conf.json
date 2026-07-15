@@ -1,18 +1,18 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Workstation Console",
+  "productName": "Prism",
   "version": "0.1.0",
-  "identifier": "com.andrewlang.workstationconsole",
+  "identifier": "com.andrewlang.prism",
   "build": {
     "beforeDevCommand": "pnpm start",
     "devUrl": "http://localhost:1420",
     "beforeBuildCommand": "pnpm build",
-    "frontendDist": "../dist/workstation-console/browser"
+    "frontendDist": "../dist/prism/browser"
   },
   "app": {
     "windows": [
       {
-        "title": "Workstation Console",
+        "title": "Prism",
         "width": 1152,
         "height": 768,
         "minWidth": 980,

@@ -1,6 +1,6 @@
-# Workstation Console
+# Prism
 
-Workstation Console is a Tauri and Angular desktop utility for monitoring and managing local workstation resources, processes, startup apps, storage, terminal sessions, and system tools.
+Prism is a Tauri and Angular desktop utility for monitoring and managing local workstation resources, processes, startup apps, storage, terminal sessions, and system tools.
 
 ## Recommended IDE Setup
 
