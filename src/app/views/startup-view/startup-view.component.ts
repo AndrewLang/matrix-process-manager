@@ -3,6 +3,7 @@ import { Component, HostListener, OnInit, computed, signal } from "@angular/core
 import { invoke } from "@tauri-apps/api/core";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { StartupApp } from "../../app.models";
+import { IconComponent } from "../../components/icon/icon.component";
 import { SearchBoxComponent } from "../../components/search-box/search-box.component";
 import { SelectComponent } from "../../components/select/select.component";
 
@@ -17,7 +18,7 @@ interface StartupColumn {
 
 @Component({
     selector: "mtx-startup-view",
-    imports: [NgClass, SearchBoxComponent, SelectComponent],
+    imports: [NgClass, IconComponent, SearchBoxComponent, SelectComponent],
     templateUrl: "./startup-view.component.html",
 })
 export class StartupViewComponent implements OnInit {

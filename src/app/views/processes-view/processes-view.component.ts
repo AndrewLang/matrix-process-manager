@@ -4,13 +4,14 @@ import { invoke } from "@tauri-apps/api/core";
 import { MetricCard, ProcessRow, ResourceSample } from "../../app.models";
 import { CommonDialogComponent } from "../../components/common-dialog/common-dialog.component";
 import { DetailsPaneComponent } from "../../components/details-pane/details-pane.component";
+import { IconComponent } from "../../components/icon/icon.component";
 import { ProcessGridComponent } from "../../components/process-grid/process-grid.component";
 import { SearchBoxComponent } from "../../components/search-box/search-box.component";
 import { WorkareaStateService } from "../../services/workarea-state.service";
 
 @Component({
     selector: "mtx-processes-view",
-    imports: [NgClass, CommonDialogComponent, DetailsPaneComponent, ProcessGridComponent, SearchBoxComponent],
+    imports: [NgClass, CommonDialogComponent, DetailsPaneComponent, IconComponent, ProcessGridComponent, SearchBoxComponent],
     templateUrl: "./processes-view.component.html",
 })
 export class ProcessesViewComponent {

@@ -1,12 +1,14 @@
+import { NgClass } from "@angular/common";
 import { Component, output } from "@angular/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { Action } from "../../app.models";
+import { IconComponent } from "../icon/icon.component";
 import { SearchBoxComponent } from "../search-box/search-box.component";
 
 @Component({
     selector: "mtx-titlebar",
-    imports: [SearchBoxComponent],
+    imports: [SearchBoxComponent, IconComponent, NgClass],
     templateUrl: "./titlebar.component.html",
 })
 export class TitlebarComponent {
@@ -31,13 +33,15 @@ export class TitlebarComponent {
         {
             name: "Sponsor on GitHub",
             description: "Sponsor on GitHub",
-            icon: "bi bi-github",
+            icon: "github",
+            iconClass: "text-[14px]",
             action: () => this.openSponsorPage(),
         },
         {
             name: "Settings",
             description: "Settings",
-            icon: "bi bi-gear",
+            icon: "gear",
+            iconClass: "text-[14px]",
             action: () => this.settingsRequested.emit(),
         },
     ];

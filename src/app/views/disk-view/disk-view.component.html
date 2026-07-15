@@ -18,12 +18,12 @@
                 <button type="button"
                   class="inline-flex h-7.5 items-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(16,31,45,0.86)] px-3 hover:bg-white/6"
                   [disabled]="loading() || cleaning()" (click)="refresh()">
-                    <i class="bi bi-arrow-clockwise"></i>Refresh
+                    <mtx-icon name="arrow-clockwise" />Refresh
                 </button>
                 <button type="button"
                   class="inline-flex h-7.5 items-center gap-2 rounded-[5px] border border-[#1596ff] bg-[#1596ff] px-3 font-medium text-white hover:bg-[#2aa4ff] disabled:opacity-55"
                   [disabled]="!hasSelection() || cleaning()" (click)="cleanSelected()">
-                    <i class="bi bi-stars"></i>Clean
+                    <mtx-icon name="stars" />Clean
                 </button>
             </div>
         </div>
@@ -110,7 +110,7 @@
                     <div class="grid gap-3">
                         <span
                           class="mx-auto grid size-11 place-items-center rounded-full border border-[rgba(23,144,255,0.28)] bg-[rgba(23,144,255,0.1)] text-(--blue)">
-                            <i class="bi bi-arrow-repeat animate-spin text-[22px]"></i>
+                            <mtx-icon name="arrow-repeat" class="animate-spin text-[22px]" />
                         </span>
                         <div>
                             <h2>Loading Storage</h2>
@@ -164,12 +164,12 @@
                                     <button type="button"
                                       class="grid size-7 place-items-center rounded border border-(--border) bg-[rgba(10,22,33,0.72)] text-(--blue) hover:bg-white/6"
                                       aria-label="Open insight folder" (click)="openInsightFolder(insight)">
-                                        <i class="bi bi-box-arrow-up-right text-[14px]"></i>
+                                        <mtx-icon name="box-arrow-up-right" class="text-[14px]" />
                                     </button>
                                     <button type="button"
                                       class="grid size-7 place-items-center rounded border border-[rgba(255,154,46,0.42)] bg-[rgba(255,154,46,0.1)] text-(--orange) hover:bg-[rgba(255,154,46,0.16)]"
                                       aria-label="Clean insight folder" [disabled]="cleaning()" (click)="requestCleanInsight($event, insight)">
-                                        <i class="bi bi-stars text-[14px]"></i>
+                                        <mtx-icon name="stars" class="text-[14px]" />
                                     </button>
                                 </div>
                             </td>
@@ -209,7 +209,7 @@
                             <td class="px-3 py-2">
                                 <span class="grid size-5 place-items-center rounded border border-(--border)" [class.bg-[#1596ff]]="targetSelected(target)">
                                     @if (targetSelected(target)) {
-                                    <i class="bi bi-check text-[12px] text-white"></i>
+                                    <mtx-icon name="check" class="text-[12px] text-white" />
                                     }
                                 </span>
                             </td>
@@ -221,7 +221,7 @@
                                 <button type="button"
                                   class="grid size-7 place-items-center rounded border border-(--border) bg-[rgba(10,22,33,0.72)] text-(--blue) hover:bg-white/6"
                                   aria-label="Open folder" (click)="openTargetFolder($event, target)">
-                                    <i class="bi bi-folder2-open text-[14px]"></i>
+                                    <mtx-icon name="folder2-open" class="text-[14px]" />
                                 </button>
                             </td>
                         </tr>
@@ -259,12 +259,12 @@
                             <button type="button"
                               class="grid size-8 place-items-center rounded border border-(--border) bg-[rgba(10,22,33,0.72)] text-(--blue) hover:bg-white/6"
                               aria-label="Open insight folder" (click)="openInsightFolder(insight)">
-                                <i class="bi bi-box-arrow-up-right text-[16px]"></i>
+                                <mtx-icon name="box-arrow-up-right" class="text-[16px]" />
                             </button>
                             <button type="button"
                               class="grid size-8 place-items-center rounded border border-[rgba(255,154,46,0.42)] bg-[rgba(255,154,46,0.1)] text-(--orange) hover:bg-[rgba(255,154,46,0.16)]"
                               aria-label="Clean insight folder" [disabled]="cleaning()" (click)="requestCleanInsight($event, insight)">
-                                <i class="bi bi-stars text-[16px]"></i>
+                                <mtx-icon name="stars" class="text-[16px]" />
                             </button>
                         </span>
                     </article>
@@ -282,7 +282,7 @@
                       [class.bg-[rgba(23,144,255,0.08)]]="targetSelected(target)" (click)="toggleTarget(target)">
                         <span class="grid size-5 place-items-center rounded border border-(--border)" [class.bg-[#1596ff]]="targetSelected(target)">
                             @if (targetSelected(target)) {
-                            <i class="bi bi-check text-[12px] text-white"></i>
+                            <mtx-icon name="check" class="text-[12px] text-white" />
                             }
                         </span>
                         <span class="min-w-0">
@@ -296,7 +296,7 @@
                         <button type="button"
                           class="grid size-8 place-items-center rounded border border-(--border) bg-[rgba(10,22,33,0.72)] text-(--blue) hover:bg-white/6"
                           aria-label="Open folder" (click)="openTargetFolder($event, target)">
-                            <i class="bi bi-folder2-open text-[18px]"></i>
+                            <mtx-icon name="folder2-open" class="text-[18px]" />
                         </button>
                     </div>
                     }
@@ -374,13 +374,13 @@
                 <h2>Clean folder</h2>
                 <button type="button" class="grid size-7 place-items-center rounded border border-(--border) text-(--muted) hover:bg-white/6"
                   aria-label="Cancel clean" (click)="cancelCleanInsight()">
-                    <i class="bi bi-x-lg text-[12px]"></i>
+                    <mtx-icon name="x-lg" class="text-[12px]" />
                 </button>
             </div>
             <div class="flex gap-3">
                 <span
                   class="grid h-9 w-9 flex-none place-items-center rounded-md border border-[rgba(255,154,46,0.35)] bg-[rgba(255,154,46,0.12)] text-(--orange)">
-                    <i class="bi bi-stars"></i>
+                    <mtx-icon name="stars" />
                 </span>
                 <div class="grid min-w-0 gap-1">
                     <strong class="text-[13px] text-[#f1f6fb]">Clean {{ insight.name }}?</strong>
@@ -410,7 +410,7 @@
         <section
           class="grid w-[min(360px,calc(100vw-32px))] gap-3 rounded-md border border-(--border) bg-[rgba(10,22,33,0.98)] p-5 text-center shadow-[0_18px_48px_rgba(0,0,0,0.42)]">
             <span class="mx-auto grid size-11 place-items-center rounded-full border border-[rgba(23,144,255,0.28)] bg-[rgba(23,144,255,0.1)] text-(--blue)">
-                <i class="bi bi-arrow-repeat animate-spin text-[22px]"></i>
+                <mtx-icon name="arrow-repeat" class="animate-spin text-[22px]" />
             </span>
             <div>
                 <h2>Cleaning Storage</h2>

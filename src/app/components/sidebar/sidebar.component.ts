@@ -1,10 +1,11 @@
 import { NgClass } from "@angular/common";
 import { Component, input, output } from "@angular/core";
 import { NavItem, ViewId } from "../../app.models";
+import { IconComponent } from "../icon/icon.component";
 
 @Component({
     selector: "mtx-sidebar",
-    imports: [NgClass],
+    imports: [NgClass, IconComponent],
     host: { class: "block h-full min-h-0 overflow-hidden" },
     templateUrl: "./sidebar.component.html",
 })

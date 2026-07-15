@@ -2,6 +2,7 @@ import { Component, OnInit, computed, inject, signal } from "@angular/core";
 import { invoke } from "@tauri-apps/api/core";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { BackendDiskDriveUsage, DiskCleanupResult, DiskCleanupScan, DiskCleanupTarget, DiskUsageInsight, DiskUsageInsightCleanupResult, DiskVolumeUsage } from "../../app.models";
+import { IconComponent } from "../../components/icon/icon.component";
 import { WorkareaStateService } from "../../services/workarea-state.service";
 
 type DiskDetailTab = "insights" | "candidates";
@@ -9,6 +10,7 @@ type DiskDetailViewMode = "cards" | "table";
 
 @Component({
     selector: "mtx-disk-view",
+    imports: [IconComponent],
     templateUrl: "./disk-view.component.html",
 })
 export class DiskViewComponent implements OnInit {

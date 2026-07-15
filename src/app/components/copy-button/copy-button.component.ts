@@ -1,10 +1,12 @@
 import { Component, input, signal } from "@angular/core";
+import { IconComponent } from "../icon/icon.component";
 
 @Component({
     selector: "mtx-copy-button",
+    imports: [IconComponent],
     template: `
         <button type="button" [class]="buttonClass()" [disabled]="!value()" (click)="copy($event)" [attr.aria-label]="label()" [title]="copied() ? 'Copied' : label()">
-            <i class="bi" [class.bi-check2]="copied()" [class.bi-copy]="!copied()"></i>
+            <mtx-icon [name]="copied() ? 'check2' : 'copy'" />
         </button>
     `,
 })

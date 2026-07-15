@@ -2,6 +2,7 @@ import { Component, inject, signal } from "@angular/core";
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { AppSettings, IndexingSchedule, NativeToolId, TerminalCursorStyle, TerminalDefaultShell, TerminalTheme, UpdateFrequency } from "../../app.models";
+import { IconComponent } from "../../components/icon/icon.component";
 import { SelectComponent } from "../../components/select/select.component";
 import { WorkareaStateService } from "../../services/workarea-state.service";
 
@@ -9,7 +10,7 @@ type GeneralSettingKey = keyof Pick<AppSettings, "startWithWindows" | "minimizeT
 
 @Component({
     selector: "mtx-settings-view",
-    imports: [SelectComponent],
+    imports: [IconComponent, SelectComponent],
     templateUrl: "./settings-view.component.html",
 })
 export class SettingsViewComponent {

@@ -6,7 +6,7 @@
             @if (selectedProcess.iconDataUrl) {
             <img class="h-6 w-6 object-contain" [src]="selectedProcess.iconDataUrl" alt="" />
             } @else {
-            <i class="bi text-[18px]" [ngClass]="selectedProcess.iconClass"></i>
+            <mtx-icon [name]="selectedProcess.iconClass" class="text-[18px]" />
             }
         </span>
         <div class="grid min-w-0">
@@ -14,20 +14,20 @@
         </div>
 
         <button class="ml-auto h-5.5 w-5.5 bg-transparent text-[#9aacba]" type="button" aria-label="Close details" (click)="closeDetails.emit()">
-            <i class="bi bi-x-lg"></i>
+            <mtx-icon name="x-lg" />
         </button>
     </div>
     <div class="my-3.25 grid gap-2">
         <button type="button"
           class="inline-flex h-7.5 w-full flex-none items-center justify-center gap-1.75 whitespace-nowrap rounded-[5px] border border-(--border) bg-[rgba(16,31,45,0.86)] px-3 py-0 text-[#cbd7e2] hover:bg-white/6 disabled:opacity-55"
           [disabled]="!selectedProcess.path" (click)="openProcessLocation(selectedProcess)">
-            <i class="bi bi-folder2-open flex-none"></i>
+            <mtx-icon name="folder2-open" class="flex-none" />
             <span>Open Process Location</span>
         </button>
         <button type="button"
           class="inline-flex h-7.5 w-full flex-none items-center justify-center gap-1.75 whitespace-nowrap rounded-[5px] border border-(--border) bg-[rgba(16,31,45,0.86)] px-3 py-0 text-[#cbd7e2]"
           (click)="endProcess.emit(selectedProcess)">
-            <i class="bi bi-slash-circle flex-none"></i>
+            <mtx-icon name="slash-circle" class="flex-none" />
             <span>End Process</span>
         </button>
     </div>

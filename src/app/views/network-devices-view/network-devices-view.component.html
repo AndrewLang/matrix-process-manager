@@ -16,7 +16,7 @@
                 <button type="button"
                   class="inline-flex h-7.5 items-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(16,31,45,0.86)] px-3 hover:bg-white/6 disabled:opacity-55"
                   [disabled]="loading()" (click)="refresh()">
-                    <i class="bi bi-arrow-clockwise" [class.animate-spin]="loading()"></i>{{ loading() ? "Scanning" : "Refresh" }}
+                    <mtx-icon name="arrow-clockwise" [class.animate-spin]="loading()" />{{ loading() ? "Scanning" : "Refresh" }}
                 </button>
             </div>
         </div>
@@ -52,7 +52,7 @@
                 <div class="flex min-w-0 items-center gap-2">
                     <div
                       class="flex h-8 min-w-0 flex-1 items-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(15,28,40,0.84)] px-2.5 text-[12px] text-(--muted)">
-                        <i class="bi bi-search"></i>
+                        <mtx-icon name="search" />
                         <input class="h-full min-w-0 flex-1 bg-transparent text-[#dfe8f1] outline-none placeholder:text-(--muted)" type="text"
                           placeholder="Search IP, host, MAC, interface..." [value]="query()" (input)="setQuery($any($event.target).value)" />
                     </div>
@@ -64,7 +64,7 @@
                 </div>
                 <div class="flex min-w-0 items-center gap-2 text-[12px] text-(--muted)">
                     @if (loading()) {
-                    <i class="bi bi-arrow-clockwise animate-spin text-[#2d9cff]"></i>
+                    <mtx-icon name="arrow-clockwise" class="animate-spin text-[#2d9cff]" />
                     <span>Scanning network devices...</span>
                     } @else {
                     <span>{{ filteredDevices().length }} matching devices</span>
@@ -76,7 +76,7 @@
                 @if (loading()) {
                 <div class="pointer-events-none absolute inset-0 z-20 grid place-items-center bg-[rgba(5,11,18,0.38)] text-[12px] text-[#dce7f0]">
                     <div class="inline-flex items-center gap-2 rounded-[5px] border border-[#2d9cff]/30 bg-[#081521]/95 px-3 py-2 shadow-lg shadow-black/20">
-                        <i class="bi bi-arrow-clockwise animate-spin text-[#2d9cff]"></i>
+                        <mtx-icon name="arrow-clockwise" class="animate-spin text-[#2d9cff]" />
                         <span>Scanning network devices...</span>
                     </div>
                 </div>
@@ -112,7 +112,7 @@
                     </dl>
                     <button type="button" class="h-8 rounded-md border border-(--border) bg-white/5 px-3 text-left text-[12px] hover:bg-white/8"
                       (click)="copyAddress(device)">
-                        <i class="bi bi-copy mr-2"></i>Copy IP address
+                        <mtx-icon name="copy" class="mr-2" />Copy IP address
                     </button>
                 </div>
                 } @else {

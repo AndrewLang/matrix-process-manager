@@ -6,6 +6,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { filter } from "rxjs";
 import { BackendCpuInfo, BackendProcessRow, BackendProcessSnapshot, BackendWindowsInfo, DockerAvailability, MetricCard, NativeToolId, NavItem, ProcessGroup, ProcessRow, ResourceBar, ResourceSample, SystemInfoItem, UpdateFrequency, ViewId } from "./app.models";
 import { CommonDialogComponent } from "./components/common-dialog/common-dialog.component";
+import { IconComponent } from "./components/icon/icon.component";
 import { SidebarComponent } from "./components/sidebar/sidebar.component";
 import { TitlebarComponent } from "./components/titlebar/titlebar.component";
 import { WorkareaComponent } from "./components/workarea/workarea.component";
@@ -31,7 +32,7 @@ interface PersistedWindowState {
 
 @Component({
   selector: "mtx-root",
-  imports: [CommonDialogComponent, SettingsViewComponent, SidebarComponent, SplitterDirective, TitlebarComponent, WorkareaComponent],
+  imports: [CommonDialogComponent, IconComponent, SettingsViewComponent, SidebarComponent, SplitterDirective, TitlebarComponent, WorkareaComponent],
   templateUrl: "./app.component.html",
   styleUrl: "./app.component.css",
 })

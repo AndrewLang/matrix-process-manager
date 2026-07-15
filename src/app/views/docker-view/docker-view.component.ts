@@ -4,6 +4,7 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { DockerContainer, DockerDashboard, DockerImage, DockerRegistryImage } from "../../app.models";
 import { CopyButtonComponent } from "../../components/copy-button/copy-button.component";
 import { DataGridColumn, DataGridComponent } from "../../components/data-grid/data-grid.component";
+import { IconComponent } from "../../components/icon/icon.component";
 
 type DockerTab = "containers" | "images" | "registry" | "remote";
 type DockerPortLink = { key: string; label: string; url?: string };
@@ -15,7 +16,7 @@ type DockerRegistryProfile = { registry: string; username: string; password: str
 
 @Component({
     selector: "mtx-docker-view",
-    imports: [CopyButtonComponent, DataGridComponent],
+    imports: [CopyButtonComponent, DataGridComponent, IconComponent],
     templateUrl: "./docker-view.component.html",
 })
 export class DockerViewComponent implements OnInit {

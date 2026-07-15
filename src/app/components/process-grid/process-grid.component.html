@@ -42,17 +42,13 @@
                       ? 'Collapse group'
                       : 'Expand group'
                   " (click)="toggleGroup(section, group)">
-                            <i [ngClass]="
-                      isGroupExpanded(section, group)
-                        ? 'bi bi-chevron-down'
-                        : 'bi bi-chevron-right'
-                    "></i>
+                            <mtx-icon [name]="isGroupExpanded(section, group) ? 'chevron-down' : 'chevron-right'" />
                         </button>
                         <span class="grid h-5.25 w-5.25 flex-none place-items-center text-[#9fb0c0]">
                             @if (groupIconDataUrl(group); as iconDataUrl) {
                             <img class="h-4.5 w-4.5 object-contain" [src]="iconDataUrl" alt="" />
                             } @else {
-                            <i class="bi bi-window text-[13px]"></i>
+                            <mtx-icon name="window" class="text-[13px]" />
                             }
                         </span>
                         <div class="grid min-w-0">
@@ -73,7 +69,7 @@
                 <td>{{ group.rows.length === 1 ? group.rows[0].pid : "--" }}</td>
                 <td></td>
                 <td class="text-center text-[#97a7b6]">
-                    <i class="bi bi-three-dots-vertical"></i>
+                    <mtx-icon name="three-dots-vertical" />
                 </td>
             </tr>
             @if (isGroupExpanded(section, group)) {
@@ -92,7 +88,7 @@
                             @if (row.iconDataUrl) {
                             <img class="h-4.5 w-4.5 object-contain" [src]="row.iconDataUrl" alt="" />
                             } @else {
-                            <i class="bi bi-window text-[13px]"></i>
+                            <mtx-icon name="window" class="text-[13px]" />
                             }
                         </span>
                         <div class="grid min-w-0">
@@ -109,7 +105,7 @@
                 <td>{{ row.pid }}</td>
                 <td>{{ row.user }}</td>
                 <td class="text-center text-[#97a7b6]">
-                    <i class="bi bi-three-dots-vertical"></i>
+                    <mtx-icon name="three-dots-vertical" />
                 </td>
             </tr>
             }

@@ -42,14 +42,14 @@
                 <button type="button"
                   class="inline-flex h-7.5 items-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(16,31,45,0.86)] px-3 hover:bg-white/6"
                   (click)="toggleDisabled()">
-                    <i class="bi" [ngClass]="
+                    <mtx-icon [name]="
               showDisabled() ? 'bi-toggle-on text-(--blue)' : 'bi-toggle-off'
-            "></i>Show disabled
+            " />Show disabled
                 </button>
                 <button type="button"
                   class="ml-auto inline-flex h-7.5 items-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(16,31,45,0.86)] px-3 hover:bg-white/6"
                   (click)="refresh()">
-                    <i class="bi bi-arrow-clockwise"></i>Refresh
+                    <mtx-icon name="arrow-clockwise" />Refresh
                 </button>
             </div>
         </div>
@@ -85,7 +85,7 @@
                                 @if (app.iconDataUrl) {
                                 <img class="h-4.5 w-4.5 flex-none object-contain" [src]="app.iconDataUrl" alt="" />
                                 } @else {
-                                <i class="bi bi-app-indicator flex-none text-(--blue)"></i>
+                                <mtx-icon name="app-indicator" class="flex-none text-(--blue)" />
                                 }
                                 <span class="truncate">{{ app.name }}</span>
                             </span>

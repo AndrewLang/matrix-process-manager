@@ -3,11 +3,12 @@ import { invoke } from "@tauri-apps/api/core";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { SshKeyGenerationRequest, SshKeyInfo } from "../../app.models";
 import { DataGridColumn, DataGridComponent } from "../../components/data-grid/data-grid.component";
+import { IconComponent } from "../../components/icon/icon.component";
 import { SelectComponent } from "../../components/select/select.component";
 
 @Component({
     selector: "mtx-ssh-keys-view",
-    imports: [DataGridComponent, SelectComponent],
+    imports: [DataGridComponent, IconComponent, SelectComponent],
     templateUrl: "./ssh-keys-view.component.html",
 })
 export class SshKeysViewComponent implements OnInit {

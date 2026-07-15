@@ -18,7 +18,7 @@
         <img class="h-5 w-5 object-contain" [src]="action.image" alt="" aria-hidden="true" />
         }
         @else if (action.icon) {
-        <i [class]="action.icon"></i>
+        <mtx-icon [name]="action.icon" [ngClass]="action.iconClass ?? ''" />
         }
       </button>
       }
@@ -30,15 +30,15 @@
     <div class="flex h-full items-center">
       <button class="grid h-full w-11.5 place-items-center rounded-none bg-transparent text-[#c3ccd5] hover:bg-white/10" type="button" aria-label="Minimize"
         title="Minimize" (click)="minimizeWindow.emit()">
-        <i class="bi bi-dash text-[13px]"></i>
+        <mtx-icon name="dash" class="text-[13px]" />
       </button>
       <button class="grid h-full w-11.5 place-items-center rounded-none bg-transparent text-[#c3ccd5] hover:bg-white/10" type="button" aria-label="Maximize"
         title="Maximize" (click)="toggleMaximizeWindow.emit()">
-        <i class="bi bi-square text-[13px]"></i>
+        <mtx-icon name="square" class="text-[13px]" />
       </button>
       <button class="grid h-full w-11.5 place-items-center rounded-none bg-transparent text-[#c3ccd5] hover:bg-[#c42b1c] hover:text-white" type="button"
         aria-label="Close" title="Close" (click)="closeWindow.emit()">
-        <i class="bi bi-x-lg text-[13px]"></i>
+        <mtx-icon name="x-lg" class="text-[13px]" />
       </button>
     </div>
     }

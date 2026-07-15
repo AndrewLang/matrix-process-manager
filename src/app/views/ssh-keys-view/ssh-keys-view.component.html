@@ -16,7 +16,7 @@
                 <button type="button"
                   class="inline-flex h-7.5 items-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(16,31,45,0.86)] px-3 hover:bg-white/6 disabled:opacity-55"
                   [disabled]="loading()" (click)="refresh()">
-                    <i class="bi bi-arrow-clockwise"></i>{{ loading() ? "Loading" : "Refresh" }}
+                    <mtx-icon name="arrow-clockwise" />{{ loading() ? "Loading" : "Refresh" }}
                 </button>
             </div>
         </div>
@@ -78,7 +78,7 @@
                 <button type="button"
                   class="h-8 rounded-md border border-[#1596ff] bg-[#1596ff] px-3 text-[12px] font-medium text-white hover:bg-[#2aa4ff] disabled:opacity-55"
                   [disabled]="generating()" (click)="generateKey()">
-                    <i class="bi bi-plus-lg mr-2"></i>{{ generating() ? "Generating" : "Generate key" }}
+                    <mtx-icon name="plus-lg" class="mr-2" />{{ generating() ? "Generating" : "Generate key" }}
                 </button>
             </div>
             <div class="min-h-0 overflow-auto p-3">
@@ -102,11 +102,11 @@
                     <div class="grid gap-2">
                         <button type="button" class="h-8 rounded-md border border-(--border) bg-white/5 px-3 text-left text-[12px] hover:bg-white/8"
                           (click)="copyPublicKey(key)">
-                            <i class="bi bi-copy mr-2"></i>Copy public key
+                            <mtx-icon name="copy" class="mr-2" />Copy public key
                         </button>
                         <button type="button" class="h-8 rounded-md border border-(--border) bg-white/5 px-3 text-left text-[12px] hover:bg-white/8"
                           (click)="openKeyLocation(key)">
-                            <i class="bi bi-folder2-open mr-2"></i>Open key location
+                            <mtx-icon name="folder2-open" class="mr-2" />Open key location
                         </button>
                     </div>
                 </div>

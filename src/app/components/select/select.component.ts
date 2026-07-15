@@ -1,13 +1,15 @@
 import { ChangeDetectionStrategy, Component, input, output } from "@angular/core";
+import { IconComponent } from "../icon/icon.component";
 
 @Component({
     selector: "mtx-select",
+    imports: [IconComponent],
     template: `
         <span class="select-shell">
             <select class="select-control" [value]="value()" [disabled]="disabled()" [attr.aria-label]="ariaLabel() || null" (change)="handleChange($event)">
                 <ng-content />
             </select>
-            <i class="bi bi-chevron-down select-icon"></i>
+            <mtx-icon name="chevron-down" class="select-icon" />
         </span>
     `,
     styles: [`

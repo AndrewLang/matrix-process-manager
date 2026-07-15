@@ -1,6 +1,7 @@
 import { NgClass } from "@angular/common";
 import { Component, HostListener, computed, input, output, signal } from "@angular/core";
 import { ProcessGroup, ProcessRow } from "../../app.models";
+import { IconComponent } from "../icon/icon.component";
 
 interface ProcessColumn {
     key: string;
@@ -25,7 +26,7 @@ interface ProcessSection {
 
 @Component({
     selector: "mtx-process-grid",
-    imports: [NgClass],
+    imports: [NgClass, IconComponent],
     templateUrl: "./process-grid.component.html",
 })
 export class ProcessGridComponent {

@@ -1,8 +1,10 @@
 import { Component, inject } from "@angular/core";
+import { IconComponent } from "../../components/icon/icon.component";
 import { WorkareaStateService } from "../../services/workarea-state.service";
 
 @Component({
     selector: "mtx-system-info-view",
+    imports: [IconComponent],
     templateUrl: "./system-info-view.component.html",
 })
 export class SystemInfoViewComponent {

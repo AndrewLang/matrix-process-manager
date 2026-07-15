@@ -41,7 +41,7 @@
                         <button type="button"
                           class="inline-flex h-7.5 flex-none items-center justify-center gap-1.75 whitespace-nowrap rounded-[5px] border border-(--border) bg-[rgba(16,31,45,0.86)] px-3 py-0 hover:bg-white/6 max-[1040px]:w-7.5 max-[1040px]:px-0"
                           (click)="toggleViewOptions()">
-                            <i class="bi bi-sliders flex-none"></i><span class="whitespace-nowrap max-[1040px]:hidden">View Options</span>
+                            <mtx-icon name="sliders" class="flex-none" /><span class="whitespace-nowrap max-[1040px]:hidden">View Options</span>
                         </button>
                         @if (viewOptionsOpen()) {
                         <div
@@ -50,13 +50,13 @@
                               (click)="
                     processesProcessGrid.expandAllGroups(); closeViewOptions()
                   ">
-                                <i class="bi bi-arrows-expand flex-none"></i><span>Expand all groups</span>
+                                <mtx-icon name="arrows-expand" class="flex-none" /><span>Expand all groups</span>
                             </button>
                             <button type="button" class="flex h-8 items-center gap-2 bg-transparent px-3 py-0 text-left text-[#cbd7e2] hover:bg-white/6"
                               (click)="
                     processesProcessGrid.collapseAllGroups(); closeViewOptions()
                   ">
-                                <i class="bi bi-arrows-collapse flex-none"></i><span>Collapse all groups</span>
+                                <mtx-icon name="arrows-collapse" class="flex-none" /><span>Collapse all groups</span>
                             </button>
                         </div>
                         }
@@ -64,7 +64,7 @@
                     <button type="button"
                       class="inline-flex h-7.5 flex-none items-center justify-center gap-1.75 whitespace-nowrap rounded-[5px] border border-[rgba(255,75,67,0.38)] bg-[rgba(16,31,45,0.86)] px-3 py-0 text-(--red) max-[1040px]:w-7.5 max-[1040px]:px-0"
                       [disabled]="!state.selectedRow()" (click)="endProcess(state.selectedRow())">
-                        <i class="bi bi-slash-circle flex-none"></i><span class="whitespace-nowrap max-[1040px]:hidden">End Process</span>
+                        <mtx-icon name="slash-circle" class="flex-none" /><span class="whitespace-nowrap max-[1040px]:hidden">End Process</span>
                     </button>
                 </div>
                 <div class="flex gap-2 text-[12px]">
@@ -97,7 +97,7 @@
         <div class="grid gap-4 text-[12px] text-[#cbd7e2]">
             <div class="flex gap-3">
                 <span class="grid h-9 w-9 flex-none place-items-center rounded-md border border-[rgba(255,75,67,0.35)] bg-[rgba(255,75,67,0.12)] text-(--red)">
-                    <i class="bi bi-exclamation-triangle"></i>
+                    <mtx-icon name="exclamation-triangle" />
                 </span>
                 <div class="grid gap-1">
                     <strong class="text-[13px] text-[#f1f6fb]">End {{ process.name }}?</strong>

@@ -9,7 +9,7 @@
     <div class="mt-2 grid gap-2 text-[12px]">
         @for (row of rows(); track row.pid) {
         <div class="grid grid-cols-[minmax(0,1fr)_48px_72px_70px_70px] gap-2 text-[#aab8c6]">
-            <span class="truncate"><i class="bi mr-1.5 text-(--blue)" [ngClass]="row.iconClass"></i>{{ row.name }}</span>
+            <span class="truncate"><mtx-icon [name]="row.iconClass" class="mr-1.5 text-(--blue)" />{{ row.name }}</span>
             <strong class="text-(--blue)">{{ row.cpu }}</strong>
             <span class="truncate">{{ row.memory }}</span>
             <span class="truncate">{{ row.disk }}</span>

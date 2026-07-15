@@ -2,13 +2,14 @@ import { Component, OnInit, computed, signal } from "@angular/core";
 import { invoke } from "@tauri-apps/api/core";
 import { NetworkDevice, NetworkDeviceScan } from "../../app.models";
 import { DataGridColumn, DataGridComponent } from "../../components/data-grid/data-grid.component";
+import { IconComponent } from "../../components/icon/icon.component";
 import { SelectComponent } from "../../components/select/select.component";
 
 type DeviceStateFilter = "all" | "reachable" | "local";
 
 @Component({
     selector: "mtx-network-devices-view",
-    imports: [DataGridComponent, SelectComponent],
+    imports: [DataGridComponent, IconComponent, SelectComponent],
     templateUrl: "./network-devices-view.component.html",
 })
 export class NetworkDevicesViewComponent implements OnInit {

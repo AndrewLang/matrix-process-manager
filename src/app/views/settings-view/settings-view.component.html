@@ -6,7 +6,7 @@
             <button type="button" class="flex h-10 items-center gap-3 rounded-[5px] bg-transparent px-2.5 text-left text-[#d0d9e2] hover:bg-white/6"
               [class.bg-[rgba(23,144,255,0.18)]]="activeCategory() === category.label" [class.text-[#1d9bff]]="activeCategory() === category.label"
               (click)="setCategory(category.label)">
-                <i class="bi grid w-5 place-items-center text-[14px] text-current {{ category.icon }}"></i>
+                <mtx-icon [name]="category.icon" class="grid w-5 place-items-center text-[14px] text-current" />
                 <span class="truncate">{{ category.label }}</span>
             </button>
             }

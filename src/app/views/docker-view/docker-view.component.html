@@ -16,7 +16,7 @@
                 <button type="button"
                   class="inline-flex h-7.5 items-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(16,31,45,0.86)] px-3 hover:bg-white/6 disabled:opacity-55"
                   [disabled]="loading()" (click)="refresh()">
-                    <i class="bi bi-arrow-clockwise"></i>{{ loading() ? "Loading" : "Refresh" }}
+                    <mtx-icon name="arrow-clockwise" />{{ loading() ? "Loading" : "Refresh" }}
                 </button>
             </div>
         </div>
@@ -85,7 +85,7 @@
                 <div class="flex min-w-0 items-center gap-4">
                     <div
                       class="flex h-9 min-w-0 max-w-[420px] flex-1 items-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(15,28,40,0.84)] px-2.5 text-[12px] text-(--muted)">
-                        <i class="bi bi-search text-[15px]"></i>
+                        <mtx-icon name="search" class="text-[15px]" />
                         <input class="h-full min-w-0 flex-1 bg-transparent text-[#dfe8f1] outline-none placeholder:text-(--muted)" type="text"
                           placeholder="Search" [value]="containerFilter()" (input)="setContainerFilter($any($event.target).value)" />
                     </div>
@@ -102,7 +102,7 @@
                 } @else if (activeTab() === "images") {
                 <div
                   class="flex h-8 min-w-0 items-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(15,28,40,0.84)] px-2.5 text-[12px] text-(--muted)">
-                    <i class="bi bi-search"></i>
+                    <mtx-icon name="search" />
                     <input class="h-full min-w-0 flex-1 bg-transparent text-[#dfe8f1] outline-none placeholder:text-(--muted)" type="text"
                       placeholder="Filter by repository, tag, image id, size..." [value]="imageFilter()" (input)="setImageFilter($any($event.target).value)" />
                     <span class="flex-none">{{ filteredImages().length }} / {{ images().length }}</span>
@@ -129,17 +129,17 @@
                         <button type="submit"
                           class="inline-flex h-8 items-center justify-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(16,31,45,0.86)] px-3 text-[12px] hover:bg-white/6 disabled:opacity-55"
                           [disabled]="!registryUrl().trim() || registryLoading()">
-                            <i class="bi bi-cloud-arrow-down"></i>{{ registryLoading() ? "Loading" : "List" }}
+                            <mtx-icon name="cloud-arrow-down" />{{ registryLoading() ? "Loading" : "List" }}
                         </button>
                         <button type="button"
                           class="inline-flex h-8 items-center justify-center gap-2 rounded-[5px] border border-[rgba(255,75,67,0.38)] bg-[rgba(255,75,67,0.08)] px-3 text-[12px] text-(--red) hover:bg-[rgba(255,75,67,0.14)] disabled:opacity-55"
                           [disabled]="registryLoading() || !registrySaved()" (click)="removeSavedRegistry()">
-                            <i class="bi bi-trash3"></i>Forget
+                            <mtx-icon name="trash3" />Forget
                         </button>
                     </div>
                     <div
                       class="flex h-8 min-w-0 items-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(15,28,40,0.84)] px-2.5 text-[12px] text-(--muted)">
-                        <i class="bi bi-search"></i>
+                        <mtx-icon name="search" />
                         <input class="h-full min-w-0 flex-1 bg-transparent text-[#dfe8f1] outline-none placeholder:text-(--muted)" type="text"
                           placeholder="Filter by repository or tag..." [value]="registryFilter()" (input)="setRegistryFilter($any($event.target).value)" />
                         <span class="flex-none">{{ filteredRegistryImages().length }} / {{ registryImages().length }}</span>
@@ -148,8 +148,7 @@
                 } @else {
                 <form class="grid gap-2" (submit)="$event.preventDefault(); saveDockerHost()">
                     <div class="flex min-w-0 items-center gap-2 text-[12px] text-(--muted)">
-                        <i class="bi text-[15px]" [class.bi-arrow-clockwise]="loading()" [class.animate-spin]="loading()"
-                          [class.bi-hdd-network]="!loading()"></i>
+                        <mtx-icon [name]="loading() ? 'arrow-clockwise' : 'hdd-network'" class="text-[15px]" [class.animate-spin]="loading()" />
                         <span>{{ loading() ? "Running" : "Current command" }}</span>
                         <span class="truncate font-mono text-[#7ea1bb]">{{ dockerHost().trim() ? "ssh " + dockerHost().trim() + " docker ps" : "Enter a remote
                             target" }}</span>
@@ -167,19 +166,19 @@
                         <button type="submit"
                           class="inline-flex h-8 items-center justify-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(16,31,45,0.86)] px-3 text-[12px] hover:bg-white/6 disabled:opacity-55"
                           [disabled]="loading() || !dockerHost().trim()">
-                            <i class="bi" [class.bi-arrow-clockwise]="loading()" [class.animate-spin]="loading()" [class.bi-terminal]="!loading()"></i>{{
+                            <mtx-icon [name]="loading() ? 'arrow-clockwise' : 'terminal'" [class.animate-spin]="loading()" />{{
                             loading() ? "Connecting" : "Connect" }}
                         </button>
                         <button type="button"
                           class="inline-flex h-8 items-center justify-center gap-2 rounded-[5px] border border-[rgba(255,75,67,0.38)] bg-[rgba(255,75,67,0.08)] px-3 text-[12px] text-(--red) hover:bg-[rgba(255,75,67,0.14)] disabled:opacity-55"
                           [disabled]="loading() || !dockerHost().trim() || !savedDockerHosts().includes(dockerHost().trim())" (click)="removeSavedDockerHost()">
-                            <i class="bi bi-trash3"></i>Forget
+                            <mtx-icon name="trash3" />Forget
                         </button>
                     </div>
                     @if (loading() && dockerHost().trim()) {
                     <div
                       class="flex min-w-0 items-center gap-2 rounded-[5px] border border-[#2d9cff]/30 bg-[#2d9cff]/10 px-2.5 py-2 text-[12px] text-[#dce7f0]">
-                        <i class="bi bi-arrow-clockwise animate-spin text-[#2d9cff]"></i>
+                        <mtx-icon name="arrow-clockwise" class="animate-spin text-[#2d9cff]" />
                         <span class="flex-none">Listing containers with</span>
                         <span class="min-w-0 truncate font-mono text-[#7ea1bb]">ssh {{ dockerHost().trim() }} docker ps</span>
                     </div>
@@ -234,13 +233,13 @@
                                 @if (row.kind === "group") {
                                 <button type="button" class="grid size-6 place-items-center bg-transparent text-[#2d9cff]"
                                   (click)="$event.stopPropagation(); toggleParent(row.key)">
-                                    <i class="bi" [class.bi-chevron-down]="parentExpanded(row.key)" [class.bi-chevron-right]="!parentExpanded(row.key)"></i>
+                                    <mtx-icon [name]="parentExpanded(row.key) ? 'chevron-down' : 'chevron-right'" />
                                 </button>
                                 }
                             </td>
                             <td class="px-1 py-2 text-center">
-                                <i class="bi text-[12px]" [class.bi-circle-fill]="containerRowRunning(row)" [class.bi-circle]="!containerRowRunning(row)"
-                                  [class.text-[#00b8a9]]="containerRowRunning(row)" [class.text-[#7ea1bb]]="!containerRowRunning(row)"></i>
+                                <mtx-icon [name]="containerRowRunning(row) ? 'circle-fill' : 'circle'" class="text-[12px]"
+                                  [class.text-[#00b8a9]]="containerRowRunning(row)" [class.text-[#7ea1bb]]="!containerRowRunning(row)" />
                             </td>
                             <td class="px-3 py-2 text-left">
                                 <span class="inline-flex min-w-0 items-center gap-2" [class.pl-6]="row.kind === 'container' && row.child">
@@ -279,7 +278,7 @@
                                       class="inline-flex min-w-0 items-center gap-1 text-left text-[#2d9cff] underline decoration-[#2d9cff]/55 underline-offset-2 hover:text-[#67bdff]"
                                       (click)="openPort($event, port.url)" [title]="port.url">
                                         <span class="truncate">{{ port.label }}</span>
-                                        <i class="bi bi-box-arrow-up-right text-[10px]"></i>
+                                        <mtx-icon name="box-arrow-up-right" class="text-[10px]" />
                                     </button>
                                     } @else {
                                     <span class="text-(--muted)">{{ port.label }}</span>
@@ -294,21 +293,21 @@
                                     <button type="button" class="grid size-8 place-items-center rounded bg-transparent text-[#2d9cff] hover:bg-white/8"
                                       [disabled]="row.container.running || actionRunning()"
                                       (click)="$event.stopPropagation(); runContainerAction('start', row.container)">
-                                        <i class="bi bi-play-fill text-[18px]"></i>
+                                        <mtx-icon name="play-fill" class="text-[18px]" />
                                     </button>
                                     <button type="button" class="grid size-8 place-items-center rounded bg-transparent text-[#2d9cff] hover:bg-white/8"
                                       [disabled]="!row.container.running || actionRunning()"
                                       (click)="$event.stopPropagation(); runContainerAction('restart', row.container)">
-                                        <i class="bi bi-arrow-clockwise text-[17px]"></i>
+                                        <mtx-icon name="arrow-clockwise" class="text-[17px]" />
                                     </button>
                                     } @else {
                                     <button type="button" class="grid size-8 place-items-center rounded bg-transparent text-[#2d9cff] hover:bg-white/8"
                                       [disabled]="row.running || actionRunning()" (click)="$event.stopPropagation(); runContainerGroupAction('start', row)">
-                                        <i class="bi bi-play-fill text-[18px]"></i>
+                                        <mtx-icon name="play-fill" class="text-[18px]" />
                                     </button>
                                     <button type="button" class="grid size-8 place-items-center rounded bg-transparent text-[#2d9cff] hover:bg-white/8"
                                       [disabled]="!row.running || actionRunning()" (click)="$event.stopPropagation(); runContainerGroupAction('restart', row)">
-                                        <i class="bi bi-arrow-clockwise text-[17px]"></i>
+                                        <mtx-icon name="arrow-clockwise" class="text-[17px]" />
                                     </button>
                                     }
                                 </div>
@@ -319,7 +318,7 @@
                             <td class="px-3 py-10 text-center text-(--muted)" colspan="8">
                                 @if (loading()) {
                                 <span class="inline-flex items-center gap-2">
-                                    <i class="bi bi-arrow-clockwise animate-spin text-[#2d9cff]"></i>
+                                    <mtx-icon name="arrow-clockwise" class="animate-spin text-[#2d9cff]" />
                                     <span>Loading containers...</span>
                                 </span>
                                 } @else {
@@ -339,7 +338,7 @@
                     <button type="button"
                       class="ml-auto grid size-7 place-items-center rounded bg-transparent text-(--muted) hover:bg-white/8 hover:text-[#e6f0fa]"
                       (click)="closeContainerLogs()" title="Close logs">
-                        <i class="bi bi-x-lg"></i>
+                        <mtx-icon name="x-lg" />
                     </button>
                 </div>
                 <pre #containerLogsOutput
@@ -356,7 +355,7 @@
             } @else {
             <div class="grid place-items-center p-6 text-center text-[12px] text-(--muted)">
                 <div class="grid max-w-md gap-2">
-                    <i class="bi bi-hdd-network text-[28px] text-[#2d9cff]"></i>
+                    <mtx-icon name="hdd-network" class="text-[28px] text-[#2d9cff]" />
                     <h3 class="text-[14px] font-semibold text-[#e6f0fa]">Remote Docker Target</h3>
                     <p>Enter an SSH target above to list containers on a remote host.</p>
                 </div>
@@ -402,7 +401,7 @@
                               class="inline-flex min-w-0 items-center gap-1 text-left text-[#2d9cff] underline decoration-[#2d9cff]/55 underline-offset-2 hover:text-[#67bdff]"
                               (click)="openPort($event, port.url)" [title]="port.url">
                                 <span class="truncate">{{ port.label }}</span>
-                                <i class="bi bi-box-arrow-up-right text-[10px]"></i>
+                                <mtx-icon name="box-arrow-up-right" class="text-[10px]" />
                             </button>
                             } @else {
                             <span class="truncate text-(--muted)">{{ port.label }}</span>
@@ -419,22 +418,22 @@
                         <button type="button"
                           class="h-8 rounded-md border border-(--border) bg-white/5 px-3 text-left text-[12px] hover:bg-white/8 disabled:opacity-45"
                           [disabled]="container.running || actionRunning()" (click)="runContainerAction('start', container)">
-                            <i class="bi bi-play-fill mr-2"></i>Start
+                            <mtx-icon name="play-fill" class="mr-2" />Start
                         </button>
                         <button type="button"
                           class="h-8 rounded-md border border-(--border) bg-white/5 px-3 text-left text-[12px] hover:bg-white/8 disabled:opacity-45"
                           [disabled]="!container.running || actionRunning()" (click)="runContainerAction('stop', container)">
-                            <i class="bi bi-stop-fill mr-2"></i>Stop
+                            <mtx-icon name="stop-fill" class="mr-2" />Stop
                         </button>
                         <button type="button"
                           class="h-8 rounded-md border border-(--border) bg-white/5 px-3 text-left text-[12px] hover:bg-white/8 disabled:opacity-45"
                           [disabled]="!container.running || actionRunning()" (click)="runContainerAction('restart', container)">
-                            <i class="bi bi-arrow-clockwise mr-2"></i>Restart
+                            <mtx-icon name="arrow-clockwise" class="mr-2" />Restart
                         </button>
                         <button type="button"
                           class="h-8 rounded-md border border-[rgba(255,75,67,0.38)] bg-[rgba(255,75,67,0.08)] px-3 text-left text-[12px] text-(--red) hover:bg-[rgba(255,75,67,0.14)] disabled:opacity-45"
                           [disabled]="actionRunning()" (click)="removeContainer(container)">
-                            <i class="bi bi-trash3 mr-2"></i>Remove container
+                            <mtx-icon name="trash3" class="mr-2" />Remove container
                         </button>
                     </div>
                 </div>
@@ -459,7 +458,7 @@
                     <button type="button"
                       class="h-8 rounded-md border border-[rgba(255,75,67,0.38)] bg-[rgba(255,75,67,0.08)] px-3 text-left text-[12px] text-(--red) hover:bg-[rgba(255,75,67,0.14)] disabled:opacity-45"
                       [disabled]="actionRunning()" (click)="removeImage(image)">
-                        <i class="bi bi-trash3 mr-2"></i>Remove image
+                        <mtx-icon name="trash3" class="mr-2" />Remove image
                     </button>
                 </div>
                 } @else {

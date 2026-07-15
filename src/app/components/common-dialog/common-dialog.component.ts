@@ -1,7 +1,9 @@
 import { Component, input, output } from "@angular/core";
+import { IconComponent } from "../icon/icon.component";
 
 @Component({
     selector: "mtx-common-dialog",
+    imports: [IconComponent],
     templateUrl: "./common-dialog.component.html",
 })
 export class CommonDialogComponent {

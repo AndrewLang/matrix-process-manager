@@ -2,13 +2,14 @@ import { NgClass } from "@angular/common";
 import { Component, computed, inject, signal } from "@angular/core";
 import { Router } from "@angular/router";
 import { MetricCard, ProcessRow, ResourceSample } from "../../app.models";
+import { IconComponent } from "../../components/icon/icon.component";
 import { TopResourceConsumersComponent } from "../../components/top-resource-consumers/top-resource-consumers.component";
 import { WorkareaStateService } from "../../services/workarea-state.service";
 import { PerformanceMetric } from "../performance-view/performance-view.models";
 
 @Component({
     selector: "mtx-dashboard-view",
-    imports: [NgClass, TopResourceConsumersComponent],
+    imports: [NgClass, IconComponent, TopResourceConsumersComponent],
     templateUrl: "./dashboard-view.component.html",
 })
 export class DashboardViewComponent {

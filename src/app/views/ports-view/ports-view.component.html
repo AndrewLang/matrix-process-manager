@@ -16,7 +16,7 @@
                 <button type="button"
                   class="inline-flex h-7.5 items-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(16,31,45,0.86)] px-3 hover:bg-white/6 disabled:opacity-55"
                   [disabled]="loading()" (click)="refresh()">
-                    <i class="bi bi-arrow-clockwise" [class.animate-spin]="loading()"></i>{{ loading() ? "Scanning" : "Refresh" }}
+                    <mtx-icon name="arrow-clockwise" [class.animate-spin]="loading()" />{{ loading() ? "Scanning" : "Refresh" }}
                 </button>
             </div>
         </div>
@@ -52,7 +52,7 @@
                 <div class="flex min-w-0 items-center gap-2">
                     <div
                       class="flex h-8 min-w-0 flex-1 items-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(15,28,40,0.84)] px-2.5 text-[12px] text-(--muted)">
-                        <i class="bi bi-search"></i>
+                        <mtx-icon name="search" />
                         <input class="h-full min-w-0 flex-1 bg-transparent text-[#dfe8f1] outline-none placeholder:text-(--muted)" type="text"
                           placeholder="Search port, process, PID, address..." [value]="query()" (input)="setQuery($any($event.target).value)" />
                     </div>
@@ -69,7 +69,7 @@
                 </div>
                 <div class="flex min-w-0 items-center gap-2 text-[12px] text-(--muted)">
                     @if (loading()) {
-                    <i class="bi bi-arrow-clockwise animate-spin text-[#2d9cff]"></i>
+                    <mtx-icon name="arrow-clockwise" class="animate-spin text-[#2d9cff]" />
                     <span>Scanning ports...</span>
                     } @else {
                     <span>{{ filteredPorts().length }} matching ports</span>
@@ -81,7 +81,7 @@
                 @if (loading()) {
                 <div class="pointer-events-none absolute inset-0 z-20 grid place-items-center bg-[rgba(5,11,18,0.38)] text-[12px] text-[#dce7f0]">
                     <div class="inline-flex items-center gap-2 rounded-[5px] border border-[#2d9cff]/30 bg-[#081521]/95 px-3 py-2 shadow-lg shadow-black/20">
-                        <i class="bi bi-arrow-clockwise animate-spin text-[#2d9cff]"></i>
+                        <mtx-icon name="arrow-clockwise" class="animate-spin text-[#2d9cff]" />
                         <span>Scanning ports...</span>
                     </div>
                 </div>
@@ -118,22 +118,22 @@
                     <div class="grid gap-2">
                         <button type="button" class="h-8 rounded-md border border-(--border) bg-white/5 text-left px-3 text-[12px] hover:bg-white/8"
                           (click)="copyEndpoint(port)">
-                            <i class="bi bi-copy mr-2"></i>Copy endpoint
+                            <mtx-icon name="copy" class="mr-2" />Copy endpoint
                         </button>
                         <button type="button"
                           class="h-8 rounded-md border border-(--border) bg-white/5 text-left px-3 text-[12px] hover:bg-white/8 disabled:opacity-45"
                           [disabled]="port.protocol !== 'TCP'" (click)="openLocalhost(port)">
-                            <i class="bi bi-box-arrow-up-right mr-2"></i>Open localhost URL
+                            <mtx-icon name="box-arrow-up-right" class="mr-2" />Open localhost URL
                         </button>
                         <button type="button"
                           class="h-8 rounded-md border border-(--border) bg-white/5 text-left px-3 text-[12px] hover:bg-white/8 disabled:opacity-45"
                           [disabled]="!port.processPath" (click)="openProcessLocation(port)">
-                            <i class="bi bi-folder2-open mr-2"></i>Open app location
+                            <mtx-icon name="folder2-open" class="mr-2" />Open app location
                         </button>
                         <button type="button"
                           class="h-8 rounded-md border border-[rgba(255,75,67,0.38)] bg-[rgba(255,75,67,0.08)] text-left px-3 text-[12px] text-(--red) hover:bg-[rgba(255,75,67,0.14)] disabled:opacity-45"
                           [disabled]="!port.pid || loading()" (click)="endProcess(port)">
-                            <i class="bi bi-x-octagon mr-2"></i>End process
+                            <mtx-icon name="x-octagon" class="mr-2" />End process
                         </button>
                     </div>
                 </div>

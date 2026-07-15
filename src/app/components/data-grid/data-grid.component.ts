@@ -1,5 +1,6 @@
 import { NgClass } from "@angular/common";
 import { Component, HostListener, computed, effect, input, output, signal } from "@angular/core";
+import { IconComponent } from "../icon/icon.component";
 
 export type DataGridSortDirection = "asc" | "desc";
 
@@ -19,7 +20,7 @@ export interface DataGridColumn<T = unknown> {
 
 @Component({
     selector: "mtx-data-grid",
-    imports: [NgClass],
+    imports: [NgClass, IconComponent],
     templateUrl: "./data-grid.component.html",
     host: { class: "block h-full min-h-0 min-w-0 overflow-hidden" },
 })
