@@ -78,14 +78,23 @@ export class AppComponent implements OnDestroy, OnInit {
     { id: "command-center", label: "Console (Beta)", icon: "bi-terminal-plus" },
   ];
 
-  toolItems: NavItem[] = [
-    { id: "processes", label: "Task Manager", icon: "bi-window-stack", nativeTool: "taskManager" },
-    { id: "settings", label: "System Setting", icon: "bi-sliders", nativeTool: "systemSettings" },
-    { id: "storage", label: "Disk Manager", icon: "bi-device-hdd", nativeTool: "diskManager" },
-    { id: "terminal", label: "Terminal", icon: "bi-terminal", nativeTool: "terminal" },
-    { id: "settings", label: "Env Variables", icon: "bi-braces", nativeTool: "envVariables" },
-    { id: "settings", label: "Snipping Tool", icon: "bi-scissors", nativeTool: "snippingTool" },
-  ];
+  toolItems: NavItem[] = navigator.platform.toLowerCase().includes("mac")
+    ? [
+      { id: "processes", label: "Activity Monitor", icon: "bi-window-stack", nativeTool: "taskManager" },
+      { id: "settings", label: "System Settings", icon: "bi-sliders", nativeTool: "systemSettings" },
+      { id: "storage", label: "Disk Utility", icon: "bi-device-hdd", nativeTool: "diskManager" },
+      { id: "terminal", label: "Terminal", icon: "bi-terminal", nativeTool: "terminal" },
+      { id: "settings", label: "Environment", icon: "bi-braces", nativeTool: "envVariables" },
+      { id: "settings", label: "Screenshot", icon: "bi-scissors", nativeTool: "snippingTool" },
+    ]
+    : [
+      { id: "processes", label: "Task Manager", icon: "bi-window-stack", nativeTool: "taskManager" },
+      { id: "settings", label: "System Setting", icon: "bi-sliders", nativeTool: "systemSettings" },
+      { id: "storage", label: "Disk Manager", icon: "bi-device-hdd", nativeTool: "diskManager" },
+      { id: "terminal", label: "Terminal", icon: "bi-terminal", nativeTool: "terminal" },
+      { id: "settings", label: "Env Variables", icon: "bi-braces", nativeTool: "envVariables" },
+      { id: "settings", label: "Snipping Tool", icon: "bi-scissors", nativeTool: "snippingTool" },
+    ];
   overviewItems = computed<NavItem[]>(() => this.dockerInstalled()
     ? [...this.baseOverviewItems.slice(0, 6), { id: "docker", label: "Docker", icon: "bi-box-seam" }, ...this.baseOverviewItems.slice(6)]
     : this.baseOverviewItems);
@@ -191,6 +200,7 @@ export class AppComponent implements OnDestroy, OnInit {
   @HostListener("window:focus")
   refreshWindowIconFromWindowFocus(): void {
     this.refreshWindowIcon();
+    this.refreshDockerAvailability();
   }
 
   @HostListener("document:visibilitychange")
@@ -207,8 +217,15 @@ export class AppComponent implements OnDestroy, OnInit {
 
   refreshDockerAvailability(): void {
     invoke<DockerAvailability>("get_docker_availability", { dockerHost: "" })
-      .then((availability) => this.dockerInstalled.set(availability.installed))
-      .catch(() => this.dockerInstalled.set(false));
+      .then((availability) => this.applyDockerAvailability(availability.installed))
+      .catch(() => this.applyDockerAvailability(false));
+  }
+
+  private applyDockerAvailability(installed: boolean): void {
+    this.dockerInstalled.set(installed);
+    if (!installed && this.router.url.split("?")[0].startsWith("/docker")) {
+      this.setView("dashboard");
+    }
   }
 
   refreshSnapshot(): void {

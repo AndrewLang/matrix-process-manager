@@ -1264,8 +1264,36 @@ fn docker_command(
             .arg(DockerSshCommand::new(args).command())
             .output()
     } else {
-        std::process::Command::new("docker").args(args).output()
+        std::process::Command::new(local_docker_program())
+            .args(args)
+            .output()
     }
+}
+
+#[cfg(target_os = "macos")]
+fn local_docker_program() -> std::path::PathBuf {
+    macos_docker_cli_candidates()
+        .into_iter()
+        .find(|path| path.is_file())
+        .unwrap_or_else(|| std::path::PathBuf::from("docker"))
+}
+
+#[cfg(target_os = "macos")]
+fn macos_docker_cli_candidates() -> Vec<std::path::PathBuf> {
+    let mut candidates = vec![
+        std::path::PathBuf::from("/Applications/Docker.app/Contents/Resources/bin/docker"),
+        std::path::PathBuf::from("/usr/local/bin/docker"),
+        std::path::PathBuf::from("/opt/homebrew/bin/docker"),
+    ];
+    if let Some(home) = std::env::var_os("HOME") {
+        candidates.push(std::path::PathBuf::from(home).join(".docker/bin/docker"));
+    }
+    candidates
+}
+
+#[cfg(not(target_os = "macos"))]
+fn local_docker_program() -> std::path::PathBuf {
+    std::path::PathBuf::from("docker")
 }
 
 fn docker_target(docker_host: Option<&str>) -> Option<&str> {
@@ -1356,9 +1384,119 @@ fn open_native_tool_impl(tool_id: &str) -> Result<(), CommandError> {
         .map_err(|error| CommandError::native_tool_failed(error.to_string()))
 }
 
-#[cfg(not(windows))]
+#[cfg(target_os = "macos")]
+fn open_native_tool_impl(tool_id: &str) -> Result<(), CommandError> {
+    let Some((program, args)) = macos_native_tool_command(tool_id) else {
+        return Err(CommandError::native_tool_failed("unknown native tool"));
+    };
+
+    std::process::Command::new(program)
+        .args(args)
+        .spawn()
+        .map(|_| ())
+        .map_err(|error| CommandError::native_tool_failed(error.to_string()))
+}
+
+#[cfg(target_os = "macos")]
+fn macos_native_tool_command(tool_id: &str) -> Option<(&'static str, &'static [&'static str])> {
+    match tool_id {
+        "taskManager" => Some((
+            "/usr/bin/open",
+            &["/System/Applications/Utilities/Activity Monitor.app"],
+        )),
+        "systemSettings" => Some((
+            "/usr/bin/open",
+            &["/System/Applications/System Settings.app"],
+        )),
+        "diskManager" => Some((
+            "/usr/bin/open",
+            &["/System/Applications/Utilities/Disk Utility.app"],
+        )),
+        "terminal" => Some((
+            "/usr/bin/open",
+            &["/System/Applications/Utilities/Terminal.app"],
+        )),
+        "envVariables" => Some((
+            "/usr/bin/osascript",
+            &[
+                "-e",
+                "tell application \"Terminal\" to do script \"printenv | sort\"",
+            ],
+        )),
+        "snippingTool" => Some((
+            "/usr/bin/open",
+            &["/System/Applications/Utilities/Screenshot.app"],
+        )),
+        _ => None,
+    }
+}
+
+#[cfg(not(any(windows, target_os = "macos")))]
 fn open_native_tool_impl(_: &str) -> Result<(), CommandError> {
     Err(CommandError::native_tool_failed(
-        "native tools are only available on Windows",
+        "native tools are not available on this platform",
     ))
+}
+
+#[cfg(all(test, target_os = "macos"))]
+mod macos_native_tool_tests {
+    use super::{macos_docker_cli_candidates, macos_native_tool_command};
+
+    #[test]
+    fn maps_every_supported_native_tool() {
+        assert_eq!(
+            macos_native_tool_command("taskManager"),
+            Some((
+                "/usr/bin/open",
+                &["/System/Applications/Utilities/Activity Monitor.app"][..]
+            ))
+        );
+        assert_eq!(
+            macos_native_tool_command("systemSettings"),
+            Some((
+                "/usr/bin/open",
+                &["/System/Applications/System Settings.app"][..]
+            ))
+        );
+        assert_eq!(
+            macos_native_tool_command("diskManager"),
+            Some((
+                "/usr/bin/open",
+                &["/System/Applications/Utilities/Disk Utility.app"][..]
+            ))
+        );
+        assert_eq!(
+            macos_native_tool_command("terminal"),
+            Some((
+                "/usr/bin/open",
+                &["/System/Applications/Utilities/Terminal.app"][..]
+            ))
+        );
+        assert_eq!(
+            macos_native_tool_command("snippingTool"),
+            Some((
+                "/usr/bin/open",
+                &["/System/Applications/Utilities/Screenshot.app"][..]
+            ))
+        );
+        assert_eq!(
+            macos_native_tool_command("envVariables").map(|command| command.0),
+            Some("/usr/bin/osascript")
+        );
+    }
+
+    #[test]
+    fn rejects_unknown_native_tools() {
+        assert!(macos_native_tool_command("unknown").is_none());
+    }
+
+    #[test]
+    fn checks_docker_desktop_cli_before_path_fallbacks() {
+        assert_eq!(
+            macos_docker_cli_candidates()
+                .first()
+                .and_then(|path| path.to_str()),
+            Some("/Applications/Docker.app/Contents/Resources/bin/docker")
+        );
+    }
 }
