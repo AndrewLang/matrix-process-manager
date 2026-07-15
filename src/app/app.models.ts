@@ -44,6 +44,15 @@ export interface NavItem {
     nativeTool?: NativeToolId;
 }
 
+export interface Action {
+    name: string;
+    description: string;
+    icon?: string;
+    image?: string;
+    iconClass?: string;
+    action: () => void;
+}
+
 export interface MetricCard {
     label: string;
     value: string;
