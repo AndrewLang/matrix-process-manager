@@ -13,6 +13,7 @@ export class SidebarComponent {
     toolItems = input.required<NavItem[]>();
     activeView = input.required<ViewId>();
     workstationName = input("My Workstation");
+    uptime = input("Loading...");
     viewChange = output<ViewId>();
     toolSelected = output<NavItem>();
 }

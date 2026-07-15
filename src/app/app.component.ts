@@ -46,6 +46,7 @@ export class AppComponent implements OnDestroy, OnInit {
   totalProcesses = signal(142);
   sidebarWidth = signal(this.persistedUiState?.sidebarWidth ?? 200);
   workstationName = signal("My Workstation");
+  uptime = signal("Loading...");
   settingsDialogOpen = signal(false);
   dockerInstalled = signal(false);
   private refreshTimer?: ReturnType<typeof setInterval>;
@@ -224,6 +225,7 @@ export class AppComponent implements OnDestroy, OnInit {
 
         this.totalProcesses.set(snapshot.totalProcesses);
         this.cpuInfo = snapshot.cpuInfo;
+        this.uptime.set(this.formatDuration(snapshot.cpuInfo.uptimeSeconds));
         this.windowsInfo = snapshot.windowsInfo;
         this.workstationName.set(snapshot.windowsInfo.deviceName || "My Workstation");
         this.workareaState.setMemoryInfo(snapshot.memoryInfo);
