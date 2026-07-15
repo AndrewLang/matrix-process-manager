@@ -44,7 +44,7 @@ export class WorkareaStateService {
     selectedPid = signal<number | undefined>(undefined);
     bars = signal<ResourceBar[]>([]);
     activeTitle = signal("Dashboard");
-    updateFrequency = signal<UpdateFrequency>("high");
+    updateFrequency = signal<UpdateFrequency>("normal");
     resourceHistory = signal<ResourceSample[]>([]);
     systemInfo = signal<SystemInfoItem[]>([]);
     memoryInfo = signal<BackendMemoryInfo | undefined>(undefined);

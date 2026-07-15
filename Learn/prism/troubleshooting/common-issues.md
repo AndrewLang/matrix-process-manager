@@ -13,8 +13,6 @@ normal. If the window never appears, close Prism fully and start it again.
 Prism reads live system information to populate its screens.
 
 - Make sure you launched the full Prism desktop app.
-- Check your **Update frequency** in [Settings](/prism/settings/general). If it is
-  set to **Paused**, automatic updates are stopped.
 - Some features depend on your platform (see below).
 
 ## A Feature Seems to Do Nothing on My Platform

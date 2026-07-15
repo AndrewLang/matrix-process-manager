@@ -66,9 +66,6 @@ By default, Prism asks before ending a process
 
 - **A process will not end** — you may lack the permissions required to stop it,
   or it may be a protected system process.
-- **The list seems frozen** — check your **Update frequency**; if it is set to
-  **Paused**, automatic updates are stopped
-  ([Settings](/prism/settings/general)).
 
 ## Next Steps
 

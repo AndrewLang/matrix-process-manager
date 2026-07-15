@@ -50,7 +50,7 @@ the disk-cleanup targets are richest on Windows.
 ## Why Use Prism
 
 - One window instead of several separate system utilities.
-- Live data with adjustable refresh speed to balance detail and battery use.
+- Live, continuously updated system data.
 - Quick, direct actions (end a process, clean a cache, generate a key) rather
   than deep menu digging.
 - Shortcuts to the native OS tools you already know.

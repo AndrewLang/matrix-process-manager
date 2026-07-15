@@ -19,20 +19,13 @@ decide where to look next.
 ## Understanding the Metrics
 
 Each metric card shows a current value, a short detail line, and a small trend
-line built from recent samples. The values refresh automatically at the interval
-set by your **Update frequency**.
+line built from recent samples. The values refresh automatically.
 
 - **CPU** — overall processor usage.
 - **GPU** — graphics processor usage.
 - **Memory** — memory in use.
 - **Disk** — disk activity.
 - **Network** — network throughput.
-
-## Adjusting Refresh Speed
-
-If the Dashboard updates too frequently (or not often enough), change the
-**Update frequency** in [Settings](/prism/settings/general). Choosing a slower
-rate or **Paused** reduces background work.
 
 ## Recommended Workflow
 

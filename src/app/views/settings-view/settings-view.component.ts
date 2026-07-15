@@ -1,7 +1,7 @@
 import { Component, inject, signal } from "@angular/core";
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { AppSettings, IndexingSchedule, NativeToolId, TerminalCursorStyle, TerminalDefaultShell, TerminalTheme, UpdateFrequency } from "../../app.models";
+import { AppSettings, IndexingSchedule, NativeToolId, TerminalCursorStyle, TerminalDefaultShell, TerminalTheme } from "../../app.models";
 import { IconComponent } from "../../components/icon/icon.component";
 import { SelectComponent } from "../../components/select/select.component";
 import { WorkareaStateService } from "../../services/workarea-state.service";
@@ -46,12 +46,6 @@ export class SettingsViewComponent {
         { value: "startup", label: "Startup", detail: "Index once when the app starts." },
         { value: "hourly", label: "Hourly", detail: "Refresh command knowledge every hour." },
         { value: "daily", label: "Daily", detail: "Refresh command knowledge once per day." },
-    ];
-    frequencies: { value: UpdateFrequency; label: string; detail: string }[] = [
-        { value: "high", label: "High", detail: "Refresh every second" },
-        { value: "normal", label: "Normal", detail: "Refresh every 2 seconds" },
-        { value: "low", label: "Low", detail: "Refresh every 5 seconds" },
-        { value: "paused", label: "Paused", detail: "Stop automatic updates" },
     ];
     generalToggles: Array<{ key: GeneralSettingKey; label: string; detail: string }> = [
         { key: "startWithWindows", label: "Start with Windows", detail: "Launch Prism automatically when Windows starts." },

@@ -28,9 +28,6 @@ You can resize the sidebar by dragging its right edge.
 2. Open [Performance](/prism/monitoring/performance) for dedicated per-resource
    charts with history.
 
-If updates feel too fast or too slow, adjust the **Update frequency** in
-[Settings](/prism/settings/general).
-
 ## 4. Find and End a Busy Process
 
 1. In the sidebar, select **Processes**.
@@ -67,13 +64,13 @@ Depending on your work, continue with:
 ## 7. Configure Prism to Your Liking
 
 1. Open **Settings** from the title bar.
-2. Set your **Update frequency**, tray behavior, and startup preference.
+2. Set your tray behavior and startup preference.
 3. Enable the native tool shortcuts you use most.
 
 ## Recommended First-Session Checklist
 
 - [ ] Launched Prism and reached the Dashboard.
-- [ ] Adjusted the Update frequency in Settings.
+- [ ] Launched Prism and reached the Dashboard.
 - [ ] Found a process in the Processes screen.
 - [ ] Ran a Storage Cleanup scan.
 - [ ] Enabled the native tool shortcuts you want.

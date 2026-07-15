@@ -28,12 +28,6 @@ value.
 Each monitor keeps a rolling window of recent samples so you can watch how usage
 changes over time.
 
-## Main Options
-
-- **Update frequency** — the sampling speed for all monitors is controlled by the
-  **Update frequency** setting. Faster rates give more detail; **Paused** stops
-  updates. See [Settings](/prism/settings/general).
-
 ## Recommended Workflow
 
 1. Open the monitor for the resource you are investigating.

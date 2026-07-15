@@ -75,11 +75,9 @@ installation for your platform.
 ## Recommended Initial Setup
 
 1. Open **Settings** (the gear button in the title bar).
-2. Under **General**, choose an **Update frequency** that suits you (see
-   [Settings](/prism/settings/general)).
-3. Decide whether to enable **Minimize to system tray** and **Start with
+2. Decide whether to enable **Minimize to system tray** and **Start with
    Windows**.
-4. Under **Tools**, enable the native tool shortcuts you want in the sidebar.
+3. Under **Tools**, enable the native tool shortcuts you want in the sidebar.
 
 ## Next Steps
 

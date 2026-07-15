@@ -20,15 +20,7 @@ General settings control core behavior.
   background; click the tray icon to bring the window back.
 - **Confirm before killing processes** — show a confirmation dialog before ending
   a process. Leaving this on is safer.
-- **Update frequency** — how often live data refreshes:
-  - **High** — refresh every second.
-  - **Normal** — refresh every 2 seconds.
-  - **Low** — refresh every 5 seconds.
-  - **Paused** — stop automatic updates.
 - **Language** and **Date & time format** — display preferences.
-
-Choosing a slower **Update frequency** (or **Paused**) reduces background work,
-which can help on battery power.
 
 ## Terminal
 
@@ -77,11 +69,9 @@ website.
 
 ## Recommended Workflow
 
-1. Set your **Update frequency** to match how closely you want to watch the
-   system.
-2. Decide on tray and startup behavior.
-3. Configure the Terminal to your taste if you use Command Center.
-4. Enable the native tool shortcuts you use most.
+1. Decide on tray and startup behavior.
+2. Configure the Terminal to your taste if you use Command Center.
+3. Enable the native tool shortcuts you use most.
 
 ## Notes and Limitations
 
