@@ -318,6 +318,7 @@ impl StartupManager {
         })
     }
 
+    #[cfg(windows)]
     fn app_from_command(
         name: String,
         command: String,
@@ -343,6 +344,7 @@ impl StartupManager {
         }
     }
 
+    #[cfg(windows)]
     fn executable_path(command: &str) -> String {
         let trimmed = command.trim();
         if let Some(rest) = trimmed.strip_prefix('"') {
@@ -356,10 +358,12 @@ impl StartupManager {
             .to_string()
     }
 
+    #[cfg(windows)]
     fn publisher(path: &str) -> String {
         Self::file_company_name(path).unwrap_or_else(|| Self::path_publisher(path))
     }
 
+    #[cfg(windows)]
     fn display_name(path: &str, fallback: &str) -> String {
         Self::file_version_string(path, "FileDescription")
             .or_else(|| Self::file_version_string(path, "ProductName"))
@@ -381,6 +385,7 @@ impl StartupManager {
         name.trim().to_string()
     }
 
+    #[cfg(windows)]
     fn expand_environment_variables(value: &str) -> String {
         let mut expanded = String::new();
         let mut chars = value.chars().peekable();
@@ -663,16 +668,6 @@ impl StartupManager {
         }
 
         Self::version_string(&buffer, &format!("\\StringFileInfo\\040904b0\\{key}"))
-    }
-
-    #[cfg(not(windows))]
-    fn file_version_string(_path: &str, _key: &str) -> Option<String> {
-        None
-    }
-
-    #[cfg(not(windows))]
-    fn file_company_name(_path: &str) -> Option<String> {
-        None
     }
 
     #[cfg(windows)]

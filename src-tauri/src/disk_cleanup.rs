@@ -771,6 +771,7 @@ impl DiskCleanupManager {
         Vec::new()
     }
 
+    #[cfg(windows)]
     fn parse_volumes(output: &str) -> Vec<DiskVolumeUsage> {
         output
             .lines()
