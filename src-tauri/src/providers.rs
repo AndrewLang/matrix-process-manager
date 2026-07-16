@@ -247,8 +247,16 @@ fn windows_info() -> Option<WindowsInfo> {
         .ok()
         .filter(|output| output.status.success())
         .map(|output| String::from_utf8_lossy(&output.stdout).into_owned());
+    let device_name = std::process::Command::new("/usr/sbin/scutil")
+        .args(["--get", "ComputerName"])
+        .output()
+        .ok()
+        .filter(|output| output.status.success())
+        .map(|output| String::from_utf8_lossy(&output.stdout).trim().to_string())
+        .filter(|value| !value.is_empty())
+        .or_else(System::host_name);
 
-    macos_info_from_outputs(hardware.as_deref(), version.as_deref(), System::host_name())
+    macos_info_from_outputs(hardware.as_deref(), version.as_deref(), device_name)
 }
 
 #[cfg(target_os = "macos")]
@@ -2795,11 +2803,11 @@ hw.perflevel1.l2cachesize: 6291456
         let info = macos_info_from_outputs(
             Some(hardware),
             Some(version),
-            Some("Andys-MacBook-Air".to_string()),
+            Some("Andy’s MacBook Air".to_string()),
         )
         .expect("valid macOS information");
 
-        assert_eq!(info.device_name.as_deref(), Some("Andys-MacBook-Air"));
+        assert_eq!(info.device_name.as_deref(), Some("Andy’s MacBook Air"));
         assert_eq!(info.manufacturer.as_deref(), Some("Apple Inc."));
         assert_eq!(info.model.as_deref(), Some("MacBook Air (Mac17,3)"));
         assert_eq!(info.system_type.as_deref(), Some("Apple M5"));
