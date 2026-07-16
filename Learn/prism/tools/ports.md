@@ -4,6 +4,8 @@ The Ports screen shows the network ports in use on your computer and, where
 available, which process owns each one. Use it to find out what is listening on a
 port or to track down a port conflict.
 
+![The Prism Ports screen showing ports in use and their owning processes](images/prism-ports.jpg)
+
 ## What You Can Do
 
 - Scan for ports currently in use.

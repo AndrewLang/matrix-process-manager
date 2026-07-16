@@ -5,6 +5,8 @@ computer starts, and lets you inspect and edit their launch commands. Reducing
 unnecessary startup items can make your computer boot faster and use fewer
 resources.
 
+![The Prism Startup Apps screen listing applications that launch at startup](images/prism-startup.jpg)
+
 ## What You Can Do
 
 - See the list of startup applications for your account.

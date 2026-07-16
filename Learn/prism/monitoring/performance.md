@@ -4,6 +4,8 @@ The Performance screen provides dedicated monitors for each major system
 resource, with recent history so you can see trends rather than just the current
 value.
 
+![The Prism Performance screen with a resource monitor and history chart](images/prism-performance.jpg)
+
 ## What You Can Do
 
 - Switch between CPU, GPU, Memory, Network, and Disk monitors.

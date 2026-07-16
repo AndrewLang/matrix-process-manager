@@ -4,6 +4,8 @@ The Processes screen shows the applications and background processes running on
 your computer, with live resource usage. Use it to understand what is consuming
 CPU, memory, disk, or network, and to end processes that are misbehaving.
 
+![The Prism Processes screen listing running processes with live resource usage](images/prism-processes.jpg)
+
 ## What You Can Do
 
 - View a live list of running processes.

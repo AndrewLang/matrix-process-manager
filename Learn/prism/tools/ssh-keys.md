@@ -4,6 +4,8 @@ The SSH Keys screen lists the SSH keys found for your user and lets you generate
 new key pairs. Use it to review your existing keys and to create a key for a new
 server or service.
 
+![The Prism SSH Keys screen listing keys with their details](images/prism-ssh-keys.jpg)
+
 ## What You Can Do
 
 - List existing SSH keys with their type and details.

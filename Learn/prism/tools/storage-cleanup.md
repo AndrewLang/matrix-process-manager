@@ -4,6 +4,8 @@ The Storage Cleanup screen scans your system for space you can safely reclaim â€
 temporary files, caches, and other reclaimable locations â€” and lets you remove
 them. Use it to free up disk space quickly.
 
+![The Prism Storage Cleanup screen showing reclaimable space by category](images/prism-storage.jpg)
+
 ## What You Can Do
 
 - Scan your drives for reclaimable space.

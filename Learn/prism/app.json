@@ -5,7 +5,7 @@
     "description": "Prism is a desktop app for monitoring processes and system performance and managing startup apps, storage, ports, network devices, SSH keys, Docker, and terminal sessions on Windows and macOS.",
     "icon": "images/app.png",
     "version": "1.0.0",
-    "heroImage": "images/hero.png",
+    "heroImage": "images/prism-dashboard.jpg",
     "navigation": [
         {
             "title": "Get Started",

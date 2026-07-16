@@ -4,6 +4,8 @@ The Dashboard is Prism's home screen. It gives you a single, at-a-glance view of
 how your workstation is performing right now, so you can spot problems quickly and
 decide where to look next.
 
+![The Prism Dashboard showing CPU, GPU, memory, disk, and network metrics](images/prism-dashboard.jpg)
+
 ## What You Can Do
 
 - See summary metrics for CPU, GPU, memory, disk, and network.

@@ -3,6 +3,8 @@
 The System Info screen shows details about your computer's hardware and operating
 system in one place, so you do not need to open separate system dialogs.
 
+![The Prism System Info screen showing hardware and operating system details](images/prism-system.jpg)
+
 ## What You Can Do
 
 - View processor details such as model, speed, cores, and logical processors.

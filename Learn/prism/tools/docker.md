@@ -4,6 +4,8 @@ The Docker screen lets you view and manage Docker containers and images from
 inside Prism. You can work with your local Docker or connect to a remote host
 over SSH. This screen appears in the sidebar only when Docker is detected.
 
+![The Prism Docker screen showing containers and images](images/prism-docker.jpg)
+
 ## What You Can Do
 
 - See whether Docker is installed and running.
