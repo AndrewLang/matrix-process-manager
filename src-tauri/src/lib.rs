@@ -65,6 +65,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             commands::autocomplete_commands,
+            commands::capture_app_screenshot,
             commands::clean_disk,
             commands::clean_disk_usage_insight,
             commands::finish_command_execution,

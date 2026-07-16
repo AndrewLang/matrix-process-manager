@@ -443,4 +443,11 @@ impl CommandError {
             message: message.into(),
         }
     }
+
+    pub fn screenshot_failed(message: impl Into<String>) -> Self {
+        Self {
+            code: "screenshotFailed".to_string(),
+            message: message.into(),
+        }
+    }
 }

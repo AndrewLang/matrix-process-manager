@@ -195,6 +195,170 @@ pub fn open_native_tool(tool_id: String) -> Result<(), CommandError> {
 }
 
 #[tauri::command]
+pub fn capture_app_screenshot(
+    app_handle: AppHandle,
+    view: Option<String>,
+) -> Result<String, CommandError> {
+    capture_app_screenshot_impl(app_handle, view)
+}
+
+#[cfg(debug_assertions)]
+fn capture_app_screenshot_impl(
+    app_handle: AppHandle,
+    view: Option<String>,
+) -> Result<String, CommandError> {
+    let pictures = app_handle
+        .path()
+        .picture_dir()
+        .map_err(|error| CommandError::screenshot_failed(error.to_string()))?;
+    let directory = pictures.join("Matrix Prism");
+    std::fs::create_dir_all(&directory)
+        .map_err(|error| CommandError::screenshot_failed(error.to_string()))?;
+
+    let window = app_handle
+        .get_webview_window("main")
+        .ok_or_else(|| CommandError::screenshot_failed("main window is unavailable"))?;
+
+    #[cfg(windows)]
+    let rgba = {
+        let hwnd = window
+            .hwnd()
+            .map_err(|error| CommandError::screenshot_failed(error.to_string()))?;
+        capture_window_rgba(hwnd.0 as isize)?
+    };
+
+    #[cfg(not(windows))]
+    let rgba = {
+        let title = window.title().unwrap_or_default();
+        let target = xcap::Window::all()
+            .map_err(|error| CommandError::screenshot_failed(error.to_string()))?
+            .into_iter()
+            .find(|candidate| {
+                candidate
+                    .title()
+                    .map(|candidate_title| !candidate_title.is_empty() && candidate_title == title)
+                    .unwrap_or(false)
+            })
+            .ok_or_else(|| CommandError::screenshot_failed("Prism window was not found"))?;
+        let capture = target
+            .capture_image()
+            .map_err(|error| CommandError::screenshot_failed(error.to_string()))?;
+        image::RgbaImage::from_raw(capture.width(), capture.height(), capture.into_raw())
+            .ok_or_else(|| CommandError::screenshot_failed("captured image buffer was invalid"))?
+    };
+
+    let rgb = image::DynamicImage::ImageRgba8(rgba).to_rgb8();
+
+    let mut name: String = view
+        .unwrap_or_default()
+        .trim()
+        .to_lowercase()
+        .chars()
+        .map(|character| {
+            if character.is_ascii_alphanumeric() || character == '-' {
+                character
+            } else {
+                '-'
+            }
+        })
+        .collect();
+    if name.is_empty() {
+        name = "view".to_string();
+    }
+    let path = directory.join(format!("prism-{name}.jpg"));
+    rgb.save(&path)
+        .map_err(|error| CommandError::screenshot_failed(error.to_string()))?;
+
+    Ok(path.to_string_lossy().to_string())
+}
+
+#[cfg(all(debug_assertions, windows))]
+fn capture_window_rgba(hwnd: isize) -> Result<image::RgbaImage, CommandError> {
+    use windows_sys::Win32::Foundation::{HWND, RECT};
+    use windows_sys::Win32::Graphics::Gdi::{
+        BitBlt, CreateCompatibleBitmap, CreateCompatibleDC, DeleteDC, DeleteObject, GetDIBits,
+        GetWindowDC, ReleaseDC, SelectObject, BITMAPINFO, BITMAPINFOHEADER, BI_RGB, DIB_RGB_COLORS,
+        HDC, SRCCOPY,
+    };
+    use windows_sys::Win32::UI::WindowsAndMessaging::{GetWindowRect, PW_RENDERFULLCONTENT};
+
+    extern "system" {
+        fn PrintWindow(hwnd: HWND, hdc_blt: HDC, flags: u32) -> i32;
+    }
+
+    let hwnd = hwnd as windows_sys::Win32::Foundation::HWND;
+
+    unsafe {
+        let mut rect: RECT = std::mem::zeroed();
+        if GetWindowRect(hwnd, &mut rect) == 0 {
+            return Err(CommandError::screenshot_failed("GetWindowRect failed"));
+        }
+
+        let width = rect.right - rect.left;
+        let height = rect.bottom - rect.top;
+        if width <= 0 || height <= 0 {
+            return Err(CommandError::screenshot_failed("window has an invalid size"));
+        }
+
+        let window_dc = GetWindowDC(hwnd);
+        if window_dc.is_null() {
+            return Err(CommandError::screenshot_failed("GetWindowDC failed"));
+        }
+        let memory_dc = CreateCompatibleDC(window_dc);
+        let bitmap = CreateCompatibleBitmap(window_dc, width, height);
+        let previous = SelectObject(memory_dc, bitmap);
+
+        let printed = PrintWindow(hwnd, memory_dc, PW_RENDERFULLCONTENT);
+        if printed == 0 {
+            BitBlt(memory_dc, 0, 0, width, height, window_dc, 0, 0, SRCCOPY);
+        }
+
+        let mut info: BITMAPINFO = std::mem::zeroed();
+        info.bmiHeader.biSize = std::mem::size_of::<BITMAPINFOHEADER>() as u32;
+        info.bmiHeader.biWidth = width;
+        info.bmiHeader.biHeight = -height;
+        info.bmiHeader.biPlanes = 1;
+        info.bmiHeader.biBitCount = 32;
+        info.bmiHeader.biCompression = BI_RGB as u32;
+
+        let mut buffer = vec![0u8; (width as usize) * (height as usize) * 4];
+        let scanlines = GetDIBits(
+            memory_dc,
+            bitmap,
+            0,
+            height as u32,
+            buffer.as_mut_ptr().cast(),
+            &mut info,
+            DIB_RGB_COLORS,
+        );
+
+        SelectObject(memory_dc, previous);
+        DeleteObject(bitmap);
+        DeleteDC(memory_dc);
+        ReleaseDC(hwnd, window_dc);
+
+        if scanlines == 0 {
+            return Err(CommandError::screenshot_failed("GetDIBits failed"));
+        }
+
+        for pixel in buffer.chunks_exact_mut(4) {
+            pixel.swap(0, 2);
+            pixel[3] = 255;
+        }
+
+        image::RgbaImage::from_raw(width as u32, height as u32, buffer)
+            .ok_or_else(|| CommandError::screenshot_failed("captured image buffer was invalid"))
+    }
+}
+
+#[cfg(not(debug_assertions))]
+fn capture_app_screenshot_impl(_: AppHandle, _: Option<String>) -> Result<String, CommandError> {
+    Err(CommandError::screenshot_failed(
+        "screenshot capture is only available in debug builds",
+    ))
+}
+
+#[tauri::command]
 pub fn set_start_with_windows(enabled: bool) -> Result<(), CommandError> {
     set_start_with_windows_impl(enabled)
 }

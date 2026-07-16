@@ -1,4 +1,4 @@
-import { Component, HostListener, OnDestroy, OnInit, computed, effect, signal } from "@angular/core";
+import { Component, HostListener, OnDestroy, OnInit, computed, effect, isDevMode, signal } from "@angular/core";
 import { NavigationEnd, Router } from "@angular/router";
 import { invoke } from "@tauri-apps/api/core";
 import { PhysicalPosition, PhysicalSize } from "@tauri-apps/api/dpi";
@@ -209,6 +209,40 @@ export class AppComponent implements OnDestroy, OnInit {
     if (document.visibilityState === "visible") {
       this.refreshWindowIcon();
     }
+  }
+
+  @HostListener("document:contextmenu", ["$event"])
+  disableContextMenu(event: Event): void {
+    event.preventDefault();
+  }
+
+  @HostListener("document:keydown", ["$event"])
+  handleGlobalKeydown(event: KeyboardEvent): void {
+    if (!isDevMode() && this.isDevToolsShortcut(event)) {
+      event.preventDefault();
+      return;
+    }
+
+    if ((event.ctrlKey || event.metaKey) && event.key.toUpperCase() === "F") {
+      event.preventDefault();
+      return;
+    }
+
+    if (event.key === "F6") {
+      event.preventDefault();
+      invoke<string>("capture_app_screenshot", { view: this.activeView() })
+        .then((path) => console.info("Screenshot saved:", path))
+        .catch((error) => console.error("Screenshot failed:", error));
+    }
+  }
+
+  private isDevToolsShortcut(event: KeyboardEvent): boolean {
+    if (event.key === "F12") {
+      return true;
+    }
+
+    const key = event.key.toUpperCase();
+    return (event.ctrlKey || event.metaKey) && event.shiftKey && (key === "I" || key === "J" || key === "C");
   }
 
   resetSettings(): void {
