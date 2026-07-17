@@ -7,7 +7,7 @@
   </div>
   }
 
-  <mtx-search-box [hostClass]="searchClass" [inputClass]="searchInputClass" placeholder="Search processes, PID, publisher..." [shortcut]="searchShortcut" />
+  <mtx-search-box [hostClass]="searchClass" [inputClass]="searchInputClass" placeholder="Search processes, PID, publisher..." [shortcut]="searchShortcut" [(value)]="state.processFilter" />
 
   <div class="absolute right-0 flex h-full items-center gap-2.5">
     <div class="flex h-full items-center">

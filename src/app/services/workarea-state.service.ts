@@ -40,6 +40,7 @@ export class WorkareaStateService {
     totalProcesses = signal(0);
     metrics = signal<MetricCard[]>([]);
     rows = signal<ProcessRow[]>([]);
+    processFilter = signal("");
     selectedProcess = signal("");
     selectedPid = signal<number | undefined>(undefined);
     bars = signal<ResourceBar[]>([]);

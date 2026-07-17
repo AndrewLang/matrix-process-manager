@@ -1,10 +1,11 @@
 import { NgClass } from "@angular/common";
-import { Component, output } from "@angular/core";
+import { Component, inject, output } from "@angular/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { Action } from "../../app.models";
 import { IconComponent } from "../icon/icon.component";
 import { SearchBoxComponent } from "../search-box/search-box.component";
+import { WorkareaStateService } from "../../services/workarea-state.service";
 
 @Component({
     selector: "mtx-titlebar",
@@ -12,6 +13,7 @@ import { SearchBoxComponent } from "../search-box/search-box.component";
     templateUrl: "./titlebar.component.html",
 })
 export class TitlebarComponent {
+    state = inject(WorkareaStateService);
     dragStart = output<MouseEvent>();
     minimizeWindow = output<void>();
     toggleMaximizeWindow = output<void>();

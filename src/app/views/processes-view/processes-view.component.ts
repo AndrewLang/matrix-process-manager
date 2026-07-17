@@ -16,13 +16,12 @@ import { WorkareaStateService } from "../../services/workarea-state.service";
 })
 export class ProcessesViewComponent {
     state = inject(WorkareaStateService);
-    processFilter = signal("");
     detailsOpen = signal(true);
     viewOptionsOpen = signal(false);
     processPendingEnd = signal<ProcessRow | undefined>(undefined);
 
     summaryMetrics = computed(() => this.metricOrder().map((label) => this.metric(label)).filter((metric): metric is MetricCard => Boolean(metric)));
-    filteredRows = computed(() => this.filterRows(this.state.rows(), this.processFilter()));
+    filteredRows = computed(() => this.filterRows(this.state.rows(), this.state.processFilter()));
     detailsVisible = computed(() => this.detailsOpen() && Boolean(this.state.selectedRow()));
 
     wideFilterSearchClass = "flex h-7.5 min-w-80 flex-1 items-center gap-2 rounded-[5px] border border-(--border) bg-[rgba(15,28,40,0.84)] px-2.5 py-0 text-[12px] text-(--muted)";

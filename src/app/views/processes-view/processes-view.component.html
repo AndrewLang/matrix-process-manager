@@ -36,7 +36,7 @@
                     Processes <span>({{ state.totalProcesses() }})</span>
                 </h1>
                 <div class="flex items-center gap-2 text-[12px]">
-                    <mtx-search-box [hostClass]="wideFilterSearchClass" placeholder="Filter processes..." [(value)]="processFilter" />
+                    <mtx-search-box [hostClass]="wideFilterSearchClass" placeholder="Filter processes..." [(value)]="state.processFilter" />
                     <div class="relative flex-none" (click)="$event.stopPropagation()">
                         <button type="button"
                           class="inline-flex h-7.5 flex-none items-center justify-center gap-1.75 whitespace-nowrap rounded-[5px] border border-(--border) bg-[rgba(16,31,45,0.86)] px-3 py-0 hover:bg-white/6 max-[1040px]:w-7.5 max-[1040px]:px-0"
