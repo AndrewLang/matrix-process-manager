@@ -9,7 +9,8 @@
     "tauri": "tauri",
     "dev": "tauri dev",
     "build:windows": "tauri build --target x86_64-pc-windows-msvc",
-    "build:macos": "tauri build --target universal-apple-darwin --config src-tauri/tauri.macos.conf.json"
+    "build:macos": "tauri build --target universal-apple-darwin --config src-tauri/tauri.macos.conf.json",
+    "build:msix": "node scripts/build-msix.js"
   },
   "private": true,
   "dependencies": {
@@ -30,6 +31,7 @@
     "@angular/build": "22.0.2",
     "@angular/cli": "22.0.2",
     "@angular/compiler-cli": "22.0.2",
+    "@microsoft/winappcli": "^0.4.0",
     "@tailwindcss/postcss": "^4.3.1",
     "@tauri-apps/cli": "^2",
     "postcss": "^8.5.15",

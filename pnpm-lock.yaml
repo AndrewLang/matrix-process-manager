@@ -54,6 +54,9 @@ importers:
       '@angular/compiler-cli':
         specifier: 22.0.2
         version: 22.0.2(@angular/compiler@22.0.2)(typescript@6.0.3)
+      '@microsoft/winappcli':
+        specifier: ^0.4.0
+        version: 0.4.0
       '@tailwindcss/postcss':
         specifier: ^4.3.1
         version: 4.3.1
@@ -880,6 +883,12 @@ packages:
     resolution: {integrity: sha512-JF1BmLCm9kGEVZgYmJq43zeQVdHVgAJnTi/NURWEsy6L1ZrrlSmdltS+D17QN4LODwf+1LMXAA9auIZVXtWwzw==}
     cpu: [x64]
     os: [win32]
+
+  '@microsoft/winappcli@0.4.0':
+    resolution: {integrity: sha512-JgfiSdph5kvennZxcDx79+py+mCzFURD7nwOGRjvJPNmprv6sClN+BG7j/5IFiZLSqMoD3Q/CXc8MKN8TN1ugw==}
+    engines: {node: '>=18.0.0'}
+    os: [win32]
+    hasBin: true
 
   '@modelcontextprotocol/sdk@1.29.0':
     resolution: {integrity: sha512-zo37mZA9hJWpULgkRpowewez1y6ML5GsXJPY8FI0tBBCd77HEvza4jDqRKOXgHNn867PVGCyTdzqpz0izu5ZjQ==}
@@ -3413,6 +3422,8 @@ snapshots:
 
   '@lmdb/lmdb-win32-x64@3.5.4':
     optional: true
+
+  '@microsoft/winappcli@0.4.0': {}
 
   '@modelcontextprotocol/sdk@1.29.0(zod@4.4.2)':
     dependencies:
