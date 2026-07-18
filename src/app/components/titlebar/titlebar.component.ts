@@ -3,9 +3,9 @@ import { Component, inject, output } from "@angular/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { Action } from "../../app.models";
+import { WorkareaStateService } from "../../services/workarea-state.service";
 import { IconComponent } from "../icon/icon.component";
 import { SearchBoxComponent } from "../search-box/search-box.component";
-import { WorkareaStateService } from "../../services/workarea-state.service";
 
 @Component({
     selector: "mtx-titlebar",

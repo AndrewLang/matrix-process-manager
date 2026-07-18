@@ -49,4 +49,28 @@
     </div>
   </mtx-common-dialog>
   }
+
+  @if (commandPaletteOpen()) {
+  <div #commandPalette class="fixed top-14 left-1/2 z-50 w-[min(560px,calc(100vw-32px))] -translate-x-1/2">
+    <section class="w-full overflow-hidden rounded-md border border-(--border) bg-[rgba(10,22,33,0.98)] shadow-[0_18px_48px_rgba(0,0,0,0.42)]"
+      (click)="$event.stopPropagation()">
+      <input #commandPaletteInput
+        class="h-12 w-full border-b border-(--border) bg-transparent px-4 text-[14px] text-[#e2edf6] outline-none placeholder:text-[#8292a1]" type="search"
+        placeholder="Search commands..." [value]="commandPaletteQuery()" (input)="commandPaletteQuery.set($any($event.target).value)"
+        (keydown.enter)="commandPaletteItems()[0] && executeCommand(commandPaletteItems()[0])" (keydown.escape)="closeCommandPalette()" />
+      <div class="max-h-80 overflow-y-auto p-1.5">
+        @for (item of commandPaletteItems(); track item.label) {
+        <button type="button"
+          class="flex h-10 w-full items-center gap-3 rounded-[5px] px-3 text-left text-[13px] text-[#cbd7e2] hover:bg-white/8 focus-visible:bg-[rgba(23,144,255,0.16)] focus-visible:outline-none"
+          (click)="executeCommand(item)">
+          <mtx-icon [name]="item.icon" class="grid w-5 place-items-center text-[#1d9bff]" />
+          <span>{{ item.label }}</span>
+        </button>
+        } @empty {
+        <p class="px-3 py-5 text-center text-[12px] text-(--muted)">No matching commands</p>
+        }
+      </div>
+    </section>
+  </div>
+  }
 </main>

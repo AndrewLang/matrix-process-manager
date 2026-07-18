@@ -1,4 +1,4 @@
-import { Component, HostListener, OnDestroy, OnInit, computed, effect, isDevMode, signal } from "@angular/core";
+import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, computed, effect, isDevMode, signal } from "@angular/core";
 import { NavigationEnd, Router } from "@angular/router";
 import { invoke } from "@tauri-apps/api/core";
 import { PhysicalPosition, PhysicalSize } from "@tauri-apps/api/dpi";
@@ -49,7 +49,11 @@ export class AppComponent implements OnDestroy, OnInit {
   workstationName = signal("My Workstation");
   uptime = signal("Loading...");
   settingsDialogOpen = signal(false);
+  commandPaletteOpen = signal(false);
+  commandPaletteQuery = signal("");
   dockerInstalled = signal(false);
+  @ViewChild("commandPalette") commandPalette?: ElementRef<HTMLElement>;
+  @ViewChild("commandPaletteInput") commandPaletteInput?: ElementRef<HTMLInputElement>;
   private refreshTimer?: ReturnType<typeof setInterval>;
   private uiSaveTimer?: ReturnType<typeof setTimeout>;
   private windowSaveTimer?: ReturnType<typeof setTimeout>;
@@ -102,6 +106,11 @@ export class AppComponent implements OnDestroy, OnInit {
 
   enabledToolItems = computed(() => this.toolItems.filter((item) => !item.nativeTool || this.workareaState.appSettings().toolSettings[item.nativeTool]));
   localIpAddress = computed(() => this.findLocalIpAddress());
+  commandPaletteItems = computed(() => {
+    const query = this.commandPaletteQuery().trim().toLowerCase();
+    const items = [...this.overviewItems(), ...this.enabledToolItems()];
+    return query ? items.filter((item) => item.label.toLowerCase().includes(query)) : items;
+  });
 
   metrics = signal<MetricCard[]>([
     { label: "CPU", value: "18%", detail: "2.42 GHz", accent: "blue", path: "55,72 75,36 92,70 112,26 126,64 148,54 164,12 180,58 203,46 224,70" },
@@ -216,8 +225,27 @@ export class AppComponent implements OnDestroy, OnInit {
     event.preventDefault();
   }
 
+  @HostListener("document:click", ["$event"])
+  closeCommandPaletteFromDocument(event: Event): void {
+    if (this.commandPaletteOpen() && !this.commandPalette?.nativeElement.contains(event.target as Node)) {
+      this.closeCommandPalette();
+    }
+  }
+
   @HostListener("document:keydown", ["$event"])
   handleGlobalKeydown(event: KeyboardEvent): void {
+    if ((event.ctrlKey || event.metaKey) && event.key.toUpperCase() === "K") {
+      event.preventDefault();
+      this.openCommandPalette();
+      return;
+    }
+
+    if (this.commandPaletteOpen() && event.key === "Escape") {
+      event.preventDefault();
+      this.closeCommandPalette();
+      return;
+    }
+
     if (!isDevMode() && this.isDevToolsShortcut(event)) {
       event.preventDefault();
       return;
@@ -304,6 +332,21 @@ export class AppComponent implements OnDestroy, OnInit {
     this.activeView.set(view);
     this.scheduleUiStateSave(`/${view}`);
     this.router.navigate([view]);
+  }
+
+  openCommandPalette(): void {
+    this.commandPaletteQuery.set("");
+    this.commandPaletteOpen.set(true);
+    setTimeout(() => this.commandPaletteInput?.nativeElement.focus());
+  }
+
+  closeCommandPalette(): void {
+    this.commandPaletteOpen.set(false);
+  }
+
+  executeCommand(item: NavItem): void {
+    this.closeCommandPalette();
+    this.openTool(item);
   }
 
   openTool(item: NavItem): void {
