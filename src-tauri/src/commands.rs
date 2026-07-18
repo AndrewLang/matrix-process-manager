@@ -202,7 +202,7 @@ pub fn capture_app_screenshot(
     capture_app_screenshot_impl(app_handle, view)
 }
 
-#[cfg(debug_assertions)]
+#[cfg(all(debug_assertions, not(target_os = "macos")))]
 fn capture_app_screenshot_impl(
     app_handle: AppHandle,
     view: Option<String>,
@@ -351,7 +351,7 @@ fn capture_window_rgba(hwnd: isize) -> Result<image::RgbaImage, CommandError> {
     }
 }
 
-#[cfg(not(debug_assertions))]
+#[cfg(any(not(debug_assertions), target_os = "macos"))]
 fn capture_app_screenshot_impl(_: AppHandle, _: Option<String>) -> Result<String, CommandError> {
     Err(CommandError::screenshot_failed(
         "screenshot capture is only available in debug builds",
